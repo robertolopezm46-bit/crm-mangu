@@ -380,6 +380,27 @@
     border: 1px dashed var(--border); border-radius: 12px;
   }
 
+  #section-whatsapp .wa-desktop-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  #section-whatsapp .wa-tab-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted);}
+  #section-whatsapp .wa-tab-btn.active{background:var(--gold);color:#fff;border-color:var(--gold);}
+  #section-whatsapp .wa-grid{display:none;}
+  #section-whatsapp.tab-plantillas .wa-grid{display:grid;}
+  #section-whatsapp.tab-plantillas #mob-wa-list{display:none;}
+  #section-whatsapp:not(.tab-plantillas) #mob-wa-list{display:block;}
+  @media (min-width: 769px) {
+    #section-whatsapp .mwa-head h2{color:var(--text);}
+    #section-whatsapp .mwa-head button{display:none;}
+    #section-whatsapp #mob-wa-list{max-width:640px;}
+    #section-whatsapp .mwa-row{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:var(--radius);}
+    #section-whatsapp .mwa-row:hover{background:#faf8f1;}
+    #section-whatsapp .mwa-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    #section-whatsapp .mwa-body{flex:1;min-width:0;}
+    #section-whatsapp .mwa-name{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    #section-whatsapp .mwa-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+    #section-whatsapp .mwa-time{color:var(--text-muted);}
+    #section-whatsapp .mwa-time.recent{color:#16A34A;}
+  }
+
   @media (max-width: 768px) {
     /* ── Reset y base ── */
     body { background: #1a1a2e; font-family: 'DM Sans', 'Inter', -apple-system, sans-serif; }
@@ -559,6 +580,9 @@
     /* ══════════ VISTA WHATSAPP (lista de conversaciones) ══════════ */
     #section-whatsapp .wa-grid { display: none; }
     #mob-wa-list { display: block; padding: 0; }
+    .wa-desktop-tabs{display:none;}
+    #section-whatsapp.tab-plantillas .wa-grid{display:none;}
+    #section-whatsapp.tab-plantillas #mob-wa-list{display:block;}
     .mwa-head {
       display: flex; align-items: center; justify-content: space-between;
       padding: 8px 0 16px;
@@ -1093,6 +1117,10 @@
       <!-- WHATSAPP -->
       <div id="section-whatsapp" class="section">
         <!-- Lista de conversaciones móvil (visible solo ≤768px) -->
+        <div class="wa-desktop-tabs">
+          <button type="button" class="wa-tab-btn active" id="wa-tab-btn-conv" onclick="showWaTab('conversaciones')">💬 Conversaciones</button>
+          <button type="button" class="wa-tab-btn" id="wa-tab-btn-tmpl" onclick="showWaTab('plantillas')">📋 Plantillas</button>
+        </div>
         <div id="mob-wa-list"></div>
         <div class="wa-grid">
           <div>
@@ -3380,9 +3408,9 @@ function subscribeRealtime() {
       if(isSectionActive('kanban'))renderKanban();
       if(window.innerWidth<=768){
         if(isSectionActive('pipeline')) renderMobileTabla();
-        if(isSectionActive('whatsapp')) renderMobileWhatsAppList();
         updateMobileAlertBadge();
       }
+      if(isSectionActive('whatsapp')) renderMobileWhatsAppList();
       updateProspectSelects();
     });})
     .on('postgres_changes',{event:'*',schema:'public',table:'crm_citas'},()=>{loadCitas().then(()=>{
@@ -3432,6 +3460,7 @@ function handleInboundWA(msg){
   const preview = (msg.body||'Mensaje nuevo').slice(0,80);
   showToast(`💬 WhatsApp de ${quien}: ${preview}`,'info');
   showWaBadge(true);
+  if(isSectionActive('whatsapp')) renderMobileWhatsAppList();
   if(window.innerWidth<=768) updateMobileAlertBadge();
   try{
     if(window.Notification && Notification.permission==='granted'){
@@ -3508,6 +3537,22 @@ function renderCitasHoyBanner(){
 
 
 const sectionTitles={pipeline:'Pipeline de Prospectos',kanban:'Tablero Kanban',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades'};
+function showWaTab(tab){
+  const sec = document.getElementById('section-whatsapp');
+  if(!sec) return;
+  const btnConv = document.getElementById('wa-tab-btn-conv');
+  const btnTmpl = document.getElementById('wa-tab-btn-tmpl');
+  if(tab==='plantillas'){
+    sec.classList.add('tab-plantillas');
+    if(btnConv) btnConv.classList.remove('active');
+    if(btnTmpl) btnTmpl.classList.add('active');
+  } else {
+    sec.classList.remove('tab-plantillas');
+    if(btnConv) btnConv.classList.add('active');
+    if(btnTmpl) btnTmpl.classList.remove('active');
+    renderMobileWhatsAppList();
+  }
+}
 function showSection(id){
   // Cerrar sidebar en mobile al navegar
   if (window.innerWidth <= 768) closeSidebar();
@@ -3524,7 +3569,7 @@ function showSection(id){
   if(id==='pipeline'){renderPipeline(); if(window.innerWidth<=768) renderMobileTabla();}
   if(id==='kanban'){renderKanban();initKanbanSwipe();}
   if(id==='citas'){renderCalendar(); if(window.innerWidth<=768) renderMobileCitas();}
-  if(id==='whatsapp'){ if(window.innerWidth<=768) renderMobileWhatsAppList(); showWaBadge(false); }
+  if(id==='whatsapp'){ renderMobileWhatsAppList(); showWaBadge(false); }
   // Actualizar chip "Sin responder" del topbar móvil al cambiar de sección
   if(window.innerWidth<=768) updateMobileAlertBadge();
   if(id==='equipo')renderEquipo();
