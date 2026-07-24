@@ -3091,11 +3091,12 @@ async function sendWATemplateReal(){
 // Respaldo: abre WhatsApp Web/App con el texto precargado (comportamiento
 // previo a la integración con la API). Se usa solo cuando la plantilla no
 // tiene mapeo en Meta, o cuando la llamada a la API falla.
+function waDigits(phone){let d=(phone||'').replace(/\D/g,'');if(d.length===12&&d.startsWith('52'))d='521'+d.slice(2);return d;}
 function openWAFallback(){
   const text=document.getElementById('wa-preview-bubble').textContent;
   const selId=document.getElementById('wa-prospect-select').value;
   const phone=selId?DB.prospects.find(p=>p.id===selId||p.id===parseInt(selId))?.phone?.replace(/\s|\+/g,''):'522206471727';
-  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`,'_blank');
+  window.open(`https://wa.me/${waDigits(phone)}?text=${encodeURIComponent(text)}`,'_blank');
 }
 // ══════════════════════════════════════════════════════════════════════════
 //  FIN INTEGRACIÓN WHATSAPP CLOUD API
@@ -3790,7 +3791,7 @@ function renderPipeline(){
         out+='<tr class="pipeline-row-'+yid+' pipeline-row-'+mid+'" style="display:'+(yOpen&&mOpen?'table-row':'none')+';border-bottom:1px solid var(--border);">'
           +(_selectMode?'<td style="padding:13px 16px;" onclick="event.stopPropagation();"><input type="checkbox" class="select-chk" data-id="'+p.id+'" onclick="toggleProspectSelect(\''+p.id+'\',this.checked)" '+(_selectedIds.has(String(p.id))?'checked':'')+'></td>':'')
           +'<td style="padding:13px 16px;"><div style="font-weight:600;font-size:13px;color:var(--navy);">'+esc(p.name)+'</div>'+(p.email?'<div style="font-size:11.5px;color:var(--text-muted);margin-top:1px;">'+esc(p.email)+'</div>':'')+'</td>'
-          +'<td style="padding:13px 16px;font-size:12.5px;"><a href="https://wa.me/'+encodeURIComponent(p.phone.replace(/\s|\+/g,''))+'" target="_blank" style="color:var(--text);text-decoration:none;">'+esc(p.phone)+'</a></td>'
+          +'<td style="padding:13px 16px;font-size:12.5px;"><a href="https://wa.me/'+waDigits(encodeURIComponent(p.phone.replace(/\s|\+/g,'')))+'" target="_blank" style="color:var(--text);text-decoration:none;">'+esc(p.phone)+'</a></td>'
           +'<td style="padding:13px 16px;font-size:12.5px;color:var(--text-muted);">'+esc(p.prop||'\u2014')+'</td>'
           +'<td style="padding:13px 16px;font-weight:600;color:var(--navy);font-size:13px;text-align:right;">$'+(p.value||0).toLocaleString('es-MX')+'</td>'
           +'<td style="padding:13px 16px;"><span class="badge '+(bm[p.phase]||'')+'">'+p.phase+'</span></td>'
@@ -4844,7 +4845,7 @@ async function compartirContrato(id) {
 
   const msg = `Hola ${c.cliente}, aquí está tu contrato de MANGU listo para firmar: ${data.url}`;
   if (c.cliente_phone) {
-    window.open(`https://wa.me/${c.cliente_phone.replace(/\s|\+/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
+    window.open(`https://wa.me/${waDigits(c.cliente_phone.replace(/\s|\+/g,''))}?text=${encodeURIComponent(msg)}`, '_blank');
   } else if (navigator.clipboard) {
     await navigator.clipboard.writeText(data.url);
     showToast('Link copiado al portapapeles (el prospecto no tiene teléfono guardado)', 'success');
@@ -6156,7 +6157,7 @@ async function notifyFaseChange({ prospectName, oldPhase, newPhase, comment, sel
     });
   } catch(e) { console.log('Notify fase error:', e.message); }
 }
-function quickWA(phone,name){window.open(`https://wa.me/${phone.replace(/\s|\+/g,'')}?text=Hola ${encodeURIComponent(name)}, te contacta MANGU Inmobiliaria.`,'_blank');}
+function quickWA(phone,name){window.open(`https://wa.me/${waDigits(phone.replace(/\s|\+/g,''))}?text=Hola ${encodeURIComponent(name)}, te contacta MANGU Inmobiliaria.`,'_blank');}
 
 // ══════════════════════════════════════════
 //  WHATSAPP
@@ -6196,7 +6197,7 @@ function updateWAPreview(){
   }
   document.getElementById('wa-preview-bubble').textContent=text;
   const phone=selId?DB.prospects.find(p=>p.id===selId||p.id===parseInt(selId))?.phone?.replace(/\s|\+/g,''):'522206471727';
-  document.getElementById('wa-send-btn').href=`https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+  document.getElementById('wa-send-btn').href=`https://wa.me/${waDigits(phone)}?text=${encodeURIComponent(text)}`;
 }
 document.addEventListener('DOMContentLoaded',()=>{document.getElementById('wa-prospect-select').addEventListener('change',updateWAPreview);});
 function copyTemplate(){
@@ -6210,7 +6211,7 @@ function copyTemplate(){
 function generateWALink(){
   const msg=document.getElementById('wa-msg-custom').value;
   const prop=document.getElementById('wa-prop').value;
-  const link=`https://wa.me/522206471727?text=${encodeURIComponent(`Hola, vi tu anuncio de ${prop}. ${msg}`)}`;
+  const link=`https://wa.me/5212206471727?text=${encodeURIComponent(`Hola, vi tu anuncio de ${prop}. ${msg}`)}`;
   const el=document.getElementById('wa-link-result');
   el.textContent=link;el.style.display='block';
   document.getElementById('wa-copy-btn').style.display='block';
@@ -6321,7 +6322,7 @@ function sendCitaWA(){
 \ud83d\udccd Pachuca, Hidalgo\
 \
 \u00a1Te esperamos! Si necesitas cambiar la cita, escr\u00edbenos aqu\u00ed. \ud83d\ude0a`;
-  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,'_blank');
+  window.open(`https://wa.me/${waDigits(phone)}?text=${encodeURIComponent(msg)}`,'_blank');
 }
 function renderCalendar(){
   const monthNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
