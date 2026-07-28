@@ -2806,9 +2806,46 @@ function _waPreview(p){
   })[p.phase] || 'Última conversación';
   return t;
 }
+async function loadUnregisteredWA(){
+  try {
+    const { data: staffRows } = await supabase.from('crm_users').select('phone');
+    const staffLast10 = (staffRows||[]).map(u => (u.phone||'').replace(/\D/g,'').slice(-10)).filter(Boolean);
+    const { data, error } = await supabase
+      .from('crm_wa_messages')
+      .select('phone, direction, body, message_type, created_at')
+      .is('prospect_id', null)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error || !data) { window.__waUnregistered = []; return; }
+    const byPhone = {};
+    for (const m of data) {
+      const digits = (m.phone||'').replace(/\D/g,'');
+      const last10 = digits.slice(-10);
+      if (staffLast10.includes(last10)) continue;
+      if (!byPhone[m.phone]) {
+        const body2 = m.message_type === 'audio' ? '🎤 Audio' : (m.message_type === 'image' ? '📷 Imagen' : (m.body||''));
+        byPhone[m.phone] = {
+          phone: m.phone,
+          phone_fmt: last10.length===10 ? ('+52 '+last10.slice(0,3)+' '+last10.slice(3,7)+' '+last10.slice(7)) : ('+'+digits),
+          last_at: m.created_at,
+          last_dir: m.direction,
+          last_body: body2
+        };
+      }
+    }
+    window.__waUnregistered = Object.values(byPhone).sort((a,b)=> new Date(b.last_at) - new Date(a.last_at));
+  } catch(e) {
+    window.__waUnregistered = window.__waUnregistered || [];
+  }
+}
 function renderMobileWhatsAppList(){
   const el = document.getElementById('mob-wa-list');
   if (!el) return;
+  const _waNow = Date.now();
+  if (!window.__waUnregTs || _waNow - window.__waUnregTs > 15000) {
+    window.__waUnregTs = _waNow;
+    loadUnregisteredWA().then(renderMobileWhatsAppList);
+  }
   let visible = getVisibleProspects();
   // Excluir Perdido explícito
   visible = visible.filter(p => p.phase !== 'Perdido');
@@ -2839,12 +2876,28 @@ function renderMobileWhatsAppList(){
       </div>
     </div>`;
   }).join('');
+  const unregRows = (window.__waUnregistered||[]).map(u => {
+    const time = _waTimeLabel(u.last_at);
+    const preview = (u.last_dir==='outbound' ? 'Tú: ' : '') + esc(u.last_body||'');
+    const waiting = u.last_dir === 'inbound';
+    return `<div class="mwa-row" onclick="window.open('https://wa.me/'+waDigits('${u.phone}'),'_blank')">
+      <div class="mwa-avatar" style="background:linear-gradient(135deg,#f5c451,#e8a33d);">🆕</div>
+      <div class="mwa-body">
+        <div class="mwa-name">${esc(u.phone_fmt||u.phone)}</div>
+        <div class="mwa-preview">${preview}</div>
+      </div>
+      <div class="mwa-right">
+        <span class="mwa-time ${time.cls}">${time.text}</span>
+        ${waiting ? '<span class="mwa-badge alert">!</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
   el.innerHTML = `<div class="mwa-head">
       <h2>WhatsApp</h2>
       <button onclick="showGlobalSearch()" aria-label="Buscar">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
-    </div>${rows || '<div class="mcit-empty">Sin conversaciones</div>'}`;
+    </div>${unregRows ? `<div class="mwa-section-label" style="padding:12px 16px 4px;font-size:12px;font-weight:700;color:#b8860b;text-transform:uppercase;letter-spacing:.04em;">Nuevos contactos (sin registrar)</div>${unregRows}<div class="mwa-section-label" style="padding:14px 16px 4px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;">Prospectos</div>` : ''}${rows || '<div class="mcit-empty">Sin conversaciones</div>'}`;
 }
 
 // ── Citas móvil (week strip + lista del día) ──
