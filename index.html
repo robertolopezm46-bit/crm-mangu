@@ -2806,6 +2806,188 @@ function _waPreview(p){
   })[p.phase] || 'Última conversación';
   return t;
 }
+// ===== Chat integrado de WhatsApp (enviar/recibir sin salir del CRM) =====
+let __waChatPhone = null;      // ultimos 10 digitos del telefono del chat abierto
+let __waChatToDigits = '';     // digitos completos (formato Meta) para enviar
+let __waChatProspectId = null; // prospect_id si aplica, o null
+
+function waLast10(phone){
+  return (phone||'').replace(/\D/g,'').slice(-10);
+}
+
+function ensureWaChatModalDom(){
+  if (document.getElementById('wachat-overlay')) return;
+  const style = document.createElement('style');
+  style.textContent = [
+    '#wachat-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;}',
+    '#wachat-box{background:#fff;border-radius:12px;width:100%;max-width:520px;height:82vh;max-height:680px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);}',
+    '#wachat-header{padding:14px 16px;background:#1f2430;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}',
+    '#wachat-header .wachat-title{font-weight:700;font-size:15px;}',
+    '#wachat-header .wachat-sub{font-size:12px;opacity:.7;}',
+    '#wachat-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:4px 8px;}',
+    '#wachat-body{flex:1;overflow-y:auto;padding:14px;background:#ece5dd;display:flex;flex-direction:column;gap:6px;}',
+    '.wachat-msg{max-width:78%;padding:8px 11px;border-radius:10px;font-size:14px;line-height:1.35;white-space:pre-wrap;word-break:break-word;box-shadow:0 1px 1px rgba(0,0,0,.08);}',
+    '.wachat-msg.in{align-self:flex-start;background:#fff;border-top-left-radius:2px;}',
+    '.wachat-msg.out{align-self:flex-end;background:#d9fdd3;border-top-right-radius:2px;}',
+    '.wachat-msg .wachat-meta{display:block;margin-top:4px;font-size:10.5px;color:#8a8a8a;text-align:right;}',
+    '.wachat-msg .wachat-sender{display:block;font-size:10.5px;font-weight:700;color:#b8860b;margin-bottom:2px;}',
+    '.wachat-msg.failed{background:#ffe4e1;}',
+    '#wachat-empty{margin:auto;color:#999;font-size:13px;text-align:center;}',
+    '#wachat-footer{padding:10px;border-top:1px solid #eee;display:flex;gap:8px;align-items:flex-end;background:#fff;flex-shrink:0;}',
+    '#wachat-input{flex:1;border:1px solid #ddd;border-radius:20px;padding:10px 14px;font-size:14px;resize:none;max-height:90px;font-family:inherit;}',
+    '#wachat-send{background:#b8860b;color:#fff;border:none;border-radius:50%;width:40px;height:40px;flex-shrink:0;cursor:pointer;font-size:16px;}',
+    '#wachat-send:disabled{opacity:.5;cursor:default;}',
+    '#wachat-fallback{font-size:11px;color:#1f6fd6;text-decoration:none;flex-shrink:0;align-self:center;padding:6px 4px;white-space:nowrap;}',
+    '#wachat-warn{padding:8px 14px;background:#fff6e0;color:#8a6100;font-size:12px;border-bottom:1px solid #f0e2b8;flex-shrink:0;}'
+  ].join('\n');
+  document.head.appendChild(style);
+  const overlay = document.createElement('div');
+  overlay.id = 'wachat-overlay';
+  overlay.style.display = 'none';
+  overlay.innerHTML = [
+    '<div id="wachat-box">',
+    '  <div id="wachat-header">',
+    '    <div>',
+    '      <div class="wachat-title" id="wachat-title">Chat</div>',
+    '      <div class="wachat-sub" id="wachat-sub"></div>',
+    '    </div>',
+    '    <button id="wachat-close" onclick="closeWaChatModal()">&times;</button>',
+    '  </div>',
+    '  <div id="wachat-warn" style="display:none;"></div>',
+    '  <div id="wachat-body"><div id="wachat-empty">Cargando...</div></div>',
+    '  <div id="wachat-footer">',
+    '    <textarea id="wachat-input" rows="1" placeholder="Escribe un mensaje..."></textarea>',
+    '    <a id="wachat-fallback" href="#" target="_blank">Abrir en WhatsApp</a>',
+    '    <button id="wachat-send" onclick="sendWaChatMessage()">&#10148;</button>',
+    '  </div>',
+    '</div>'
+  ].join('\n');
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e){ if (e.target.id === 'wachat-overlay') closeWaChatModal(); });
+  document.getElementById('wachat-input').addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendWaChatMessage(); }
+  });
+}
+
+async function openWaChatModal(phone, displayName, prospectId){
+  ensureWaChatModalDom();
+  if (!displayName && prospectId) {
+    const p = (DB.prospects || []).find(function(x){ return String(x.id) === String(prospectId); });
+    displayName = p ? p.name : phone;
+  }
+  if (!displayName) displayName = phone;
+  __waChatPhone = waLast10(phone);
+  __waChatToDigits = waDigits(phone);
+  __waChatProspectId = prospectId || null;
+  document.getElementById('wachat-title').textContent = displayName;
+  document.getElementById('wachat-sub').textContent = '+' + __waChatToDigits;
+  document.getElementById('wachat-fallback').href = 'https://wa.me/' + __waChatToDigits;
+  document.getElementById('wachat-overlay').style.display = 'flex';
+  document.getElementById('wachat-input').value = '';
+  await loadAndRenderWaChat();
+  document.getElementById('wachat-input').focus();
+}
+
+function closeWaChatModal(){
+  const ov = document.getElementById('wachat-overlay');
+  if (ov) ov.style.display = 'none';
+  __waChatPhone = null;
+  __waChatToDigits = '';
+  __waChatProspectId = null;
+}
+
+async function loadAndRenderWaChat(){
+  if (!__waChatPhone) return;
+  const body = document.getElementById('wachat-body');
+  const { data, error } = await supabase
+    .from('crm_wa_messages')
+    .select('id, direction, message_type, body, status, created_at, sent_by, error_detail')
+    .like('phone', '%' + __waChatPhone + '%')
+    .order('created_at', { ascending: true })
+    .limit(200);
+  if (error || !data) {
+    body.innerHTML = '<div id="wachat-empty">No se pudo cargar la conversacion.</div>';
+    return;
+  }
+  if (!data.length) {
+    body.innerHTML = '<div id="wachat-empty">Todavia no hay mensajes con este contacto.</div>';
+  } else {
+    let myEmail = '';
+    try {
+      const sessionRes = await supabase.auth.getSession();
+      myEmail = (sessionRes && sessionRes.data && sessionRes.data.session && sessionRes.data.session.user && sessionRes.data.session.user.email) || '';
+    } catch(e) {}
+    body.innerHTML = data.map(function(m){
+      const isOut = m.direction === 'outbound';
+      const failed = m.status === 'failed';
+      const dt = new Date(m.created_at);
+      const timeStr = dt.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+      const senderLabel = (isOut && m.sent_by && m.sent_by !== myEmail) ? ('<span class="wachat-sender">' + esc(m.sent_by.split('@')[0]) + '</span>') : '';
+      const text = m.message_type === 'audio' ? 'ð¤ Audio' : (m.message_type === 'image' ? 'ð· Imagen' : esc(m.body || ''));
+      const failNote = failed
+        ? ('<span class="wachat-meta" style="color:#c0392b;">No se pudo enviar' + (m.error_detail ? (': ' + esc(m.error_detail)) : '') + '</span>')
+        : ('<span class="wachat-meta">' + timeStr + '</span>');
+      return '<div class="wachat-msg ' + (isOut ? 'out' : 'in') + (failed ? ' failed' : '') + '">' + senderLabel + text + failNote + '</div>';
+    }).join('');
+  }
+  body.scrollTop = body.scrollHeight;
+
+  const warn = document.getElementById('wachat-warn');
+  const lastInbound = data.slice().reverse().find(function(m){ return m.direction === 'inbound'; });
+  if (lastInbound) {
+    const hrs = (Date.now() - new Date(lastInbound.created_at).getTime()) / 3600000;
+    if (hrs > 24) {
+      warn.style.display = 'block';
+      warn.textContent = 'Han pasado mas de 24h desde su ultimo mensaje. WhatsApp puede rechazar el texto libre: si falla, usa una Plantilla o contesta desde WhatsApp directamente.';
+    } else {
+      warn.style.display = 'none';
+    }
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+async function sendWaChatMessage(){
+  const input = document.getElementById('wachat-input');
+  const text = (input.value || '').trim();
+  if (!text || !__waChatToDigits) return;
+  const btn = document.getElementById('wachat-send');
+  btn.disabled = true;
+  input.value = '';
+  try {
+    const sessionRes = await supabase.auth.getSession();
+    const session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if (!session || !session.access_token) throw new Error('Sesion no valida. Vuelve a iniciar sesion.');
+    const resp = await fetch(WA_EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({
+        to: __waChatToDigits,
+        prospect_id: __waChatProspectId,
+        kind: 'text',
+        text: text
+      })
+    });
+    const json = await resp.json().catch(function(){ return {}; });
+    if (!(resp.ok && json.ok)) {
+      showToast('No se pudo enviar: ' + (json.error || (json.metaError && json.metaError.message) || 'error desconocido'), 'error');
+      input.value = text;
+    }
+  } catch(e) {
+    showToast('No se pudo enviar: ' + e.message, 'error');
+    input.value = text;
+  }
+  btn.disabled = false;
+  await loadAndRenderWaChat();
+  window.__waUnregTs = 0;
+}
+
+function refreshOpenWaChatIfMatches(msg){
+  if (__waChatPhone && msg && waLast10(msg.phone) === __waChatPhone) {
+    loadAndRenderWaChat();
+  }
+}
+
 async function loadUnregisteredWA(){
   try {
     const { data: staffRows } = await supabase.from('crm_users').select('phone');
@@ -2864,7 +3046,7 @@ function renderMobileWhatsAppList(){
     if (!p.last_wa_at) badge = `<span class="mwa-badge alert">!</span>`;
     else if (noWa) badge = `<span class="mwa-badge alert">!</span>`;
     // No tenemos contador real de no leídos; los recientes muestran un "2" simbólico si son de hoy y no atendidos
-    return `<div class="mwa-row" onclick="quickWAProspect('${p.id}')">
+    return `<div class="mwa-row" onclick="openWaChatModal('${p.phone}', null, '${p.id}')">
       <div class="mwa-avatar" style="background:linear-gradient(135deg,${c1},${c2});">${_waInitials(p.name)}</div>
       <div class="mwa-body">
         <div class="mwa-name">${esc(p.name)}</div>
@@ -2880,7 +3062,7 @@ function renderMobileWhatsAppList(){
     const time = _waTimeLabel(u.last_at);
     const preview = (u.last_dir==='outbound' ? 'Tú: ' : '') + esc(u.last_body||'');
     const waiting = u.last_dir === 'inbound';
-    return `<div class="mwa-row" onclick="window.open('https://wa.me/'+waDigits('${u.phone}'),'_blank')">
+    return `<div class="mwa-row" onclick="openWaChatModal('${u.phone}','${u.phone_fmt}',null)">
       <div class="mwa-avatar" style="background:linear-gradient(135deg,#f5c451,#e8a33d);">🆕</div>
       <div class="mwa-body">
         <div class="mwa-name">${esc(u.phone_fmt||u.phone)}</div>
@@ -3485,6 +3667,7 @@ function subscribeRealtime() {
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'crm_wa_messages'},payload=>{
       const msg=payload.new;
       if(msg && msg.direction==='inbound') handleInboundWA(msg);
+      if(msg) refreshOpenWaChatIfMatches(msg);
     })
     .subscribe();
 }
