@@ -3191,7 +3191,7 @@ function quickWAProspect(id){
   p.last_wa_at = ts;
   supabase.from('crm_prospects').update({last_wa_at: ts}).eq('id', id).then(()=>{});
   renderKanban();
-  quickWA(p.phone, p.name);
+  openWaChatModal(p.phone, p.name, p.id);
 }
 const WA_TEMPLATES = [
   {id:1,phase:'Registro',title:'Bienvenida',text:'Hola {nombre} \ud83d\udc4b, gracias por contactar a *MANGU Inmobiliaria*.\
