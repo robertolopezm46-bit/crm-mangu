@@ -6422,6 +6422,14 @@ async function confirmFaseChange() {
 
   // Notificar por email (incluye nuevo responsable si hubo relevo)
   notifyFaseChange({ prospectName: prospect.name, oldPhase, newPhase, comment: motivoTxt + ' ' + comment + reasignado, sellerName: DB.currentUser?.name || '', assignedTo: nuevoResp?.name || prospect.seller || '', notifyTo: NOTIFY_MATRIX[newPhase] || ['roberto'] });
+
+  // Aviso por WhatsApp con plantilla aprobada (no depende de ventana de 24h de Meta)
+  const _waUsernames = NOTIFY_MATRIX[newPhase] || ['roberto'];
+  const _waTemplate = newPhase === 'Registro' ? 'mangu_alerta_prospecto' : 'mangu_cambio_fase';
+  const _waParams = newPhase === 'Registro'
+  ? [prospect.name, prospect.prop || 'la propiedad de interés', prospect.seller || '']
+  : [prospect.name, newPhase, prospect.seller || ''];
+  notifyStaffWATemplate(_waUsernames, _waTemplate, _waParams, id);
 }
 
 async function notifyFaseChange({ prospectName, oldPhase, newPhase, comment, sellerName, assignedTo, notifyTo }) {
@@ -6438,6 +6446,27 @@ async function notifyFaseChange({ prospectName, oldPhase, newPhase, comment, sel
     });
   } catch(e) { console.log('Notify fase error:', e.message); }
 }
+
+  async function sendWATemplateStaff(phone, templateName, params, prospectId){
+  try{
+  const digits=(phone||'').replace(/\D/g,'');
+  if(digits.length<10) return;
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.access_token) return;
+  await fetch(WA_EDGE_FUNCTION_URL,{
+  method:'POST',
+  headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+  body:JSON.stringify({ to: digits, prospect_id: prospectId||null, kind:'template', template_name: templateName, template_lang:'es_MX', params })
+  });
+  }catch(e){ console.log('WA staff template error:', e.message); }
+  }
+  async function notifyStaffWATemplate(usernames, templateName, params, prospectId){
+  if((DB.currentUser?.username||'').toLowerCase()==='roberto') return;
+  for(const uname of usernames){
+  const u=(DB.users||[]).find(x=>(x.username||'').toLowerCase()===uname);
+  if(u?.phone) sendWATemplateStaff(u.phone, templateName, params, prospectId);
+  }
+  }
 function quickWA(phone,name){window.open(`https://wa.me/${waDigits(phone.replace(/\s|\+/g,''))}?text=Hola ${encodeURIComponent(name)}, te contacta MANGU Inmobiliaria.`,'_blank');}
 
 // ══════════════════════════════════════════
@@ -6748,6 +6777,8 @@ async function notifyAdminNewProspect(prospectName, sellerName, phone, prop, not
   } catch(e) {
     console.log('Notify error:', e.message);
   }
+    // Aviso por WhatsApp con plantilla aprobada (no depende de ventana de 24h de Meta)
+    notifyStaffWATemplate(NOTIFY_MATRIX['Registro'], 'mangu_alerta_prospecto', [prospectName, prop || 'la propiedad de interés', sellerName], null);
 }
 
 async function saveProspect(){
