@@ -1103,19 +1103,7 @@
               <div class="wa-select"><label>Enviar a prospecto</label><select id="wa-prospect-select"><option value="">Seleccionar...</option></select></div>
               <div style="background:#E8F5E9;padding:20px;border-radius:12px;"><div class="wa-bubble" id="wa-preview-bubble">\u2190 Selecciona una plantilla para ver la vista previa</div></div>
               <div class="wa-actions">
-                <!-- ============================================================
-                     INTEGRACIÓN WHATSAPP CLOUD API — NO ELIMINAR / NO REEMPLAZAR
-                     Este botón NO debe volver a ser un simple <a href="wa.me/...">.
-                     Llama a sendWATemplateReal() (buscar "WHATSAPP CLOUD API" más
-                     abajo, junto a WA_TEMPLATES) que envía el mensaje real vía la
-                     Edge Function "whatsapp-send" de Supabase (Meta WhatsApp Cloud
-                     API) y registra cada envío en la tabla crm_wa_messages. Solo si
-                     la API falla se abre wa.me como respaldo. Si esta integración
-                     se pierde (p.ej. al restaurar/pegar una versión anterior de este
-                     archivo), el botón volverá a ser un enlace wa.me sin registro ni
-                     envío real por API. Contexto: integración añadida 19-jul-2026.
-                     ============================================================ -->
-                <a class="btn-wa" id="wa-send-btn" href="#" onclick="event.preventDefault();sendWATemplateReal();">
+                <a class="btn-wa" id="wa-send-btn" href="#" target="_blank">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21l1.65-3.8A9 9 0 1 1 7.2 19.35z"/></svg>Enviar por WhatsApp
                 </a>
                 <button class="btn-secondary" onclick="copyTemplate()">Copiar texto</button>
@@ -1351,6 +1339,16 @@
                   <input type="text" id="ctl-vendedor-identificacion" placeholder="Ej. IDMEX1234567890">
                 </div>
               </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Correo del vendedor (obligatorio para firma DocuSign)</label>
+                  <input type="email" id="ctl-vendedor-email" placeholder="correo@ejemplo.com">
+                </div>
+                <div class="form-group">
+                  <label>Teléfono del vendedor (opcional, para WhatsApp)</label>
+                  <input type="text" id="ctl-vendedor-telefono" placeholder="Ej. 7711234567">
+                </div>
+              </div>
               <div class="form-group">
                 <label>Domicilio del vendedor</label>
                 <input type="text" id="ctl-vendedor-domicilio" placeholder="Calle, número, colonia, ciudad, C.P.">
@@ -1558,10 +1556,11 @@
 
           </div>
           <div style="padding:16px 28px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;">
-            <p style="width:100%;font-size:11px;color:var(--text-muted);margin:-4px 0 4px;">Firma aquí mismo en pantalla, o deja la firma en blanco y envíalo a firma remota por DocuSign (requiere correo del prospecto).</p>
+            <p style="width:100%;font-size:11px;color:var(--text-muted);margin:-4px 0 4px;">Firma aquí mismo en pantalla, o comparte un borrador para revisar, o envíalo a firma remota por DocuSign.</p>
             <button onclick="closeContratoModal()" style="padding:10px 20px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;">Cancelar</button>
-            <button onclick="generarContratoPDF()" class="btn-primary" style="background:var(--surface);color:var(--navy);border:1px solid var(--border);">📥 Generar y Descargar PDF</button>
-            <button onclick="generarContratoPDF({enviarDocusign:true})" class="btn-primary">📤 Guardar y Enviar a Firma (DocuSign)</button>
+            <button onclick="generarContratoPDF()" class="btn-primary" style="background:var(--surface);color:var(--navy);border:1px solid var(--border);">📥 Descargar PDF</button>
+            <button onclick="compartirBorrador()" class="btn-primary" style="background:var(--surface);color:var(--navy);border:1px solid var(--border);">📱 Compartir Borrador</button>
+            <button onclick="generarContratoPDF({enviarDocusign:true})" class="btn-primary">📤 Enviar a Firma (DocuSign)</button>
           </div>
         </div>
       </div>
@@ -2404,18 +2403,26 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-firma-link">
+  <div class="modal" style="width:360px;text-align:center;">
+    <h3 id="firma-link-title" style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;">🔗 Link de firma</h3>
+    <p id="firma-link-subtitle" style="font-size:12px;color:var(--text-muted);margin-bottom:14px;"></p>
+    <div id="firma-link-qr" style="display:flex;justify-content:center;margin-bottom:14px;"></div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <input type="text" id="firma-link-url" readonly style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11px;font-family:monospace;background:var(--surface);">
+      <button onclick="copiarLinkFirma()" title="Copiar link" style="border:1px solid var(--border);background:var(--white);border-radius:var(--radius);padding:8px 10px;cursor:pointer;font-size:13px;">📋</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button id="firma-link-whatsapp-btn" onclick="enviarLinkFirmaWhatsapp()" class="btn-gold" style="padding:10px 18px;font-size:13px;display:none;">📲 Enviar por WhatsApp</button>
+      <button onclick="closeModal('firma-link')" style="padding:9px 18px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-// Banner de verificación rápida: si al abrir la consola del navegador NO ves
-// "WhatsApp Cloud API: ACTIVA", significa que este index.html fue reemplazado
-// por una versión anterior y perdió la integración real de envío por API
-// (ver bloque "WHATSAPP CLOUD API — INTEGRACIÓN REAL" más abajo, junto a
-// WA_TEMPLATES). Antes de sobrescribir este archivo con un backup viejo,
-// confirma que ese backup también incluya ese bloque.
-console.log('%cMANGU CRM — build 2026-07-19', 'font-weight:bold;color:#0a7');
-console.log('WhatsApp Cloud API: ACTIVA (envío real vía Edge Function whatsapp-send)');
-
 // ══════════════════════════════════════════
 //  SUPABASE CONFIG
 // ══════════════════════════════════════════
@@ -2969,114 +2976,6 @@ Hace tiempo platicamos sobre una propiedad de *MANGU* y quer\u00eda compartirte 
 \
 \u00bfSigues buscando casa? Me encantar\u00eda retomar la conversación. \ud83d\ude0a\ud83c\udfe0'},
 ];
-// ══════════════════════════════════════════════════════════════════════════
-//  WHATSAPP CLOUD API — INTEGRACIÓN REAL — NO ELIMINAR ESTE BLOQUE
-// ──────────────────────────────────────────────────────────────────────────
-//  Mapea cada plantilla local (WA_TEMPLATES, arriba) con su plantilla real,
-//  ya aprobada por Meta, de la cuenta de WhatsApp Business "Mangu Desarrollo
-//  Inmobiliario" (WABA asset_id 1001106382802590). Los nombres deben coincidir
-//  EXACTAMENTE con "Nombre de la plantilla" en Meta Business Suite ->
-//  Administrador de WhatsApp -> Plantillas de mensajes (verificar ahí que la
-//  cuenta seleccionada sea "Mangu Desarrollo Inmobiliario", NO "Test WhatsApp
-//  Business Account"). "params" define, en orden, qué dato del prospecto llena
-//  cada variable {{1}}, {{2}}, ... de la plantilla aprobada.
-//
-//  Si se crea o edita una plantilla en Meta, actualízala aquí también.
-//  Si este bloque desaparece, restaurarlo desde el historial de este archivo o
-//  desde la conversación con Claude del 19-jul-2026 (integración WhatsApp API).
-// ══════════════════════════════════════════════════════════════════════════
-const WA_META_TEMPLATE_MAP = {
-  1: { name: 'mangu_bienvenida',          params: ['nombre'] },
-  2: { name: 'mangu_info_propiedad',      params: ['nombre','propiedad','precio'] },
-  3: { name: 'mangu_seguimiento_visita',  params: ['nombre'] },
-  4: { name: 'mangu_financiamiento',      params: ['nombre'] },
-  5: { name: 'mangu_seguimiento_cierre',  params: ['nombre'] },
-  6: { name: 'mangu_felicitacion_cierre', params: ['nombre'] },
-  7: { name: 'mangu_reactivacion',        params: ['nombre'] },
-};
-const WA_EDGE_FUNCTION_URL = 'https://dgpuqlnjwisqyynpvdyw.supabase.co/functions/v1/whatsapp-send';
-
-function buildWAParams(keys, p){
-  return keys.map(k=>{
-    if(k==='nombre') return p.name || '';
-    if(k==='propiedad') return p.prop || '';
-    if(k==='precio') return '$'+((p.value||0).toLocaleString('es-MX'));
-    return '';
-  });
-}
-
-// Envía el mensaje REAL por la API de WhatsApp Cloud (vía Edge Function
-// whatsapp-send), registrando el intento en crm_wa_messages. Si la plantilla
-// seleccionada aún no tiene equivalente aprobado en Meta, o si la llamada a la
-// API falla por cualquier motivo (token, registro del número, red, etc.), se
-// recurre automáticamente al enlace wa.me tradicional como respaldo, para que
-// el asesor nunca se quede sin poder contactar al prospecto.
-async function sendWATemplateReal(){
-  if(!selectedTemplate){ showToast('Selecciona una plantilla primero','info'); return; }
-  const selId=document.getElementById('wa-prospect-select').value;
-  if(!selId){ showToast('Selecciona un prospecto para enviar el mensaje','info'); return; }
-  const p=DB.prospects.find(pr=>pr.id===selId||pr.id===parseInt(selId));
-  if(!p){ showToast('Prospecto no encontrado','error'); return; }
-  const phoneDigits=(p.phone||'').replace(/\D/g,'');
-  if(phoneDigits.length<10){ showToast('El prospecto no tiene un teléfono válido','error'); return; }
-
-  const meta = WA_META_TEMPLATE_MAP[selectedTemplate.id];
-  if(!meta){
-    // Esta plantilla local todavía no está mapeada a una plantilla aprobada
-    // en Meta: usamos el respaldo wa.me directamente, sin intentar la API.
-    showToast('Esta plantilla aún no está conectada a la API; se abrirá WhatsApp Web.','info');
-    return openWAFallback();
-  }
-
-  const btn=document.getElementById('wa-send-btn');
-  const originalHTML=btn.innerHTML;
-  btn.innerHTML='Enviando...';
-  btn.style.pointerEvents='none';
-  try{
-    const {data:{session}} = await supabase.auth.getSession();
-    if(!session?.access_token){ throw new Error('Sesión no válida. Vuelve a iniciar sesión e intenta de nuevo.'); }
-    const resp = await fetch(WA_EDGE_FUNCTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+session.access_token },
-      body: JSON.stringify({
-        to: phoneDigits,
-        prospect_id: p.id,
-        kind: 'template',
-        template_name: meta.name,
-        template_lang: 'es_MX',
-        params: buildWAParams(meta.params, p),
-      }),
-    });
-    const json = await resp.json().catch(()=>({}));
-    if(resp.ok && json.ok){
-      showToast('Mensaje enviado por la API de WhatsApp ✅','success');
-      p.last_wa_at = new Date().toISOString();
-    } else {
-      console.log('whatsapp-send error:', json);
-      showToast('No se pudo enviar por la API (' + (json.error||json.metaError?.message||'error desconocido') + '). Se abrirá WhatsApp Web como respaldo.','error');
-      openWAFallback();
-    }
-  }catch(e){
-    console.log('whatsapp-send exception:', e.message);
-    showToast('Error de conexión con la API de WhatsApp. Se abrirá WhatsApp Web como respaldo.','error');
-    openWAFallback();
-  }finally{
-    btn.innerHTML=originalHTML;
-    btn.style.pointerEvents='';
-  }
-}
-// Respaldo: abre WhatsApp Web/App con el texto precargado (comportamiento
-// previo a la integración con la API). Se usa solo cuando la plantilla no
-// tiene mapeo en Meta, o cuando la llamada a la API falla.
-function openWAFallback(){
-  const text=document.getElementById('wa-preview-bubble').textContent;
-  const selId=document.getElementById('wa-prospect-select').value;
-  const phone=selId?DB.prospects.find(p=>p.id===selId||p.id===parseInt(selId))?.phone?.replace(/\s|\+/g,''):'522206471727';
-  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`,'_blank');
-}
-// ══════════════════════════════════════════════════════════════════════════
-//  FIN INTEGRACIÓN WHATSAPP CLOUD API
-// ══════════════════════════════════════════════════════════════════════════
 let selectedTemplate=null, kanbanSellerFilter='todos', draggedId=null, calDate=new Date(), filterPhase='', searchText='';
 let _selectMode=false, _selectedIds=new Set();
 let _wpSelectMode=false, _wpSelectedIds=new Set();
@@ -4070,6 +3969,8 @@ const DEFAULT_EQUIPAMIENTO = 'Cocina integral, horno empotrado, estufa, muebles 
 const CTL_FIELDS = [
   {id:'ctl-vendedor-nombre',          key:'vendedorNombre'},
   {id:'ctl-vendedor-identificacion',  key:'vendedorIdentificacion'},
+  {id:'ctl-vendedor-email',           key:'vendedorEmail'},
+  {id:'ctl-vendedor-telefono',        key:'vendedorTelefono'},
   {id:'ctl-vendedor-domicilio',       key:'vendedorDomicilio'},
   {id:'ctl-vendedor-extra',           key:'vendedorExtra'},
   {id:'ctl-inmueble-domicilio',       key:'inmuebleDomicilio'},
@@ -4103,6 +4004,11 @@ const CTL_CHECKBOX_FIELDS = [
   {id:'ctl-aplica-excedente',       key:'aplicaExcedente'},
   {id:'ctl-incluir-equipamiento',   key:'incluirEquipamiento'}
 ];
+
+// Tipos de contrato donde ambas partes (vendedor y comprador) firman por DocuSign.
+// La carta de intención y la contraoferta son cartas de un solo firmante (el comprador),
+// dirigidas "a quien corresponda", por lo que no aplican aquí.
+const DUAL_SIGNER_TIPOS = ['promesa_credito', 'promesa_propios'];
 
 // Valores por defecto que cambian según el tipo de contrato elegido (solo se aplican si el campo está vacío)
 const CTL_TIPO_DEFAULTS = {
@@ -4229,12 +4135,22 @@ const CONTRATO_BASE_CSS = `
   @media print { body { padding: 20px 40px; } }
 `;
 
-function firmaHtmlFor(firmaMode, f) {
+function firmaHtmlFor(firmaMode, f, role = 'comprador') {
+  const anchor = role === 'vendedor' ? '/firma_vendedor/' : '/firma_comprador/';
   return firmaMode === 'docusign'
     ? `<div style="height:40px;display:flex;align-items:flex-end;justify-content:center;">
-         <span style="color:#ffffff;font-size:10pt;">/firma_comprador/</span>
+         <span style="color:#ffffff;font-size:10pt;">${anchor}</span>
        </div>`
     : `<img src="${f.firmaImg}" class="firma-img" alt="Firma">`;
+}
+
+// Bloque de firma de "La Parte Vendedora" en los contratos de promesa (crédito / recursos propios).
+// En modo DocuSign coloca el anchor de firma remota; en modo local (canvas) queda en blanco
+// para firma física, ya que ese flujo presume solo al comprador firmando en pantalla frente al agente.
+function firmaVendedorHtmlFor(firmaMode, f) {
+  return firmaMode === 'docusign'
+    ? firmaHtmlFor(firmaMode, f, 'vendedor')
+    : `<div style="height:90px;border-bottom:2px solid #333;"></div>`;
 }
 
 function wrapContratoDocument(titleText, folio, bodyHtml, firmaMode) {
@@ -4410,11 +4326,11 @@ function buildPromesaCreditoHTML(f, firmaMode) {
 
     <div class="firmas">
       <div class="firma-box">
-        <div style="height:90px;border-bottom:2px solid #333;"></div>
+        ${firmaVendedorHtmlFor(firmaMode, f)}
         <p class="firma-line">La Parte Vendedora<br><b>${esc(L.vendedorNombre || '_______________')}</b></p>
       </div>
       <div class="firma-box">
-        ${firmaHtmlFor(firmaMode, f)}
+        ${firmaHtmlFor(firmaMode, f, 'comprador')}
         <p class="firma-line">La Parte Compradora<br><b>${esc(f.clienteName || '_______________')}</b></p>
       </div>
     </div>
@@ -4515,11 +4431,11 @@ function buildPromesaPropiosHTML(f, firmaMode) {
 
     <div class="firmas">
       <div class="firma-box">
-        <div style="height:90px;border-bottom:2px solid #333;"></div>
+        ${firmaVendedorHtmlFor(firmaMode, f)}
         <p class="firma-line">La Parte Vendedora<br><b>${esc(L.vendedorNombre || '_______________')}</b></p>
       </div>
       <div class="firma-box">
-        ${firmaHtmlFor(firmaMode, f)}
+        ${firmaHtmlFor(firmaMode, f, 'comprador')}
         <p class="firma-line">La Parte Compradora<br><b>${esc(f.clienteName || '_______________')}</b></p>
       </div>
     </div>
@@ -4629,6 +4545,85 @@ function readContratoForm() {
 
 // Guarda el contrato (nuevo o editado). Si opts.enviarDocusign es true, además lo manda a firma remota
 // y NO exige la firma capturada en pantalla (la pondrá el cliente a distancia).
+// Compartir borrador del contrato por WhatsApp para revisión
+async function compartirBorrador() {
+  if (!canContratosFull()) { showToast('No tienes permiso para crear contratos', 'error'); return; }
+
+  const form = readContratoForm();
+  if (!form.tipo) { showToast('Selecciona el tipo de contrato', 'error'); return; }
+  if (!form.prospecto.email) { showToast('El prospecto no tiene correo registrado', 'error'); return; }
+  if (!form.prospecto.phone) { showToast('El prospecto no tiene teléfono registrado para WhatsApp', 'error'); return; }
+
+  showToast('Guardando borrador…', 'info');
+
+  const firmaImg = ''; // Sin firma en borrador
+  const folio = (editingContratoId ? (contratosDB.find(c=>c.id===editingContratoId)?.folio) : null) || ('CT-' + Date.now().toString().slice(-6));
+
+  const fields = {
+    clienteName: form.prospecto.name || 'Sin nombre',
+    clientePhone: form.prospecto.phone || '',
+    clienteEmail: form.prospecto.email || '',
+    propiedad: form.propiedad,
+    precio: form.precio,
+    anticipo: form.anticipo,
+    fechaStr: form.fechaStr,
+    vendedor: form.vendedor,
+    clausulas: form.clausulas,
+    firmaImg,
+    folio,
+    tipoContrato: form.tipo,
+    legal: form.legal
+  };
+
+  const row = {
+    folio,
+    prospect_id: String(form.prospectId || ''),
+    cliente: fields.clienteName,
+    cliente_email: fields.clienteEmail,
+    cliente_phone: fields.clientePhone,
+    propiedad: form.propiedad,
+    precio: parseInt((form.precio||'0').replace(/,/g,'')) || 0,
+    anticipo: parseInt((form.anticipo||'0').replace(/,/g,'')) || 0,
+    fecha: form.fechaVal,
+    vendedor: form.vendedor,
+    clausulas: form.clausulas,
+    tipo_contrato: form.tipo,
+    datos_legales: form.legal,
+    docusign_status: 'borrador_compartido',
+    created_by: DB.currentUser?.username || DB.currentUser?.name || ''
+  };
+
+  let savedId = editingContratoId;
+  if (!editingContratoId) {
+    const { data, error } = await supabase.from('crm_contratos').insert(row).select('id').single();
+    if (error) { showToast('No se pudo guardar el borrador: ' + error.message, 'error'); return; }
+    savedId = data.id;
+  } else {
+    const { error } = await supabase.from('crm_contratos').update(row).eq('id', editingContratoId);
+    if (error) { showToast('No se pudo guardar el borrador: ' + error.message, 'error'); return; }
+  }
+
+  // Enviar por WhatsApp al comprador
+  const compradorMsg = `Hola ${fields.clienteName}, te compartimos el borrador del contrato para que lo revises. ✓ Por favor, revísalo con cuidado y cuéntanos si tiene los datos correctos. Una vez confirmado, te enviaremos el link para firmar.`;
+  const compradorPhone = fields.clientePhone?.replace(/\s|\+/g, '');
+  if (compradorPhone) {
+    window.open(`https://wa.me/${compradorPhone}?text=${encodeURIComponent(compradorMsg)}`, '_blank');
+  }
+
+  // Enviar por WhatsApp al vendedor (si aplica)
+  if (DUAL_SIGNER_TIPOS.includes(fields.tipoContrato) && fields.legal?.vendedorTelefono) {
+    const vendedorPhone = fields.legal.vendedorTelefono?.replace(/\s|\+/g, '');
+    const vendedorMsg = `Hola ${fields.legal?.vendedorNombre || 'Vendedor'}, te compartimos el borrador del contrato para revisión. Por favor, verifica que los datos sean correctos. Una vez confirmado, procederemos a la firma.`;
+    setTimeout(() => {
+      window.open(`https://wa.me/${vendedorPhone}?text=${encodeURIComponent(vendedorMsg)}`, '_blank');
+    }, 1500);
+  }
+
+  showToast('✓ Borrador guardado y enviado por WhatsApp', 'success');
+  await loadContratos();
+  closeContratoModal();
+}
+
 async function generarContratoPDF(opts = {}) {
   if (!canContratosFull()) { showToast('No tienes permiso para crear o editar contratos', 'error'); return; }
 
@@ -4645,6 +4640,10 @@ async function generarContratoPDF(opts = {}) {
   }
   if (enviarDocusign && !form.prospecto.email) {
     showToast('El prospecto no tiene correo registrado — no se puede enviar a DocuSign', 'error');
+    return;
+  }
+  if (enviarDocusign && DUAL_SIGNER_TIPOS.includes(form.tipo) && !form.legal.vendedorEmail) {
+    showToast('Falta el correo del vendedor — es obligatorio para que ambas partes firmen por DocuSign', 'error');
     return;
   }
 
@@ -4728,6 +4727,15 @@ async function enviarContratoADocuSign(id, fieldsOverride = null) {
     fechaStr: fmtDate(c.fecha), vendedor: c.vendedor, clausulas: c.clausulas || '', folio: c.folio,
     tipoContrato: c.tipo_contrato, legal: c.datos_legales || {}
   };
+
+  const esDualFirma = DUAL_SIGNER_TIPOS.includes(fields.tipoContrato);
+  const vendedorNombre = fields.legal?.vendedorNombre || '';
+  const vendedorEmail  = fields.legal?.vendedorEmail || '';
+  if (esDualFirma && !vendedorEmail) {
+    showToast('Este contrato no tiene correo del vendedor — edítalo primero para que ambas partes firmen por DocuSign', 'error');
+    return;
+  }
+
   const htmlContrato = buildContratoHTML(fields, 'docusign');
 
   showToast('Enviando contrato a DocuSign…', 'info');
@@ -4737,6 +4745,7 @@ async function enviarContratoADocuSign(id, fieldsOverride = null) {
       contratoId: id,
       clienteNombre: fields.clienteName,
       clienteEmail: fields.clienteEmail,
+      ...(esDualFirma ? { vendedorNombre, vendedorEmail } : {}),
       htmlContrato,
       folio: fields.folio
     }
@@ -4746,20 +4755,91 @@ async function enviarContratoADocuSign(id, fieldsOverride = null) {
     showToast('Error al enviar a DocuSign: ' + (data?.error || error.message), 'error');
     return;
   }
-  showToast('Contrato enviado a firma — ' + fields.clienteEmail, 'success');
+
+  const envelopeId = data.envelopeId;
+
+  // Enviar automáticamente por WhatsApp si hay números de teléfono
+  const compradorPhone = fields.clientePhone?.replace(/\s|\+/g, '');
+  const vendedorPhone = fields.legal?.vendedorTelefono?.replace(/\s|\+/g, '');
+
+  let whatsappsSent = [];
+
+  // Enviar link al comprador por WhatsApp
+  if (compradorPhone) {
+    try {
+      showToast('Obteniendo link de firma para comprador…', 'info');
+      const { data: urlData, error: urlError } = await supabase.functions.invoke('docusign-envelope', {
+        body: {
+          action: 'get_signing_url',
+          envelopeId: envelopeId,
+          clienteNombre: fields.clienteName,
+          clienteEmail: fields.clienteEmail,
+          role: 'comprador'
+        }
+      });
+
+      if (urlData?.url && !urlError) {
+        const msg = `Hola ${fields.clienteName}, aquí está tu contrato de MANGU listo para firmar: ${urlData.url}`;
+        window.open(`https://wa.me/${compradorPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        whatsappsSent.push(`${fields.clienteName} (Comprador)`);
+      }
+    } catch (e) {
+      console.error('Error enviando WhatsApp a comprador:', e);
+    }
+  }
+
+  // Enviar link al vendedor por WhatsApp (si es dual firma)
+  if (esDualFirma && vendedorPhone && vendedorEmail) {
+    try {
+      showToast('Obteniendo link de firma para vendedor…', 'info');
+      const { data: urlData, error: urlError } = await supabase.functions.invoke('docusign-envelope', {
+        body: {
+          action: 'get_signing_url',
+          envelopeId: envelopeId,
+          clienteNombre: vendedorNombre,
+          clienteEmail: vendedorEmail,
+          role: 'vendedor'
+        }
+      });
+
+      if (urlData?.url && !urlError) {
+        const msg = `Hola ${vendedorNombre}, aquí está el contrato de MANGU listo para tu firma: ${urlData.url}`;
+        window.open(`https://wa.me/${vendedorPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        whatsappsSent.push(`${vendedorNombre} (Vendedor)`);
+      }
+    } catch (e) {
+      console.error('Error enviando WhatsApp a vendedor:', e);
+    }
+  }
+
+  // Mensaje de éxito
+  let successMsg = 'Contrato enviado ✓';
+  if (whatsappsSent.length > 0) {
+    successMsg += ` — Abriendo WhatsApp para: ${whatsappsSent.join(', ')}`;
+  } else {
+    successMsg += ` — Nota: Agrega números de teléfono para enviar por WhatsApp automáticamente`;
+  }
+  showToast(successMsg, 'success');
   await loadContratos();
 }
 
-// Obtiene un link de firma fresco y lo comparte por WhatsApp (o lo copia al portapapeles).
-async function compartirContrato(id) {
+// Obtiene un link de firma fresco y abre el modal con QR + opción de WhatsApp/copiar.
+// role: 'comprador' (default) o 'vendedor' — en contratos de doble firma, cada quien necesita su propio link.
+async function compartirContrato(id, role = 'comprador') {
   if (!canContratosView()) { showToast('No tienes permiso para compartir contratos', 'error'); return; }
   const c = contratosDB.find(x => x.id === id);
   if (!c) { showToast('Contrato no encontrado', 'error'); return; }
   if (!c.docusign_envelope_id) { showToast('Este contrato aún no se ha enviado a DocuSign', 'error'); return; }
 
+  const legal = c.datos_legales || {};
+  const nombre   = role === 'vendedor' ? (legal.vendedorNombre || 'Vendedor') : c.cliente;
+  const email    = role === 'vendedor' ? legal.vendedorEmail : c.cliente_email;
+  const telefono = role === 'vendedor' ? (legal.vendedorTelefono || '') : (c.cliente_phone || '');
+  if (role === 'vendedor' && !email) { showToast('Este contrato no tiene correo del vendedor registrado', 'error'); return; }
+
   showToast('Generando link de firma…', 'info');
   const { data, error } = await supabase.functions.invoke('docusign-envelope', {
-    body: { action: 'get_signing_url', contratoId: id, envelopeId: c.docusign_envelope_id, clienteNombre: c.cliente, clienteEmail: c.cliente_email }
+    body: { action: 'get_signing_url', contratoId: id, envelopeId: c.docusign_envelope_id, clienteNombre: nombre, clienteEmail: email, role }
   });
 
   if (error || data?.error || !data?.url) {
@@ -4767,13 +4847,53 @@ async function compartirContrato(id) {
     return;
   }
 
-  const msg = `Hola ${c.cliente}, aquí está tu contrato de MANGU listo para firmar: ${data.url}`;
-  if (c.cliente_phone) {
-    window.open(`https://wa.me/${c.cliente_phone.replace(/\s|\+/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
-  } else if (navigator.clipboard) {
-    await navigator.clipboard.writeText(data.url);
-    showToast('Link copiado al portapapeles (el prospecto no tiene teléfono guardado)', 'success');
+  mostrarLinkFirma({ url: data.url, nombre, telefono, rol: role });
+}
+
+// Estado temporal del modal de link de firma (se limpia al cerrar).
+let firmaLinkState = { url: '', nombre: '', telefono: '' };
+
+// Muestra el modal con el link de firma: QR escaneable + campo de texto (copiar) + botón de WhatsApp
+// (solo si hay teléfono guardado para ese firmante).
+function mostrarLinkFirma({ url, nombre, telefono, rol }) {
+  firmaLinkState = { url, nombre, telefono };
+
+  document.getElementById('firma-link-title').textContent = rol === 'vendedor' ? '🔗 Link de firma — Vendedor' : '🔗 Link de firma — Comprador';
+  document.getElementById('firma-link-subtitle').textContent = nombre || '';
+  document.getElementById('firma-link-url').value = url;
+
+  const qrBox = document.getElementById('firma-link-qr');
+  qrBox.innerHTML = '';
+  if (window.QRCode) {
+    new QRCode(qrBox, { text: url, width: 180, height: 180, colorDark: '#0A0F1E', colorLight: '#ffffff' });
+  } else {
+    qrBox.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">(No se pudo cargar el generador de QR — usa el link de abajo)</p>';
   }
+
+  const waBtn = document.getElementById('firma-link-whatsapp-btn');
+  waBtn.style.display = telefono ? '' : 'none';
+
+  document.getElementById('modal-firma-link').classList.add('open');
+}
+
+async function copiarLinkFirma() {
+  if (!firmaLinkState.url) return;
+  try {
+    await navigator.clipboard.writeText(firmaLinkState.url);
+    showToast('Link copiado al portapapeles', 'success');
+  } catch {
+    document.getElementById('firma-link-url').select();
+    document.execCommand('copy');
+    showToast('Link copiado al portapapeles', 'success');
+  }
+}
+
+// Envío manual: abre WhatsApp (app o web) en este dispositivo con el mensaje precargado —
+// sale desde la cuenta de WhatsApp que esté activa en el navegador/celular de quien da clic.
+function enviarLinkFirmaWhatsapp() {
+  if (!firmaLinkState.url || !firmaLinkState.telefono) return;
+  const msg = `Hola ${firmaLinkState.nombre}, aquí está tu contrato de MANGU listo para firmar: ${firmaLinkState.url}`;
+  window.open(`https://wa.me/${firmaLinkState.telefono.replace(/\s|\+/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 function verContrato(id) {
@@ -4888,7 +5008,13 @@ function renderContratosList() {
               acciones.push(`<button onclick="eliminarContrato('${c.id}')" title="Eliminar" style="border:none;background:none;cursor:pointer;font-size:14px;">&#128465;</button>`);
             }
             if (canContratosView() && c.docusign_envelope_id) {
-              acciones.push(`<button onclick="compartirContrato('${c.id}')" title="Compartir link de firma" style="border:none;background:none;cursor:pointer;font-size:14px;">&#128279;</button>`);
+              const esDualFirma = DUAL_SIGNER_TIPOS.includes(c.tipo_contrato) && !!(c.datos_legales || {}).vendedorEmail;
+              if (esDualFirma) {
+                acciones.push(`<button onclick="compartirContrato('${c.id}','comprador')" title="Compartir link de firma — Comprador" style="border:none;background:none;cursor:pointer;font-size:14px;">&#128279;&#128100;</button>`);
+                acciones.push(`<button onclick="compartirContrato('${c.id}','vendedor')" title="Compartir link de firma — Vendedor" style="border:none;background:none;cursor:pointer;font-size:14px;">&#128279;&#127968;</button>`);
+              } else {
+                acciones.push(`<button onclick="compartirContrato('${c.id}')" title="Compartir link de firma" style="border:none;background:none;cursor:pointer;font-size:14px;">&#128279;</button>`);
+              }
             }
             return `
             <tr style="border-bottom:1px solid var(--border);">
@@ -6413,12 +6539,7 @@ async function editProspect(id){
   document.getElementById('modal-prospect').querySelector('.modal').classList.remove('modal-simple');
   document.getElementById('modal-prospect-title').textContent='Editar Prospecto';
   document.getElementById('p-name').value=p.name;
-  // Fix: el campo solo debe contener los 10 dígitos locales (sin +52).
-  // Se toman los últimos 10 dígitos numéricos para evitar que, si el dato
-  // ya tenía el prefijo "52" duplicado por una edición previa, se siga
-  // acumulando cada vez que se guarda. Esto también autocorrige registros
-  // ya afectados la próxima vez que se editen.
-  document.getElementById('p-phone').value=((p.phone||'').replace(/\D/g,'')).slice(-10);
+  document.getElementById('p-phone').value=p.phone;
   document.getElementById('p-email').value=p.email||'';
   document.getElementById('p-prop').value=p.prop;
   document.getElementById('p-value').value=p.value;
@@ -7086,9 +7207,6 @@ document.addEventListener('click',e=>{
 // ══════════════════════════════════════════
 const SB_URL='https://dgpuqlnjwisqyynpvdyw.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRncHVxbG5qd2lzcXl5bnB2ZHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NTUyMjEsImV4cCI6MjA5ODEzMTIyMX0.Y-cPHMzlsVCQtlmKsXOW69nhFODK3_6PIKNuJs9mWt4';
-const TWILIO_SID='ACab09ffdd05200d9e2ad5e5783459919f';
-const TWILIO_TOKEN='377310a3bf3a953b92cce379f564a7f8';
-const TWILIO_WA_FROM='+522206471727';
 
 (function boot(){
   initSupabase(SB_URL, SB_KEY);
