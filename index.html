@@ -6073,14 +6073,14 @@ function renderKanban(){
   ALL_PHASES.forEach(phase=>{
     let inPhase = visible.filter(p => p.phase === phase);
     if (_filtroSinContacto) inPhase = inPhase.filter(sinContactoReciente);
-    const allData = inPhase.filter(p => (p.created_at || '').substring(0, 7) === currentMonth);
+    const allData = (phase === 'Perdido') ? inPhase.filter(p => (p.created_at || '').substring(0, 7) === currentMonth) : inPhase;
 
     const LIMIT = 5;
     const data = allData.slice(0, LIMIT);
     const remaining = Math.max(0, allData.length - LIMIT);
 
     // Total real (incluyendo meses anteriores) para el contador
-    const totalAll = inPhase.length;
+    const totalAll = (phase === 'Perdido') ? allData.length : inPhase.length;
     const cnt = document.getElementById('cnt-'+phase);
     if (cnt) cnt.textContent = totalAll;
     const cards=data.map(p=>{
