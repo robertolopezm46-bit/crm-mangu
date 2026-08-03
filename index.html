@@ -1221,8 +1221,8 @@
                     <div class="form-group"><label>Fecha</label><input type="date" id="cita-date"></div>
                     <div class="form-group"><label>Hora</label><input type="time" id="cita-time" value="10:00"></div>
                   </div>
-                  <div class="form-group"><label>Propiedad a visitar</label>
-                    <select id="cita-prop"><option>Casa Castaño 101 \u2014 Arboledas de San Javier</option><option>Casa Trinidad 5 \u2014 La Cartuja</option><option>Casa Miraflores \u2014 La Cartuja</option><option>Casa S O U L \u2014 Monte Olimpo</option><option>Casa Juniperos 126 \u2014 Arboledas de San Javier</option><option>Casa Artemisa \u2014 Monte Olimpo</option><option>Casa Esmeralda 16 \u2014 Gema Residencial</option><option>Casa Ontario \u2014 El Portezuelo</option></select>
+                                    <div class="form-group"><label>Propiedad a visitar</label>
+                                        <select id="cita-prop"><option value="">Seleccionar propiedad...</option></select>
                   </div>
                   <div class="form-group"><label>Vendedor asignado</label><select id="cita-vendedor"></select></div>
                   <div class="form-group"><label>Notas</label><textarea id="cita-notes" rows="3" placeholder="Observaciones, requerimientos especiales..."></textarea></div>
@@ -7036,6 +7036,7 @@ async function loadWebProps(){
   renderWebProps();
   populatePropSelect();
   populateContratoPropSelect();
+    populateCitaPropSelect();
 }
 
 // Reconstruye el select "Propiedad de interés" de Nuevo Prospecto con las
@@ -7064,6 +7065,7 @@ function populateContratoPropSelect(){
     '<option value="Otra">Otra</option>';
   if(current && (props.some(p=>p.titulo===current) || current==='Otra')) select.value = current;
 }
+  function populateCitaPropSelect(){const select=document.getElementById("cita-prop");if(!select)return;const current=select.value;const props=webPropsDB.filter(p=>p.activa&&["disponible","reservada","preventa"].includes(p.estatus));select.innerHTML="<option value=\"\">Seleccionar propiedad...</option>"+props.map(p=>`<option value="${esc(p.titulo)}">${esc(p.titulo)}${p.ubicacion?" — "+esc(p.ubicacion.split(",")[0]):""}${p.estatus==="preventa"?" (Preventa)":p.estatus==="reservada"?" (Reservada)":""}</option>`).join("");if(current&&props.some(p=>p.titulo===current))select.value=current;}
 
 function fmtPrecio(n){ return '$' + Number(n||0).toLocaleString('es-MX'); }
 
