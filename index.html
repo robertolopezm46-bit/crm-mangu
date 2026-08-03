@@ -6695,6 +6695,7 @@ function renderEquipo(){
 // ══════════════════════════════════════════
 function openModal(type){
   if(type==='prospect'){
+        loadWebProps(); // refresca el select de propiedad al abrir Nuevo Prospecto (fix 3 ago 2026)
     document.getElementById('modal-prospect-title').textContent='Nuevo Prospecto';
     ['p-name','p-phone','p-email','p-notes','p-referred-by'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('p-phone').classList.remove('phone-complete');
