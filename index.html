@@ -6283,7 +6283,7 @@ const cardUnread=cardHasUnread(p);
           </div>
         </div>
         <div class="kcard-divider"></div>
-        ${act?`<div class="kcard-activity"><span class="kcard-avatar" style="background:${sellerColor(p)};">${esc((act.author||'?').charAt(0).toUpperCase())}</span><span><b>${esc(act.author)}</b> dej\u00f3 una nota${act.ago?' \u00b7 '+act.ago:''}</span></div>`:''}
+        ${(act&&ni.unread)?`<div class="kcard-activity"><span class="kcard-avatar" style="background:${sellerColor(p)};">${esc((act.author||'?').charAt(0).toUpperCase())}</span><span><b>${esc(act.author)}</b> dejó una nota${act.ago?' · '+act.ago:''}</span></div>`:''}
         <div class="card-actions">
           ${hasModule('whatsapp')&&phase!=='Cierre'?`<button class="kbtn kbtn-wa" onclick="quickWAProspect('${p.id}')" title="WhatsApp API">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.28-1.38a9.9 9.9 0 0 0 4.76 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2z"/></svg>
