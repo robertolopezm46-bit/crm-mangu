@@ -1590,6 +1590,8 @@
           <div style="padding:16px 28px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;">
             <p style="width:100%;font-size:11px;color:var(--text-muted);margin:-4px 0 4px;">Firma aquí mismo en pantalla, o deja la firma en blanco y envíalo a firma remota por DocuSign (requiere correo del prospecto).</p>
             <button onclick="closeContratoModal()" style="padding:10px 20px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;">Cancelar</button>
+            <button onclick="marcarRevisionContrato('enviado_revision')" class="btn-primary" style="background:var(--surface);color:var(--navy);border:1px solid var(--border);">Enviar a Revision</button>
+            <button onclick="marcarRevisionContrato('aprobado')" class="btn-primary" style="background:var(--surface);color:#2E7D32;border:1px solid var(--border);">Marcar Aprobado</button>
             <button onclick="generarContratoPDF()" class="btn-primary" style="background:var(--surface);color:var(--navy);border:1px solid var(--border);">📥 Generar y Descargar PDF</button>
             <button onclick="generarContratoPDF({enviarDocusign:true})" class="btn-primary">📤 Guardar y Enviar a Firma (DocuSign)</button>
           </div>
@@ -4555,6 +4557,13 @@ const DOCUSIGN_STATUS_META = {
   expirado:       {label:'Expirado',            color:'#C0392B'}
 };
 
+// estatus de revision interna (borrador -> enviado a revision -> aprobado)
+const REVISION_STATUS_META = {
+  borrador:         {label:'Borrador',            color:'#9CA3AF'},
+  enviado_revision: {label:'En revision',         color:'#C9A84C'},
+  aprobado:         {label:'Aprobado',            color:'#2E7D32'}
+};
+
 // Tipos de documento disponibles
 const TIPO_CONTRATO_META = {
   carta_intencion:        {label:'Carta intención de compra'},
@@ -4644,6 +4653,14 @@ function onTipoContratoChange() {
       if (el && !el.value) el.value = defaults[id];
     });
   }
+}
+
+async function marcarRevisionContrato(status){
+  if (!editingContratoId) { showToast('Guarda el contrato primero (Generar PDF o Enviar a Firma) antes de cambiar su estado de revision.', 'error'); return; }
+  const { error } = await supabase.from('crm_contratos').update({ revision_status: status }).eq('id', editingContratoId);
+  if (error) { showToast('No se pudo actualizar el estado: ' + error.message, 'error'); return; }
+  showToast(status === 'aprobado' ? 'Contrato marcado como aprobado por ambas partes.' : 'Contrato enviado a revision.', 'success');
+  await loadContratos();
 }
 
 function openContratoModal(existing = null) {
@@ -5131,6 +5148,14 @@ function readContratoForm() {
 async function generarContratoPDF(opts = {}) {
   if (!canContratosFull()) { showToast('No tienes permiso para crear o editar contratos', 'error'); return; }
 
+  if (editingContratoId) {
+    const cRowRevision = contratosDB.find(function(c){ return c.id === editingContratoId; });
+    if (cRowRevision && cRowRevision.revision_status === 'enviado_revision') {
+      showToast('Este contrato esta en revision por el comprador/vendedor. Marca "Aprobado" antes de generar la firma.', 'error');
+      return;
+    }
+  }
+
   const enviarDocusign = !!opts.enviarDocusign;
   if (!enviarDocusign && firmaVacia) {
     showToast('Agrega la firma del cliente, o usa "Enviar a Firma (DocuSign)" para firma remota', 'error');
@@ -5370,6 +5395,7 @@ function renderContratosList() {
             <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Precio</th>
             <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Fecha</th>
             <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Estatus</th>
+            <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Revision</th>
             <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Acciones</th>
           </tr>
         </thead>
@@ -5397,6 +5423,7 @@ function renderContratosList() {
               <td style="padding:11px 12px;font-weight:600;color:var(--gold);">$${(c.precio||0).toLocaleString('en-US')}</td>
               <td style="padding:11px 12px;font-size:12px;color:var(--text-muted);">${fmtDate(c.fecha)}</td>
               <td style="padding:11px 12px;font-size:12px;"><span style="background:${meta.color}22;color:${meta.color};padding:2px 8px;border-radius:20px;font-weight:600;">${meta.label}</span></td>
+              <td style="padding:11px 12px;font-size:12px;">${(() => { const rm = REVISION_STATUS_META[c.revision_status] || REVISION_STATUS_META.borrador; return '<span style="background:'+rm.color+'22;color:'+rm.color+';padding:2px 8px;border-radius:20px;font-weight:600;">'+rm.label+'</span>'; })()}</td>
               <td style="padding:11px 12px;white-space:nowrap;">${acciones.join(' ')}</td>
             </tr>`;
           }).join('')}
