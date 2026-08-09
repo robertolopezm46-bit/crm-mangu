@@ -3193,6 +3193,28 @@ function quickWAProspect(id){
   renderKanban();
   openWaChatModal(p.phone, p.name, p.id);
 }
+
+async function finalizarProspecto(id){
+  const p = DB.prospects.find(x => String(x.id) === String(id));
+  if(!p) return;
+  const lp = (typeof webPropsDB!=='undefined') ? webPropsDB.find(x=>x.titulo===p.prop) : null;
+  const propTxt = lp ? lp.titulo : (p.prop || '—');
+  if(!confirm('Finalizar la venta de '+p.name+' ('+propTxt+').\n\nSe marcará la propiedad como vendida y se abrirá el contrato. ¿Continuar?')) return;
+  if(lp){
+    const { error } = await supabase.from('web_propiedades').update({ estatus: 'vendida', destacada: false }).eq('id', lp.id);
+    if(error){ alert('Error al marcar la propiedad como vendida: ' + error.message); return; }
+    if(typeof loadWebProps === 'function') loadWebProps();
+  } else {
+    alert('No se encontró una propiedad vinculada por nombre ("'+(p.prop||'—')+'"). Márcala como vendida manualmente en Sitio Web → Propiedades.');
+  }
+  openContratoModal();
+  setTimeout(()=>{
+    const sel = document.getElementById('ct-prospect');
+    if(sel){ sel.value = String(p.id); sel.dispatchEvent(new Event('change')); }
+  }, 50);
+  renderKanban();
+}
+
 const WA_TEMPLATES = [
   {id:1,phase:'Registro',title:'Bienvenida',text:'Hola {nombre} \ud83d\udc4b, gracias por contactar a *MANGU Inmobiliaria*.\
 \
@@ -6088,6 +6110,7 @@ function renderKanban(){
       const urgente=dias>7&&phase!=='Perdido';
       const ni=notesInfo(p);
       const act=lastNoteActivity(p);
+      const lp=(phase==='Cierre'&&typeof webPropsDB!=='undefined')?webPropsDB.find(x=>x.titulo===p.prop):null;
       return `
       <div class="kswipe" data-pid="${p.id}">
       <div class="kswipe-action" onclick="quickWAProspect('${p.id}')">
@@ -6108,9 +6131,10 @@ function renderKanban(){
         <div class="kcard-divider"></div>
         ${act?`<div class="kcard-activity"><span class="kcard-avatar" style="background:${sellerColor(p)};">${esc((act.author||'?').charAt(0).toUpperCase())}</span><span><b>${esc(act.author)}</b> dej\u00f3 una nota${act.ago?' \u00b7 '+act.ago:''}</span></div>`:''}
         <div class="card-actions">
-          ${hasModule('whatsapp')?`<button class="kbtn kbtn-wa" onclick="quickWAProspect('${p.id}')" title="WhatsApp API">
+          ${hasModule('whatsapp')&&phase!=='Cierre'?`<button class="kbtn kbtn-wa" onclick="quickWAProspect('${p.id}')" title="WhatsApp API">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.28-1.38a9.9 9.9 0 0 0 4.76 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2z"/></svg>
             WhatsApp API</button>`:''}
+          ${phase==='Cierre'?(lp&&lp.estatus==='vendida'?`<span class="kbtn kbtn-finalizado" title="Finalizado" style="opacity:.7;cursor:default;">✅ Finalizado</span>`:`<button class="kbtn kbtn-finalizar" onclick="finalizarProspecto('${p.id}')" title="Finalizar cierre">✅ Finalizar</button>`):''}
           <div class="kbtn-phase-wrap">
             <svg class="phase-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             <select class="kbtn-phase" onchange="cambiarFaseDesdeModal('${p.id}','${esc(p.name)}','${p.phase}',this.value,this)">
