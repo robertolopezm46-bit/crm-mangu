@@ -2810,6 +2810,7 @@ function _waPreview(p){
 let __waChatPhone = null;      // ultimos 10 digitos del telefono del chat abierto
 let __waChatToDigits = '';     // digitos completos (formato Meta) para enviar
 let __waChatProspectId = null; // prospect_id si aplica, o null
+let __waChatPendingFile = null; // {blob, name, type:'image'|'video', previewUrl} o null
 
 function waLast10(phone){
   return (phone||'').replace(/\D/g,'').slice(-10);
@@ -2838,7 +2839,15 @@ function ensureWaChatModalDom(){
     '#wachat-send{background:#b8860b;color:#fff;border:none;border-radius:50%;width:40px;height:40px;flex-shrink:0;cursor:pointer;font-size:16px;}',
     '#wachat-send:disabled{opacity:.5;cursor:default;}',
     '#wachat-fallback{font-size:11px;color:#1f6fd6;text-decoration:none;flex-shrink:0;align-self:center;padding:6px 4px;white-space:nowrap;}',
-    '#wachat-warn{padding:8px 14px;background:#fff6e0;color:#8a6100;font-size:12px;border-bottom:1px solid #f0e2b8;flex-shrink:0;}'
+    '#wachat-warn{padding:8px 14px;background:#fff6e0;color:#8a6100;font-size:12px;border-bottom:1px solid #f0e2b8;flex-shrink:0;}',
+    '#wachat-attach-btn{cursor:pointer;font-size:20px;padding:6px;flex-shrink:0;color:#b8860b;line-height:1;}',
+    '#wachat-preview{padding:8px 14px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;gap:10px;flex-shrink:0;}',
+    '#wachat-preview .wachat-preview-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;flex-shrink:0;}',
+    '#wachat-preview .wachat-preview-name{flex:1;font-size:13px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+    '#wachat-preview .wachat-preview-cancel{cursor:pointer;font-size:16px;color:#999;padding:4px;flex-shrink:0;}',
+    '.wachat-msg .wachat-media-img{display:block;max-width:220px;border-radius:8px;cursor:pointer;}',
+    '.wachat-msg .wachat-media-video{display:block;max-width:220px;border-radius:8px;}',
+    '.wachat-msg .wachat-media-audio{max-width:220px;}'
   ].join('\n');
   document.head.appendChild(style);
   const overlay = document.createElement('div');
@@ -2855,7 +2864,10 @@ function ensureWaChatModalDom(){
     '  </div>',
     '  <div id="wachat-warn" style="display:none;"></div>',
     '  <div id="wachat-body"><div id="wachat-empty">Cargando...</div></div>',
+    '  <div id="wachat-preview" style="display:none;"></div>',
     '  <div id="wachat-footer">',
+    '    <label id="wachat-attach-btn" for="wachat-file" title="Adjuntar foto o video">&#128206;</label>',
+    '    <input type="file" id="wachat-file" accept="image/*,video/*" style="display:none;" onchange="handleWaChatAttach(this)">',
     '    <textarea id="wachat-input" rows="1" placeholder="Escribe un mensaje..."></textarea>',
     '    <a id="wachat-fallback" href="#" target="_blank">Abrir en WhatsApp</a>',
     '    <button id="wachat-send" onclick="sendWaChatMessage()">&#10148;</button>',
@@ -2884,6 +2896,7 @@ async function openWaChatModal(phone, displayName, prospectId){
   document.getElementById('wachat-fallback').href = 'https://wa.me/' + __waChatToDigits;
   document.getElementById('wachat-overlay').style.display = 'flex';
   document.getElementById('wachat-input').value = '';
+  clearWaChatAttach();
   await loadAndRenderWaChat();
   document.getElementById('wachat-input').focus();
 }
@@ -2894,6 +2907,7 @@ function closeWaChatModal(){
   __waChatPhone = null;
   __waChatToDigits = '';
   __waChatProspectId = null;
+  clearWaChatAttach();
 }
 
 async function loadAndRenderWaChat(){
@@ -2901,7 +2915,7 @@ async function loadAndRenderWaChat(){
   const body = document.getElementById('wachat-body');
   const { data, error } = await supabase
     .from('crm_wa_messages')
-    .select('id, direction, message_type, body, status, created_at, sent_by, error_detail')
+    .select('id, direction, message_type, body, status, created_at, sent_by, error_detail, media_url')
     .like('phone', '%' + __waChatPhone + '%')
     .order('created_at', { ascending: true })
     .limit(200);
@@ -2923,11 +2937,20 @@ async function loadAndRenderWaChat(){
       const dt = new Date(m.created_at);
       const timeStr = dt.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
       const senderLabel = (isOut && m.sent_by && m.sent_by !== myEmail) ? ('<span class="wachat-sender">' + esc(m.sent_by.split('@')[0]) + '</span>') : '';
-      const text = m.message_type === 'audio' ? 'ð¤ Audio' : (m.message_type === 'image' ? 'ð· Imagen' : esc(m.body || ''));
+      let content;
+      if (m.message_type === 'image' && m.media_url) {
+        content = '<img class="wachat-media-img" src="' + esc(m.media_url) + '" onclick="window.open(this.src,\'_blank\')">' + (m.body ? ('<div style="margin-top:4px;">' + esc(m.body) + '</div>') : '');
+      } else if (m.message_type === 'video' && m.media_url) {
+        content = '<video class="wachat-media-video" src="' + esc(m.media_url) + '" controls></video>';
+      } else if (m.message_type === 'audio' && m.media_url) {
+        content = '<audio class="wachat-media-audio" src="' + esc(m.media_url) + '" controls></audio>';
+      } else {
+        content = m.message_type === 'audio' ? 'ð¤ Audio' : (m.message_type === 'image' ? 'ð· Imagen' : (m.message_type === 'video' ? 'ð¥ Video' : esc(m.body || '')));
+      }
       const failNote = failed
         ? ('<span class="wachat-meta" style="color:#c0392b;">No se pudo enviar' + (m.error_detail ? (': ' + esc(m.error_detail)) : '') + '</span>')
         : ('<span class="wachat-meta">' + timeStr + '</span>');
-      return '<div class="wachat-msg ' + (isOut ? 'out' : 'in') + (failed ? ' failed' : '') + '">' + senderLabel + text + failNote + '</div>';
+      return '<div class="wachat-msg ' + (isOut ? 'out' : 'in') + (failed ? ' failed' : '') + '">' + senderLabel + content + failNote + '</div>';
     }).join('');
   }
   body.scrollTop = body.scrollHeight;
@@ -2947,7 +2970,85 @@ async function loadAndRenderWaChat(){
   }
 }
 
+async function handleWaChatAttach(input){
+  const file = (input.files || [])[0];
+  input.value = '';
+  if (!file) return;
+  const isImage = file.type.startsWith('image/');
+  const isVideo = file.type.startsWith('video/');
+  if (!isImage && !isVideo) { showToast('Solo se permiten fotos o videos.', 'error'); return; }
+  if (isVideo && file.size > 16 * 1024 * 1024) { showToast('El video no puede pesar mas de 16MB.', 'error'); return; }
+  let blob = file;
+  if (isImage) {
+    const compressedRes = await compressImageFile(file);
+    blob = compressedRes.blob;
+    if (blob.size > 5 * 1024 * 1024) { showToast('La foto sigue pesando mas de 5MB incluso comprimida.', 'error'); return; }
+  }
+  const previewUrl = URL.createObjectURL(blob);
+  __waChatPendingFile = { blob: blob, name: file.name, type: isImage ? 'image' : 'video', previewUrl: previewUrl };
+  renderWaChatPreview();
+}
+
+function renderWaChatPreview(){
+  const box = document.getElementById('wachat-preview');
+  if (!box) return;
+  if (!__waChatPendingFile) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const p = __waChatPendingFile;
+  const thumb = p.type === 'image'
+    ? ('<img class="wachat-preview-thumb" src="' + p.previewUrl + '">')
+    : ('<video class="wachat-preview-thumb" src="' + p.previewUrl + '"></video>');
+  box.innerHTML = thumb + '<span class="wachat-preview-name">' + esc(p.name) + '</span><span class="wachat-preview-cancel" onclick="clearWaChatAttach()">&times;</span>';
+  box.style.display = 'flex';
+}
+
+function clearWaChatAttach(){
+  if (__waChatPendingFile && __waChatPendingFile.previewUrl) { try { URL.revokeObjectURL(__waChatPendingFile.previewUrl); } catch(e) {} }
+  __waChatPendingFile = null;
+  renderWaChatPreview();
+}
+
+async function sendWaChatMedia(){
+  const p = __waChatPendingFile;
+  if (!p || !__waChatToDigits) return;
+  const btn = document.getElementById('wachat-send');
+  btn.disabled = true;
+  try {
+    const ext = p.type === 'image' ? 'jpg' : ((p.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g,'') || 'mp4');
+    const path = 'wachat_' + Date.now() + '_' + Math.random().toString(36).slice(2,8) + '.' + ext;
+    const contentType = p.blob.type || (p.type === 'image' ? 'image/jpeg' : 'video/mp4');
+    const { error: upErr } = await supabase.storage.from('propiedades').upload(path, p.blob, { cacheControl: '3600', upsert: false, contentType: contentType });
+    if (upErr) throw new Error('No se pudo subir el archivo: ' + upErr.message);
+    const { data: pub } = supabase.storage.from('propiedades').getPublicUrl(path);
+    if (!pub || !pub.publicUrl) throw new Error('No se pudo obtener el enlace del archivo.');
+    const sessionRes = await supabase.auth.getSession();
+    const session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if (!session || !session.access_token) throw new Error('Sesion no valida. Vuelve a iniciar sesion.');
+    const resp = await fetch(WA_EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({
+        to: __waChatToDigits,
+        prospect_id: __waChatProspectId,
+        kind: p.type,
+        link: pub.publicUrl
+      })
+    });
+    const json = await resp.json().catch(function(){ return {}; });
+    if (!(resp.ok && json.ok)) {
+      showToast('No se pudo enviar: ' + (json.error || (json.metaError && json.metaError.message) || 'error desconocido'), 'error');
+    } else {
+      clearWaChatAttach();
+    }
+  } catch(e) {
+    showToast('No se pudo enviar: ' + e.message, 'error');
+  }
+  btn.disabled = false;
+  await loadAndRenderWaChat();
+  window.__waUnregTs = 0;
+}
+
 async function sendWaChatMessage(){
+  if (__waChatPendingFile) { await sendWaChatMedia(); return; }
   const input = document.getElementById('wachat-input');
   const text = (input.value || '').trim();
   if (!text || !__waChatToDigits) return;
