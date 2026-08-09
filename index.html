@@ -6352,7 +6352,12 @@ async function saveNotaRapida(){
   if(p && ['Visita','Proceso','Cierre'].includes(p.phase)){
     notifyFaseChange({prospectName:p.name,oldPhase:p.phase,newPhase:p.phase,comment:'Nuevo comentario: '+txt,sellerName:DB.currentUser?.name||'',assignedTo:p.seller||'',notifyTo:NOTIFY_MATRIX[p.phase]});
   }
-  showToast('Nota guardada','success');
+  // Aviso por WhatsApp al celular del staff relevante (mismo criterio que la tarjeta amarilla del Kanban)
+    if(p){
+          const notaCorta=txt.length>150?txt.slice(0,150)+'…':txt;
+          notaWANotifyRecipients(p).forEach(u=>{ if(u.phone) sendWATemplateStaff(u.phone,'mangu_nueva_nota',[p.name,DB.currentUser?.name||'',notaCorta],p.id); });
+    }
+    showToast('Nota guardada','success');
 }
 
 // ── Vista Tabla del tablero (prototipo v2) ──
@@ -6645,7 +6650,18 @@ async function notifyFaseChange({ prospectName, oldPhase, newPhase, comment, sel
   if(u?.phone) sendWATemplateStaff(u.phone, templateName, params, prospectId);
   }
   }
-function quickWA(phone,name){window.open(`https://wa.me/${waDigits(phone.replace(/\s|\+/g,''))}?text=Hola ${encodeURIComponent(name)}, te contacta MANGU Inmobiliaria.`,'_blank');}
+function notaWANotifyRecipients(p){
+    if(!p) return [];
+    const authorUsername=(DB.currentUser?.username||'').toLowerCase();
+    const admins=(DB.users||[]).filter(u=>['Administrador','Gerencia'].includes(u.role));
+    const seller=(DB.users||[]).find(u=>u.id===p.seller_id || (u.name||'').toLowerCase()===(p.seller||'').toLowerCase());
+    const map=new Map();
+    admins.forEach(u=>map.set((u.username||'').toLowerCase(),u));
+    if(seller) map.set((seller.username||'').toLowerCase(),seller);
+    map.delete(authorUsername);
+    return [...map.values()];
+}
+  function quickWA(phone,name){window.open(`https://wa.me/${waDigits(phone.replace(/\s|\+/g,''))}?text=Hola ${encodeURIComponent(name)}, te contacta MANGU Inmobiliaria.`,'_blank');}
 
 // ══════════════════════════════════════════
 //  WHATSAPP
