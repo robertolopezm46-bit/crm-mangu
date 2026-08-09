@@ -2880,6 +2880,23 @@ function ensureWaChatModalDom(){
   document.getElementById('wachat-input').addEventListener('keydown', function(e){
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendWaChatMessage(); }
   });
+  if (window.visualViewport && !window.__waChatVVBound) {
+    window.__waChatVVBound = true;
+    window.__syncWaChatViewport = function(){
+      const ovEl = document.getElementById('wachat-overlay');
+      if (!ovEl || ovEl.style.display === 'none') return;
+      const vv = window.visualViewport;
+      ovEl.style.height = vv.height + 'px';
+      ovEl.style.top = vv.offsetTop + 'px';
+      const boxEl = document.getElementById('wachat-box');
+      if (boxEl) boxEl.style.maxHeight = Math.max(200, Math.min(680, vv.height - 32)) + 'px';
+    };
+    window.visualViewport.addEventListener('resize', window.__syncWaChatViewport);
+    window.visualViewport.addEventListener('scroll', window.__syncWaChatViewport);
+  }
+  document.getElementById('wachat-input').addEventListener('focus', function(){
+    setTimeout(function(){ if (window.__syncWaChatViewport) window.__syncWaChatViewport(); }, 300);
+  });
 }
 
 async function openWaChatModal(phone, displayName, prospectId){
@@ -2898,6 +2915,7 @@ async function openWaChatModal(phone, displayName, prospectId){
   document.getElementById('wachat-overlay').style.display = 'flex';
   document.getElementById('wachat-input').value = '';
   clearWaChatAttach();
+  if (window.__syncWaChatViewport) window.__syncWaChatViewport();
   await loadAndRenderWaChat();
   document.getElementById('wachat-input').focus();
 }
