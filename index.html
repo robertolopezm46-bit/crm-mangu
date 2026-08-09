@@ -2486,7 +2486,7 @@ function initSupabase(url, key) {
 }
 function setConnStatus(online) {
   const dot = document.getElementById('conn-dot');
-  const txt = document.getElementById('conn-status');
+      const txt = document.getElementById('conn-status');
   if(!dot) return;
   if(online){ dot.className='conn-dot online'; txt.textContent='Conectado'; }
   else { dot.className='conn-dot'; txt.textContent='Sin conexión'; }
@@ -2508,7 +2508,7 @@ const PHASE_BADGES={'Registro':'badge-inicial','Visita':'badge-proceso','Proceso
 const PHASE_RESPONSIBLE={'Registro':'alfredo','Visita':'fabiola','Proceso':'fabiola'};
 // Quién recibe notificación en cada fase (usernames) — el ruteo final lo hace quick-worker
 // Registro: Roberto + Fabiola | Visita/Proceso/Cierre: Roberto + Alfredo | Perdido: Fabiola + Roberto
-const NOTIFY_MATRIX={'Registro':['fabiola','roberto'],'Visita':['roberto','alfredo'],'Proceso':['roberto','alfredo'],'Cierre':['roberto','alfredo'],'Perdido':['fabiola','roberto']};
+const NOTIFY_MATRIX={'Registro':['roberto','fabiola','alfredo'],'Visita':['roberto','fabiola','alfredo'],'Proceso':['roberto','fabiola','alfredo'],'Cierre':['roberto','fabiola','alfredo'],'Perdido':['roberto','fabiola','alfredo']};
 // Responsable al entrar a una fase: Cierre conserva a Fabiola si ya es suyo; si no, pasa a Roberto
 function getPhaseResponsible(newPhase, prospect){
   if(newPhase==='Cierre'){
@@ -6617,7 +6617,7 @@ async function confirmFaseChange() {
 
 async function notifyFaseChange({ prospectName, oldPhase, newPhase, comment, sellerName, assignedTo, notifyTo }) {
   // Roberto no genera notificaciones cuando él mismo hace el cambio de fase
-  if ((DB.currentUser?.username || '').toLowerCase() === 'roberto') return;
+  const _actor = (DB.currentUser?.username || '').toLowerCase(); notifyTo = (notifyTo || []).filter(u => (u || '').toLowerCase() !== _actor); if (!notifyTo.length) return;
   try {
     await fetch('https://dgpuqlnjwisqyynpvdyw.supabase.co/functions/v1/quick-worker', {
       method: 'POST',
@@ -6644,8 +6644,8 @@ async function notifyFaseChange({ prospectName, oldPhase, newPhase, comment, sel
   }catch(e){ console.log('WA staff template error:', e.message); }
   }
   async function notifyStaffWATemplate(usernames, templateName, params, prospectId){
-  if((DB.currentUser?.username||'').toLowerCase()==='roberto') return;
-  for(const uname of usernames){
+  const _actor=(DB.currentUser?.username||'').toLowerCase();
+  for(const uname of usernames){ if((uname||'').toLowerCase()===_actor) continue;
   const u=(DB.users||[]).find(x=>(x.username||'').toLowerCase()===uname);
   if(u?.phone) sendWATemplateStaff(u.phone, templateName, params, prospectId);
   }
@@ -6653,11 +6653,11 @@ async function notifyFaseChange({ prospectName, oldPhase, newPhase, comment, sel
 function notaWANotifyRecipients(p){
     if(!p) return [];
     const authorUsername=(DB.currentUser?.username||'').toLowerCase();
-    const admins=(DB.users||[]).filter(u=>['Administrador','Gerencia'].includes(u.role));
-    const seller=(DB.users||[]).find(u=>u.id===p.seller_id || (u.name||'').toLowerCase()===(p.seller||'').toLowerCase());
+    const staff=(DB.users||[]).filter(u=>u.active!==false);
+      // (se notifica a todo el staff activo, ya no solo admin+vendedor asignado)
     const map=new Map();
-    admins.forEach(u=>map.set((u.username||'').toLowerCase(),u));
-    if(seller) map.set((seller.username||'').toLowerCase(),seller);
+    staff.forEach(u=>map.set((u.username||'').toLowerCase(),u));
+      // (línea reservada: ya no se filtra por vendedor asignado)
     map.delete(authorUsername);
     return [...map.values()];
 }
@@ -6958,7 +6958,7 @@ function handlePhoneInput(el) {
 
 async function notifyAdminNewProspect(prospectName, sellerName, phone, prop, notes) {
   // Roberto no genera notificaciones cuando él mismo registra el prospecto
-  if ((DB.currentUser?.username || '').toLowerCase() === 'roberto') return;
+if ((DB.currentUser?.username || '').toLowerCase() === 'roberto') return;
   try {
     await fetch('https://dgpuqlnjwisqyynpvdyw.supabase.co/functions/v1/quick-worker', {
       method: 'POST',
