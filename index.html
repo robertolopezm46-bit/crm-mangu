@@ -7373,16 +7373,52 @@ function openPropModal(id){
 }
 
 function renderFotosPreview(){
-  const el = document.getElementById('wp-fotos-preview');
-  if (!el) return;
-  el.innerHTML = _propFotos.map((url,i)=>`<div style="position:relative;">
-    <img src="${esc(url)}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:${i===0?'2px solid var(--navy)':'1px solid var(--border)'};">
-    ${i===0?'<span style="position:absolute;bottom:2px;left:2px;background:var(--navy);color:#fff;font-size:9px;padding:1px 4px;border-radius:4px;">Portada</span>':''}
-    <button onclick="quitarFotoProp(${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:var(--danger,#dc2626);color:#fff;font-size:11px;cursor:pointer;line-height:1;">×</button>
-  </div>`).join('');
+    const el = document.getElementById('wp-fotos-preview');
+    if (!el) return;
+    el.innerHTML = _propFotos.map((url,i)=>`<div class="wp-foto-thumb" data-idx="${i}" style="position:relative;touch-action:none;cursor:grab;" onpointerdown="fotoDragStart(event,${i})" onpointermove="fotoDragMove(event)" onpointerup="fotoDragEnd(event)" onpointercancel="fotoDragEnd(event)">
+        <img src="${esc(url)}" draggable="false" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:${i===0?'2px solid var(--navy)':'1px solid var(--border)'};pointer-events:none;-webkit-user-drag:none;">
+            ${i===0?'<span style="position:absolute;bottom:2px;left:2px;background:var(--navy);color:#fff;font-size:9px;padding:1px 4px;border-radius:4px;pointer-events:none;">Portada</span>':''}
+                <button onclick="quitarFotoProp(${i})" onpointerdown="event.stopPropagation()" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:var(--danger,#dc2626);color:#fff;font-size:11px;cursor:pointer;line-height:1;">×</button>
+                  </div>`).join('');
 }
 
-function quitarFotoProp(i){ _propFotos.splice(i,1); renderFotosPreview(); }
+  function quitarFotoProp(i){ _propFotos.splice(i,1); renderFotosPreview(); }
+
+  let _fotoDragIdx = null;
+
+  function fotoDragStart(ev, i){
+      if (ev.target.closest('button')) return;
+      ev.preventDefault();
+      _fotoDragIdx = i;
+      ev.currentTarget.style.opacity = '0.5';
+      ev.currentTarget.setPointerCapture(ev.pointerId);
+  }
+
+  function fotoDragMove(ev){
+      if (_fotoDragIdx === null) return;
+      ev.preventDefault();
+      const target = document.elementFromPoint(ev.clientX, ev.clientY);
+      const wrap = target && target.closest('.wp-foto-thumb');
+      document.querySelectorAll('.wp-foto-thumb').forEach(n=>{ if(n!==ev.currentTarget) n.style.outline=''; });
+      if (wrap && wrap !== ev.currentTarget) wrap.style.outline = '2px dashed var(--navy)';
+  }
+
+  function fotoDragEnd(ev){
+      if (_fotoDragIdx === null) return;
+      ev.preventDefault();
+      const target = document.elementFromPoint(ev.clientX, ev.clientY);
+      const wrap = target && target.closest('.wp-foto-thumb');
+      document.querySelectorAll('.wp-foto-thumb').forEach(n=>{ n.style.outline=''; n.style.opacity=''; });
+      if (wrap) {
+            const targetIdx = parseInt(wrap.dataset.idx, 10);
+            if (!isNaN(targetIdx) && targetIdx !== _fotoDragIdx) {
+                    const moved = _propFotos.splice(_fotoDragIdx, 1)[0];
+                    _propFotos.splice(targetIdx, 0, moved);
+            }
+      }
+      _fotoDragIdx = null;
+      renderFotosPreview();
+  }
 
 function compressImageFile(file, maxDim = 1600, quality = 0.75){
   return new Promise((resolve) => {
