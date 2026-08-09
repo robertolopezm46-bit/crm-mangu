@@ -190,6 +190,7 @@
   .wa-none{background:var(--surface);color:var(--text-muted);}
   .kanban-card.urgente{border-color:#FECACA;box-shadow:0 0 0 1px #FECACA;}
   .kanban-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 16px 14px;margin-bottom:10px;cursor:grab;transition:box-shadow .15s;}
+.kanban-card.kcard-unread{background:#FFF3C4;border-color:#F5D67A;}
   .kanban-card:hover{box-shadow:var(--shadow-md);}
   .kanban-card.dragging{opacity:.5;cursor:grabbing;}
   .kanban-card h4{font-size:15px;font-weight:700;margin:0 0 8px;cursor:pointer;}
@@ -2587,6 +2588,11 @@ function markNotesSeen(p){
   const list=parseManualNotes(p);
   try{localStorage.setItem(notesSeenKey(p), String(list.length));}catch(e){}
 }
+function waSeenKey(p){return 'mangu_wa_seen_'+(DB.currentUser?.id||DB.currentUser?.name||'anon')+'_'+p.id;}
+function isRelevantToMe(p){return isAdmin() || !!(p && DB.currentUser?.id && p.seller_id===DB.currentUser.id);}
+function markWaSeen(p){if(!p)return; try{localStorage.setItem(waSeenKey(p), new Date().toISOString());}catch(e){}}
+function cardHasUnread(p){if(!isRelevantToMe(p))return false; const ninfo=notesInfo(p); if(ninfo.unread)return true; const lastIn=DB._waLastInbound&&DB._waLastInbound[p.id]; if(!lastIn)return false; const seen=localStorage.getItem(waSeenKey(p)); return !seen || new Date(lastIn).getTime()>new Date(seen).getTime();}
+async function loadKanbanUnreadCache(){if(!DB.prospects||!DB.prospects.length)return; let q=supabase.from('crm_prospects').select('id,notes'); if(!puedeVerTodosProspectos()){ if(DB.currentUser.id) q=q.eq('seller_id',DB.currentUser.id); else q=q.eq('seller',DB.currentUser.name); } const {data:notesData}=await q; if(notesData){ const byId={}; notesData.forEach(r=>{byId[r.id]=r.notes;}); DB.prospects.forEach(p=>{ if(Object.prototype.hasOwnProperty.call(byId,p.id)) p.notes=byId[p.id]; }); } const idSet=new Set(DB.prospects.map(p=>String(p.id))); const {data:waData}=await supabase.from('crm_wa_messages').select('prospect_id,created_at').eq('direction','inbound').order('created_at',{ascending:false}).limit(1500); DB._waLastInbound={}; if(waData){ waData.forEach(r=>{ if(r.prospect_id&&idSet.has(String(r.prospect_id))&&!DB._waLastInbound[r.prospect_id]) DB._waLastInbound[r.prospect_id]=r.created_at; }); }}
 function lastNoteActivity(p){
   const list=parseManualNotes(p);
   if(!list.length) return null;
@@ -2911,6 +2917,7 @@ async function openWaChatModal(phone, displayName, prospectId){
   __waChatPhone = waLast10(phone);
   __waChatToDigits = waDigits(phone);
   __waChatProspectId = prospectId || null;
+if(__waChatProspectId){ const __pSeen=(DB.prospects||[]).find(function(x){return String(x.id)===String(__waChatProspectId);}); if(__pSeen){ markWaSeen(__pSeen); if(isSectionActive('kanban')) renderKanban(); } }
   document.getElementById('wachat-title').textContent = displayName;
   document.getElementById('wachat-sub').textContent = '+' + __waChatToDigits;
   document.getElementById('wachat-fallback').href = 'https://wa.me/' + __waChatToDigits;
@@ -3785,6 +3792,7 @@ function subscribeRealtime() {
     .on('postgres_changes',{event:'*',schema:'public',table:'crm_prospects'},()=>{loadProspects().then(()=>{
       if(isSectionActive('pipeline'))renderPipeline();
       if(isSectionActive('kanban'))renderKanban();
+loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban(); });
       if(window.innerWidth<=768){
         if(isSectionActive('pipeline')) renderMobileTabla();
         updateMobileAlertBadge();
@@ -3833,6 +3841,7 @@ function showWaBadge(show){
 }
 function handleInboundWA(msg){
   const prospect=DB.prospects.find(p=>p.id===msg.prospect_id);
+if(prospect){ DB._waLastInbound=DB._waLastInbound||{}; DB._waLastInbound[prospect.id]=msg.created_at||new Date().toISOString(); }
   const soyResponsable = prospect && DB.currentUser?.id && prospect.seller_id===DB.currentUser.id;
   const relevante = isAdmin() || soyResponsable;
   if(!relevante) return;
@@ -3876,6 +3885,7 @@ async function loadCitas() {
 async function initAll() {
   showLoading('Cargando datos...');
   await Promise.all([loadUsers(),loadProspects(),loadCitas(),loadWebProps()]);
+loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban(); });
   renderPipeline();
   renderWATemplates();
   populateSelects();
@@ -6258,12 +6268,13 @@ function renderKanban(){
       const ni=notesInfo(p);
       const act=lastNoteActivity(p);
       const lp=(phase==='Cierre'&&typeof webPropsDB!=='undefined')?webPropsDB.find(x=>x.titulo===p.prop):null;
+const cardUnread=cardHasUnread(p);
       return `
       <div class="kswipe" data-pid="${p.id}">
       <div class="kswipe-action" onclick="quickWAProspect('${p.id}')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
       </div>
-      <div class="kanban-card${urgente?' urgente':''}" draggable="true" ondragstart="onDragStart(event,'${p.id}')" id="kcard-${p.id}">
+      <div class="kanban-card${urgente?' urgente':''}${cardUnread?' kcard-unread':''}" draggable="true" ondragstart="onDragStart(event,'${p.id}')" id="kcard-${p.id}">
         <h4 onclick="${phase==='Registro'?`editProspect('${p.id}')`:`openNotaRapida('${p.id}')`}" title="${phase==='Registro'?'Editar prospecto':'Ver notas'}">${esc(p.name)}</h4>
         <div class="kcard-info-row">
           <div>
