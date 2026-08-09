@@ -2869,7 +2869,7 @@ function ensureWaChatModalDom(){
     '  <div id="wachat-footer">',
     '    <label id="wachat-attach-btn" for="wachat-file" title="Adjuntar foto o video">&#128206;</label>',
     '    <input type="file" id="wachat-file" accept="image/*,video/*" style="display:none;" onchange="handleWaChatAttach(this)">',
-    '    <textarea id="wachat-input" rows="1" placeholder="Escribe un mensaje..."></textarea>',
+    '    <textarea id="wachat-input" name="wachat_msg_body" rows="1" placeholder="Escribe un mensaje..." autocomplete="off" autocapitalize="sentences" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"></textarea>',
     '    <a id="wachat-fallback" href="#" target="_blank">Abrir en WhatsApp</a>',
     '    <button id="wachat-send" onclick="sendWaChatMessage()">&#10148;</button>',
     '  </div>',
