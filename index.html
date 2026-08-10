@@ -6775,36 +6775,38 @@ www.mangu.mx`;
 //  CITAS
 // ══════════════════════════════════════════
 async function agendarCita(){
-  const pid=document.getElementById('cita-prospect').value;
-  const date=document.getElementById('cita-date').value;
-  const time=document.getElementById('cita-time').value;
-  const prop=document.getElementById('cita-prop').value;
-  const seller=document.getElementById('cita-vendedor').value;
+  const pid = document.getElementById('cita-prospect').value;
+  const date = document.getElementById('cita-date').value;
+  const time = document.getElementById('cita-time').value;
+  const prop = document.getElementById('cita-prop').value;
+  const seller = document.getElementById('cita-vendedor').value;
   if(!pid||!date||!time){showToast('Completa los campos obligatorios','error');return;}
   setSyncBadge(true);
-  const{error}=await supabase.from('crm_citas').insert({prospect_id:pid,date,time,prop,seller,notes:document.getElementById('cita-notes').value});
+  const{data:nuevaCita,error} = await supabase.from('crm_citas').insert({prospect_id:pid,date,time,prop,seller,notes:document.getElementById('cita-notes').value}).select().single();
   if(error){setSyncBadge(false);showToast('Error al guardar cita: '+error.message,'error');return;}
 
-  // Relevo autom\u00e1tico: al agendar visita, el prospecto pasa a Seguimiento Visita
-  // y se asigna al vendedor de la cita (flujo Atenci\u00f3n a Cliente \u2192 Comercial)
-  const p=DB.prospects.find(pr=>String(pr.id)===String(pid));
-  if(p && p.phase==='Registro'){
-    const u=DB.users.find(x=>(x.name||'').toLowerCase()===(seller||'').toLowerCase());
-    const upd={phase:'Visita',phase_updated_at:new Date().toISOString()};
-    if(u){upd.seller=u.name;upd.seller_id=u.id;}
-    const{data:cur}=await supabase.from('crm_prospects').select('notes').eq('id',pid).single();
-    upd.notes=(cur?.notes||'')+`\n[${new Date().toLocaleDateString('es-MX')}] Visita agendada ${date} ${time} \u00b7 ${prop}. Cambio de fase: ${p.phase} \u2192 Visita.`+(u?` Asignado a ${u.name}.`:'');
-    await supabase.from('crm_prospects').update(upd).eq('id',pid);
-    const oldPh=p.phase;
-    p.phase='Visita';
-    p.phase_updated_at=upd.phase_updated_at;
-    if(u){p.seller=u.name;p.seller_id=u.id;}
-    notifyFaseChange({prospectName:p.name,oldPhase:oldPh,newPhase:'Visita',comment:`Visita agendada ${date} ${time} \u00b7 ${prop}`,sellerName:DB.currentUser?.name||'',assignedTo:u?.name||seller,notifyTo:NOTIFY_MATRIX['Visita']});
-    renderKanban();renderPipeline();
-    showToast(u?`Cita agendada \u00b7 prospecto asignado a ${u.name}`:'Cita agendada','success');
-  } else {
-    showToast('Cita agendada','success');
+  // Asignación de vendedor (sin cambio de fase automático - Robert decidió el 10-ago-2026
+  // que el cambio de fase a Visita debe hacerse manualmente)
+  const p = DB.prospects.find(pr=>String(pr.id)===String(pid));
+  if(p && p.phase === 'Registro'){
+    const u = DB.users.find(x=>(x.name||'').toLowerCase()===(seller||'').toLowerCase());
+    if(u){
+      const upd = {seller:u.name,seller_id:u.id};
+      const{data:cur} = await supabase.from('crm_prospects').select('notes').eq('id',pid).single();
+      upd.notes = (cur?.notes||'')+`\n[${new Date().toLocaleDateString('es-MX')}] Visita agendada ${date} ${time} · ${prop}. Asignado a ${u.name}.`;
+      await supabase.from('crm_prospects').update(upd).eq('id',pid);
+      p.seller=u.name;p.seller_id=u.id;
+      renderKanban();renderPipeline();
+    }
   }
+  showToast('Cita agendada','success');
+
+  // Confirmación automática por WhatsApp (cliente + vendedor) con ubicación real,
+  // vía la Edge Function visitas-recordatorios (modo confirmación inmediata: {cita_id})
+  if(nuevaCita?.id){
+    supabase.functions.invoke('visitas-recordatorios',{body:{cita_id:nuevaCita.id}}).catch(()=>{});
+  }
+
   setSyncBadge(false);
   await loadCitas();renderCalendar();
   renderCitasHoyBanner();
