@@ -7011,9 +7011,10 @@ async function saveProspect(){
   btn.textContent='Guardando...';btn.disabled=true;
   setSyncBadge(true);
   let error;
+  let _phaseChanged=false, _oldPhaseForNotify=null, _newPhaseForNotify=null;
   if(editId){
     const prev=DB.prospects.find(x=>String(x.id)===String(editId));
-    if(prev && prev.phase!==data.phase) data.phase_updated_at=new Date().toISOString();
+if(prev && prev.phase!==data.phase){ data.phase_updated_at=new Date().toISOString(); _phaseChanged=true; _oldPhaseForNotify=prev.phase; _newPhaseForNotify=data.phase; }
     ({error}=await supabase.from('crm_prospects').update(data).eq('id',editId));
   }
   else{({error}=await supabase.from('crm_prospects').insert(data));}
@@ -7021,7 +7022,9 @@ async function saveProspect(){
   if(error){showToast('Error: '+error.message,'error');return;}
   closeModal('prospect');
   await loadProspects();renderPipeline();
-  if(!editId) notifyAdminNewProspect(data.name, data.seller, rawPhone, data.prop, data.notes);updateProspectSelects();
+if(!editId) notifyAdminNewProspect(data.name, data.seller, rawPhone, data.prop, data.notes);
+    if(_phaseChanged){ notifyFaseChange({ prospectName: data.name, oldPhase: _oldPhaseForNotify, newPhase: _newPhaseForNotify, comment: 'Editado desde ficha de prospecto', sellerName: DB.currentUser?.name || '', assignedTo: data.seller || '', notifyTo: NOTIFY_MATRIX[_newPhaseForNotify] || ['roberto'] }); const _waUsernames2 = NOTIFY_MATRIX[_newPhaseForNotify] || ['roberto']; const _waTemplate2 = _newPhaseForNotify==='Registro' ? 'mangu_alerta_prospecto' : 'mangu_cambio_fase'; const _waParams2 = _newPhaseForNotify==='Registro' ? [data.name, data.prop || 'la propiedad de interés', data.seller || ''] : [data.name, _newPhaseForNotify, data.seller || '']; notifyStaffWATemplate(_waUsernames2, _waTemplate2, _waParams2, editId); }
+    updateProspectSelects();
   showToast(editId?'Prospecto actualizado':'Prospecto creado','success');
 }
 async function editProspect(id){
