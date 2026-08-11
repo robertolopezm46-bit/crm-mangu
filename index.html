@@ -1310,18 +1310,6 @@
           </div>
           <div style="padding:24px 28px;display:flex;flex-direction:column;gap:14px;">
 
-            <div class="form-group">
-              <label>Tipo de contrato</label>
-              <select id="ct-tipo" onchange="onTipoContratoChange()">
-                <option value="" disabled selected>Selecciona un tipo…</option>
-                <option value="carta_intencion">Carta intención de compra</option>
-                <option value="contraoferta_intencion">Contra oferta intención de compra</option>
-                <option value="promesa_credito">Contrato promesa de compra (con crédito hipotecario)</option>
-                <option value="promesa_propios">Contrato promesa de compra (recursos propios)</option>
-              </select>
-              <p style="font-size:11px;color:var(--text-muted);margin-top:4px;">El tipo define qué texto legal se genera. Puedes cambiarlo mientras no hayas guardado.</p>
-            </div>
-
             <div class="form-row">
               <div class="form-group">
                 <label>Prospecto / Cliente</label>
@@ -1369,209 +1357,37 @@
               <textarea id="ct-clausulas" rows="3" placeholder="Condiciones especiales, entrega de llaves, etc..."></textarea>
             </div>
 
-            <!-- ══════ Campos legales — Promesa de compra (crédito o recursos propios) ══════ -->
-            <div id="ctl-group-comunes" style="display:none;flex-direction:column;gap:14px;border-top:1px dashed var(--border);padding-top:14px;">
-              <p style="font-size:12px;font-weight:700;color:var(--navy);margin:0;">Datos del vendedor (persona física)</p>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Nombre completo del vendedor</label>
-                  <input type="text" id="ctl-vendedor-nombre" placeholder="Nombre completo">
-                </div>
-                <div class="form-group">
-                  <label>Identificación oficial (INE/IDMEX + número)</label>
-                  <input type="text" id="ctl-vendedor-identificacion" placeholder="Ej. IDMEX1234567890">
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Domicilio del vendedor</label>
-                <input type="text" id="ctl-vendedor-domicilio" placeholder="Calle, número, colonia, ciudad, C.P.">
-              </div>
-              <div class="form-group">
-                <label>Otros datos del vendedor (opcional)</label>
-                <textarea id="ctl-vendedor-extra" rows="2" placeholder="Nacionalidad, edad/fecha de nacimiento, estado civil y régimen, ocupación, CURP, RFC..."></textarea>
-              </div>
-
-              <p style="font-size:12px;font-weight:700;color:var(--navy);margin:8px 0 0;">Datos legales del inmueble</p>
-              <div class="form-group">
-                <label>Domicilio legal completo del inmueble</label>
-                <input type="text" id="ctl-inmueble-domicilio" placeholder="Calle, número, lote/manzana, fraccionamiento, ciudad, C.P.">
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Superficie de terreno</label>
-                  <input type="text" id="ctl-superficie-terreno" placeholder="Ej. 126 m²">
-                </div>
-                <div class="form-group">
-                  <label>Superficie de construcción (opcional)</label>
-                  <input type="text" id="ctl-superficie-construccion" placeholder="Ej. 180 m²">
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Medidas y colindancias</label>
-                <textarea id="ctl-medidas" rows="2" placeholder="AL NORTE: ... AL SUR: ... AL ESTE: ... AL OESTE: ..."></textarea>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Escritura pública número</label>
-                  <input type="text" id="ctl-escritura-numero" placeholder="Ej. 83,692">
-                </div>
-                <div class="form-group">
-                  <label>Fecha de la escritura</label>
-                  <input type="date" id="ctl-escritura-fecha">
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Libro</label>
-                  <input type="text" id="ctl-escritura-libro">
-                </div>
-                <div class="form-group">
-                  <label>Folio</label>
-                  <input type="text" id="ctl-escritura-folio">
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Notario público (número y nombre)</label>
-                  <input type="text" id="ctl-notario" placeholder="Ej. Notario Público número 3, Lic. Gerardo Martínez Martínez">
-                </div>
-                <div class="form-group">
-                  <label>Distrito judicial</label>
-                  <input type="text" id="ctl-distrito-judicial" value="Pachuca de Soto, Estado de Hidalgo">
-                </div>
-              </div>
-
-              <p style="font-size:12px;font-weight:700;color:var(--navy);margin:8px 0 0;">Condiciones del contrato</p>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Vigencia (días naturales)</label>
-                  <input type="number" id="ctl-plazo-dias" value="60">
-                </div>
-                <div class="form-group">
-                  <label>Gastos de escrituración a cargo de</label>
-                  <select id="ctl-gastos-cargo">
-                    <option value="La Compradora">La Compradora</option>
-                    <option value="La Vendedora">La Vendedora</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Pena convencional por incumplimiento (MXN)</label>
-                <div style="position:relative;">
-                  <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-weight:600;">$</span>
-                  <input type="text" id="ctl-pena-convencional" inputmode="numeric" style="padding-left:24px;" oninput="formatValueInput(this)">
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Datos bancarios para transferencias (opcional)</label>
-                <textarea id="ctl-datos-bancarios" rows="2" placeholder="Banco, número de cuenta, CLABE interbancaria"></textarea>
-              </div>
-            </div>
-
-            <!-- ══════ Solo: Promesa con crédito hipotecario ══════ -->
-            <div id="ctl-group-credito" style="display:none;flex-direction:column;gap:14px;border-top:1px dashed var(--border);padding-top:14px;">
-              <p style="font-size:12px;font-weight:700;color:var(--navy);margin:0;">Crédito hipotecario</p>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Institución financiera</label>
-                  <input type="text" id="ctl-institucion-credito" value="Infonavit">
-                </div>
-                <div class="form-group" style="justify-content:flex-end;">
-                  <label style="display:flex;align-items:center;gap:8px;font-weight:400;">
-                    <input type="checkbox" id="ctl-aplica-excedente" checked style="width:auto;">
-                    Incluir cláusula de excedente de crédito
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <!-- ══════ Solo: Promesa con recursos propios ══════ -->
-            <div id="ctl-group-propios" style="display:none;flex-direction:column;gap:14px;border-top:1px dashed var(--border);padding-top:14px;">
-              <p style="font-size:12px;font-weight:700;color:var(--navy);margin:0;">Equipamiento incluido</p>
-              <label style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;">
-                <input type="checkbox" id="ctl-incluir-equipamiento" checked style="width:auto;" onchange="document.getElementById('ctl-equipamiento-lista').style.display=this.checked?'':'none';">
-                Incluir cláusula de equipamiento y accesorios
-              </label>
-              <textarea id="ctl-equipamiento-lista" rows="4">Cocina integral, horno empotrado, estufa, muebles de cocina, campana extractora, closets instalados, lavabos, sanitarios, muebles de baño, calentador, cisterna y tinaco.</textarea>
-            </div>
-
-            <!-- ══════ Solo: Carta intención de compra (oferta inicial del comprador) ══════ -->
-            <div id="ctl-group-carta" style="display:none;flex-direction:column;gap:14px;border-top:1px dashed var(--border);padding-top:14px;">
-              <p style="font-size:12px;font-weight:700;color:var(--navy);margin:0;">Detalles de la oferta inicial</p>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Ciudad</label>
-                  <input type="text" id="ctl-ci-ciudad" value="Pachuca de Hidalgo">
-                </div>
-                <div class="form-group">
-                  <label>Forma de pago propuesta</label>
-                  <select id="ctl-ci-forma-pago">
-                    <option value="de contado">De contado</option>
-                    <option value="mediante crédito hipotecario">Mediante crédito hipotecario</option>
-                    <option value="de forma mixta (crédito + recursos propios)">Mixta (crédito + recursos propios)</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Monto de la oferta inicial (MXN)</label>
-                <div style="position:relative;">
-                  <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-weight:600;">$</span>
-                  <input type="text" id="ctl-ci-oferta-inicial" inputmode="numeric" style="padding-left:24px;" oninput="formatValueInput(this)">
-                </div>
-              </div>
-              <p style="font-size:11px;color:var(--text-muted);margin:-6px 0 0;">El precio publicado del inmueble usa el campo "Precio de venta" de arriba.</p>
-              <div class="form-group">
-                <label>Condiciones adicionales de la oferta (opcional)</label>
-                <textarea id="ctl-ci-condiciones" rows="3" placeholder="Ej. sujeto a inspección previa, cierre en un plazo de 30 días, etc."></textarea>
-              </div>
-            </div>
-
-            <!-- ══════ Solo: Contra oferta intención de compra ══════ -->
-            <div id="ctl-group-contraoferta" style="display:none;flex-direction:column;gap:14px;border-top:1px dashed var(--border);padding-top:14px;">
-              <p style="font-size:12px;font-weight:700;color:var(--navy);margin:0;">Detalles de la negociación</p>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Ciudad</label>
-                  <input type="text" id="ctl-carta-ciudad" value="Pachuca de Hidalgo">
-                </div>
-                <div class="form-group">
-                  <label>Forma de pago propuesta</label>
-                  <select id="ctl-forma-pago-carta">
-                    <option value="de contado">De contado</option>
-                    <option value="mediante crédito hipotecario">Mediante crédito hipotecario</option>
-                    <option value="de forma mixta (crédito + recursos propios)">Mixta (crédito + recursos propios)</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Oferta inicial del comprador (opcional, MXN)</label>
-                  <div style="position:relative;">
-                    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-weight:600;">$</span>
-                    <input type="text" id="ctl-oferta-inicial" inputmode="numeric" style="padding-left:24px;" oninput="formatValueInput(this)">
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Contraoferta recibida (opcional, MXN)</label>
-                  <div style="position:relative;">
-                    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-weight:600;">$</span>
-                    <input type="text" id="ctl-contraoferta" inputmode="numeric" style="padding-left:24px;" oninput="formatValueInput(this)">
-                  </div>
-                </div>
-              </div>
-              <p style="font-size:11px;color:var(--text-muted);margin:-6px 0 0;">El precio final de la propuesta usa el campo "Precio de venta" de arriba.</p>
-              <div class="form-group">
-                <label>Condiciones aceptadas (una por línea)</label>
-                <textarea id="ctl-condiciones-aceptadas" rows="3" placeholder="Ej. Trámite en la notaría indicada por el vendedor&#10;Pago mediante transferencia bancaria&#10;Firma de contrato de reserva y anticipo"></textarea>
-              </div>
-              <div class="form-group">
-                <label>Disponibilidad para formalizar (opcional)</label>
-                <input type="text" id="ctl-disponibilidad" placeholder="Ej. A partir del 12 de julio, o la fecha que convenga a ambas partes">
-              </div>
-            </div>
-
-            <!-- Área de firma -->
             <div class="form-group">
+              <label>Modo de contrato</label>
+              <div style="display:flex;gap:20px;">
+                <label style="display:flex;align-items:center;gap:6px;font-weight:400;">
+                  <input type="radio" name="ct-modo" value="texto" checked onchange="onModoContratoChange()" style="width:auto;">
+                  Escribir texto libre
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-weight:400;">
+                  <input type="radio" name="ct-modo" value="archivo" onchange="onModoContratoChange()" style="width:auto;">
+                  Subir archivo (Word/PDF)
+                </label>
+              </div>
+              <p style="font-size:11px;color:var(--text-muted);margin-top:4px;">Escribe o pega aquí tu propio contrato, o sube el archivo ya redactado. El CRM ya no genera el texto legal automáticamente.</p>
+            </div>
+
+            <!-- Modo: texto libre -->
+            <div id="modo-texto-wrap" class="form-group">
+              <label>Texto del contrato</label>
+              <textarea id="ct-texto-contrato" rows="16" placeholder="Escribe aquí el contrato completo…" style="font-family:'Inter',sans-serif;font-size:12.5px;line-height:1.5;"></textarea>
+            </div>
+
+            <!-- Modo: subir archivo -->
+            <div id="modo-archivo-wrap" class="form-group" style="display:none;">
+              <label>Archivo del contrato (Word o PDF)</label>
+              <input type="file" id="ct-archivo" accept=".pdf,.doc,.docx">
+              <div id="ct-archivo-actual" style="font-size:12px;color:var(--text-muted);margin-top:4px;"></div>
+              <p style="font-size:11px;color:var(--text-muted);margin-top:4px;">Si vas a enviarlo a firma por DocuSign, incluye el texto <b>/firma_comprador/</b> en el lugar del documento donde debe ir la firma del cliente (puede ir en letra blanca o muy pequeña) — DocuSign lo busca como texto para colocar ahí el recuadro de firma.</p>
+            </div>
+
+            <!-- Área de firma (solo modo texto libre — un archivo subido se firma siempre por DocuSign) -->
+            <div id="modo-firma-wrap" class="form-group">
               <label>Firma del cliente</label>
               <div style="border:2px dashed var(--border);border-radius:var(--radius);background:#FAFAFA;position:relative;">
                 <canvas id="firma-canvas" width="560" height="160"
@@ -1587,13 +1403,28 @@
               </div>
             </div>
 
+            <!-- Aprobación de las partes (reemplaza el antiguo botón único "Marcar Aprobado") -->
+            <div class="form-group" style="border-top:1px dashed var(--border);padding-top:14px;">
+              <label>Aprobación</label>
+              <div style="display:flex;gap:24px;">
+                <label style="display:flex;align-items:center;gap:8px;font-weight:400;">
+                  <input type="checkbox" id="ct-aprobado-comprador" style="width:auto;">
+                  Aprobado por comprador
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-weight:400;">
+                  <input type="checkbox" id="ct-aprobado-vendedor" style="width:auto;">
+                  Aprobado por vendedor
+                </label>
+              </div>
+              <p style="font-size:11px;color:var(--text-muted);margin-top:4px;">Ambas casillas deben estar marcadas para poder enviar el contrato a firma por DocuSign.</p>
+            </div>
+
           </div>
           <div style="padding:16px 28px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;">
-            <p style="width:100%;font-size:11px;color:var(--text-muted);margin:-4px 0 4px;">Firma aquí mismo en pantalla, o deja la firma en blanco y envíalo a firma remota por DocuSign (requiere correo del prospecto).</p>
+            <p id="ct-firma-hint" style="width:100%;font-size:11px;color:var(--text-muted);margin:-4px 0 4px;">Firma aquí mismo en pantalla, o deja la firma en blanco y envíalo a firma remota por DocuSign (requiere correo del prospecto).</p>
             <button onclick="closeContratoModal()" style="padding:10px 20px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;">Cancelar</button>
-            <button onclick="marcarRevisionContrato('enviado_revision')" class="btn-primary" style="background:var(--surface);color:var(--navy);border:1px solid var(--border);">Enviar a Revision</button>
-            <button onclick="marcarRevisionContrato('aprobado')" class="btn-primary" style="background:var(--surface);color:#2E7D32;border:1px solid var(--border);">Marcar Aprobado</button>
-            <button onclick="generarContratoPDF()" class="btn-primary" style="background:var(--surface);color:var(--navy);border:1px solid var(--border);">📥 Generar y Descargar PDF</button>
+            <button id="ct-btn-pdf" onclick="generarContratoPDF()" class="btn-primary" style="background:var(--surface);color:var(--navy);border:1px solid var(--border);">📥 Generar y Descargar PDF</button>
+            <button id="ct-btn-guardar" onclick="generarContratoPDF()" class="btn-primary" style="display:none;background:var(--surface);color:var(--navy);border:1px solid var(--border);">💾 Guardar contrato</button>
             <button onclick="generarContratoPDF({enviarDocusign:true})" class="btn-primary">📤 Guardar y Enviar a Firma (DocuSign)</button>
           </div>
         </div>
@@ -4647,8 +4478,14 @@ function fillCtlFields(legal) {
   });
 }
 
+// NOTA: onTipoContratoChange() y los campos ctl-* ya no se usan en el flujo activo
+// (se sustituyó por texto libre / archivo subido, ver onModoContratoChange más abajo).
+// Se deja sin borrar porque buildContratoHTML() todavía la necesita para poder
+// seguir mostrando (verContrato) contratos antiguos guardados con plantilla.
 function onTipoContratoChange() {
-  const tipo = document.getElementById('ct-tipo').value;
+  const tipoEl = document.getElementById('ct-tipo');
+  if (!tipoEl) return;
+  const tipo = tipoEl.value;
   const esPromesa = (tipo === 'promesa_credito' || tipo === 'promesa_propios');
   document.getElementById('ctl-group-comunes').style.display = esPromesa ? 'flex' : 'none';
   document.getElementById('ctl-group-credito').style.display = (tipo === 'promesa_credito') ? 'flex' : 'none';
@@ -4663,6 +4500,24 @@ function onTipoContratoChange() {
       if (el && !el.value) el.value = defaults[id];
     });
   }
+}
+
+// Alterna entre "texto libre" y "subir archivo" en el modal de Nuevo/Editar Contrato.
+// El área de firma en pantalla y el botón "Generar y Descargar PDF" solo aplican al modo
+// texto libre (firma presencial); en modo archivo, la firma siempre se hace por DocuSign.
+function onModoContratoChange() {
+  const modo = document.querySelector('input[name="ct-modo"]:checked')?.value || 'texto';
+  const esArchivo = modo === 'archivo';
+  document.getElementById('modo-texto-wrap').style.display   = esArchivo ? 'none' : '';
+  document.getElementById('modo-archivo-wrap').style.display = esArchivo ? '' : 'none';
+  const firmaWrap = document.getElementById('modo-firma-wrap');
+  if (firmaWrap) firmaWrap.style.display = esArchivo ? 'none' : '';
+  const firmaHint = document.getElementById('ct-firma-hint');
+  if (firmaHint) firmaHint.style.display = esArchivo ? 'none' : '';
+  const btnPdf = document.getElementById('ct-btn-pdf');
+  const btnGuardar = document.getElementById('ct-btn-guardar');
+  if (btnPdf) btnPdf.style.display = esArchivo ? 'none' : '';
+  if (btnGuardar) btnGuardar.style.display = esArchivo ? '' : 'none';
 }
 
 async function marcarRevisionContrato(status){
@@ -4699,18 +4554,29 @@ function openContratoModal(existing = null) {
     document.getElementById('ct-fecha').value = existing.fecha || new Date().toISOString().split('T')[0];
     document.getElementById('ct-vendedor').value = existing.vendedor || DB.currentUser?.name || '';
     document.getElementById('ct-clausulas').value = existing.clausulas || '';
-    document.getElementById('ct-tipo').value = existing.tipo_contrato || '';
-    fillCtlFields(existing.datos_legales);
+    document.getElementById('ct-texto-contrato').value = existing.texto_contrato || '';
+    document.getElementById('ct-aprobado-comprador').checked = !!existing.aprobado_comprador;
+    document.getElementById('ct-aprobado-vendedor').checked = !!existing.aprobado_vendedor;
+    document.getElementById('ct-archivo').value = '';
+    const archivoActualEl = document.getElementById('ct-archivo-actual');
+    archivoActualEl.textContent = existing.archivo_nombre ? `Archivo actual: ${existing.archivo_nombre} (sube uno nuevo para reemplazarlo)` : '';
+    const modoRadio = document.querySelector(`input[name="ct-modo"][value="${existing.archivo_path ? 'archivo' : 'texto'}"]`);
+    if (modoRadio) modoRadio.checked = true;
   } else {
     document.getElementById('ct-fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('ct-vendedor').value = DB.currentUser?.name || '';
     document.getElementById('ct-precio').value = '';
     document.getElementById('ct-anticipo').value = '';
     document.getElementById('ct-clausulas').value = '';
-    document.getElementById('ct-tipo').value = '';
-    fillCtlFields(null);
+    document.getElementById('ct-texto-contrato').value = '';
+    document.getElementById('ct-aprobado-comprador').checked = false;
+    document.getElementById('ct-aprobado-vendedor').checked = false;
+    document.getElementById('ct-archivo').value = '';
+    document.getElementById('ct-archivo-actual').textContent = '';
+    const modoRadioTexto = document.querySelector('input[name="ct-modo"][value="texto"]');
+    if (modoRadioTexto) modoRadioTexto.checked = true;
   }
-  onTipoContratoChange();
+  onModoContratoChange();
 
   // Mostrar modal
   const modal = document.getElementById('modal-contrato');
@@ -5123,7 +4989,32 @@ function buildContraofertaIntencionHTML(f, firmaMode) {
 }
 
 // Punto de entrada: elige la plantilla según el tipo de contrato seleccionado
+// Contrato escrito libremente por Roberto (o subido como archivo — ver nota en buildContratoHTML).
+// Se envuelve con el mismo header/footer/CSS de MANGU que usan las plantillas antiguas.
+function buildTextoLibreHTML(f, firmaMode) {
+  const parrafos = (f.textoContrato || '')
+    .split(/\n{2,}/)
+    .map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+  const body = `
+    ${parrafos}
+    <div class="firmas" style="margin-top:50px;">
+      <div class="firma-box" style="flex:1;max-width:280px;margin:0 auto;">
+        ${firmaHtmlFor(firmaMode, f)}
+        <p class="firma-line">${esc(f.clienteName || '_______________')}</p>
+      </div>
+    </div>
+    <p style="margin-top:16px;font-size:9pt;color:#9CA3AF;">Contrato gestionado por <b>${esc(f.vendedor || 'MANGU')}</b> · MANGU Desarrollo Inmobiliario.</p>
+  `;
+  return wrapContratoDocument(`Contrato MANGU — ${f.clienteName || 'Cliente'}`, f.folio, body, firmaMode);
+}
+
+// Punto de entrada para armar el HTML imprimible/enviado a DocuSign.
+// Prioriza el texto libre escrito en el CRM (flujo activo); si el contrato no tiene texto libre
+// pero sí un tipo_contrato antiguo, cae de vuelta a las plantillas legales (solo para poder seguir
+// viendo contratos generados antes de quitar las plantillas del flujo).
 function buildContratoHTML(f, firmaMode) {
+  if (f.textoContrato) return buildTextoLibreHTML(f, firmaMode);
   switch (f.tipoContrato) {
     case 'promesa_credito': return buildPromesaCreditoHTML(f, firmaMode);
     case 'promesa_propios': return buildPromesaPropiosHTML(f, firmaMode);
@@ -5141,7 +5032,7 @@ function readContratoForm() {
   return {
     prospectId,
     prospecto,
-    tipo: document.getElementById('ct-tipo').value,
+    modo: document.querySelector('input[name="ct-modo"]:checked')?.value || 'texto',
     propiedad: document.getElementById('ct-prop').value,
     precio:    document.getElementById('ct-precio').value || '0',
     anticipo:  document.getElementById('ct-anticipo').value || '0',
@@ -5149,41 +5040,52 @@ function readContratoForm() {
     fechaStr:  fd.toLocaleDateString('es-MX', { day:'numeric', month:'long', year:'numeric' }),
     vendedor:  document.getElementById('ct-vendedor').value,
     clausulas: document.getElementById('ct-clausulas').value,
-    legal:     readCtlFields()
+    textoContrato: document.getElementById('ct-texto-contrato').value,
+    archivoFile: document.getElementById('ct-archivo').files[0] || null,
+    aprobadoComprador: document.getElementById('ct-aprobado-comprador').checked,
+    aprobadoVendedor: document.getElementById('ct-aprobado-vendedor').checked
   };
 }
 
 // Guarda el contrato (nuevo o editado). Si opts.enviarDocusign es true, además lo manda a firma remota
-// y NO exige la firma capturada en pantalla (la pondrá el cliente a distancia).
+// y exige que ambas partes ya hayan sido marcadas como "Aprobado" en el CRM.
 async function generarContratoPDF(opts = {}) {
   if (!canContratosFull()) { showToast('No tienes permiso para crear o editar contratos', 'error'); return; }
 
-  if (editingContratoId) {
-    const cRowRevision = contratosDB.find(function(c){ return c.id === editingContratoId; });
-    if (cRowRevision && cRowRevision.revision_status === 'enviado_revision') {
-      showToast('Este contrato esta en revision por el comprador/vendedor. Marca "Aprobado" antes de generar la firma.', 'error');
+  const enviarDocusign = !!opts.enviarDocusign;
+  const existingRow = editingContratoId ? contratosDB.find(c => c.id === editingContratoId) : null;
+
+  const form = readContratoForm();
+
+  if (form.modo === 'texto') {
+    if (!form.textoContrato || !form.textoContrato.trim()) {
+      showToast('Escribe el texto del contrato', 'error');
+      return;
+    }
+    if (!enviarDocusign && firmaVacia) {
+      showToast('Agrega la firma del cliente, o usa "Guardar y Enviar a Firma (DocuSign)" para firma remota', 'error');
+      return;
+    }
+  } else {
+    if (!form.archivoFile && !existingRow?.archivo_path) {
+      showToast('Sube el archivo del contrato (Word o PDF)', 'error');
       return;
     }
   }
 
-  const enviarDocusign = !!opts.enviarDocusign;
-  if (!enviarDocusign && firmaVacia) {
-    showToast('Agrega la firma del cliente, o usa "Enviar a Firma (DocuSign)" para firma remota', 'error');
-    return;
+  if (enviarDocusign) {
+    if (!form.aprobadoComprador || !form.aprobadoVendedor) {
+      showToast('El contrato debe estar aprobado por comprador y vendedor antes de enviarlo a firma', 'error');
+      return;
+    }
+    if (!form.prospecto.email) {
+      showToast('El prospecto no tiene correo registrado — no se puede enviar a DocuSign', 'error');
+      return;
+    }
   }
 
-  const form = readContratoForm();
-  if (!form.tipo) {
-    showToast('Selecciona el tipo de contrato', 'error');
-    return;
-  }
-  if (enviarDocusign && !form.prospecto.email) {
-    showToast('El prospecto no tiene correo registrado — no se puede enviar a DocuSign', 'error');
-    return;
-  }
-
-  const firmaImg = document.getElementById('firma-canvas').toDataURL('image/png');
-  const folio = (editingContratoId ? (contratosDB.find(c=>c.id===editingContratoId)?.folio) : null) || ('CT-' + Date.now().toString().slice(-6));
+  const firmaImg = form.modo === 'texto' ? document.getElementById('firma-canvas').toDataURL('image/png') : '';
+  const folio = existingRow?.folio || ('CT-' + Date.now().toString().slice(-6));
 
   const fields = {
     clienteName: form.prospecto.name || 'Sin nombre',
@@ -5197,8 +5099,7 @@ async function generarContratoPDF(opts = {}) {
     clausulas: form.clausulas,
     firmaImg,
     folio,
-    tipoContrato: form.tipo,
-    legal: form.legal
+    textoContrato: form.modo === 'texto' ? form.textoContrato : ''
   };
 
   const row = {
@@ -5213,13 +5114,29 @@ async function generarContratoPDF(opts = {}) {
     fecha: form.fechaVal,
     vendedor: form.vendedor,
     clausulas: form.clausulas,
-    tipo_contrato: form.tipo,
-    datos_legales: form.legal,
+    aprobado_comprador: form.aprobadoComprador,
+    aprobado_vendedor: form.aprobadoVendedor,
     created_by: DB.currentUser?.username || DB.currentUser?.name || ''
   };
 
+  if (form.modo === 'texto') {
+    row.texto_contrato = form.textoContrato;
+    row.archivo_path = null;
+    row.archivo_nombre = null;
+  } else if (form.archivoFile) {
+    const ext = (form.archivoFile.name.split('.').pop() || 'pdf').toLowerCase();
+    const path = `${folio}-${Date.now()}.${ext}`;
+    const { error: upError } = await supabase.storage.from('contratos').upload(path, form.archivoFile, { upsert: true });
+    if (upError) { showToast('No se pudo subir el archivo: ' + upError.message, 'error'); return; }
+    row.archivo_path = path;
+    row.archivo_nombre = form.archivoFile.name;
+    row.texto_contrato = null;
+  }
+  // Si modo === 'archivo' y no se seleccionó un archivo nuevo al editar, no se tocan
+  // archivo_path/archivo_nombre — se conserva el archivo ya guardado previamente.
+
   let savedId = editingContratoId;
-  if (!enviarDocusign) {
+  if (!enviarDocusign && form.modo === 'texto') {
     // Flujo local: firma en pantalla + descarga/impresión inmediata
     // Solo asigna el estatus "firmado_fisico" en contratos NUEVOS — al editar uno existente
     // no queremos pisar un estatus real de DocuSign (p.ej. "firmado") solo por reimprimir.
@@ -5234,7 +5151,7 @@ async function generarContratoPDF(opts = {}) {
     const { error } = await supabase.from('crm_contratos').update(row).eq('id', editingContratoId);
     if (error) { showToast('No se pudo guardar el contrato: ' + error.message, 'error'); return; }
   } else {
-    if (!row.docusign_status) row.docusign_status = enviarDocusign ? 'borrador' : 'firmado_fisico';
+    if (!row.docusign_status) row.docusign_status = (enviarDocusign || form.modo === 'archivo') ? 'borrador' : 'firmado_fisico';
     const { data, error } = await supabase.from('crm_contratos').insert(row).select('id').single();
     if (error) { showToast('No se pudo guardar el contrato: ' + error.message, 'error'); return; }
     savedId = data.id;
@@ -5242,39 +5159,48 @@ async function generarContratoPDF(opts = {}) {
 
   await loadContratos();
   closeContratoModal();
-  showToast(enviarDocusign ? 'Contrato guardado — enviándolo a DocuSign…' : 'Contrato generado — guárdalo como PDF desde el diálogo de impresión', 'success');
+  showToast(enviarDocusign ? 'Contrato guardado — enviándolo a DocuSign…' : 'Contrato guardado', 'success');
 
   if (enviarDocusign && savedId) {
-    await enviarContratoADocuSign(savedId, fields);
+    await enviarContratoADocuSign(savedId, { ...fields, archivoPath: row.archivo_path, archivoNombre: row.archivo_nombre });
   }
 }
 
-// Vuelve a generar el HTML (con anchor para DocuSign) y llama a la Edge Function que crea + envía el sobre.
+// Vuelve a generar el HTML (con anchor para DocuSign) — o usa el archivo subido — y llama a la
+// Edge Function que crea + envía el sobre.
 async function enviarContratoADocuSign(id, fieldsOverride = null) {
   if (!canContratosFull()) { showToast('No tienes permiso para enviar contratos a firma', 'error'); return; }
   const c = fieldsOverride ? null : contratosDB.find(x => x.id === id);
   if (!fieldsOverride && !c) { showToast('Contrato no encontrado', 'error'); return; }
   if (!fieldsOverride && !c.cliente_email) { showToast('Este contrato no tiene correo del cliente — edítalo primero', 'error'); return; }
+  if (!fieldsOverride && !c.aprobado_comprador && !c.aprobado_vendedor) {
+    showToast('El contrato debe estar aprobado por comprador y vendedor antes de enviarlo a firma', 'error');
+    return;
+  }
 
   const fields = fieldsOverride || {
     clienteName: c.cliente, clientePhone: c.cliente_phone || '', clienteEmail: c.cliente_email,
     propiedad: c.propiedad, precio: c.precio, anticipo: c.anticipo,
     fechaStr: fmtDate(c.fecha), vendedor: c.vendedor, clausulas: c.clausulas || '', folio: c.folio,
-    tipoContrato: c.tipo_contrato, legal: c.datos_legales || {}
+    textoContrato: c.texto_contrato || '', archivoPath: c.archivo_path || '', archivoNombre: c.archivo_nombre || ''
   };
-  const htmlContrato = buildContratoHTML(fields, 'docusign');
+
+  const body = {
+    action: 'send',
+    contratoId: id,
+    clienteNombre: fields.clienteName,
+    clienteEmail: fields.clienteEmail,
+    folio: fields.folio
+  };
+  if (fields.archivoPath) {
+    body.archivoPath = fields.archivoPath;
+    body.archivoExt = (fields.archivoNombre || fields.archivoPath).split('.').pop();
+  } else {
+    body.htmlContrato = buildContratoHTML(fields, 'docusign');
+  }
 
   showToast('Enviando contrato a DocuSign…', 'info');
-  const { data, error } = await supabase.functions.invoke('docusign-envelope', {
-    body: {
-      action: 'send',
-      contratoId: id,
-      clienteNombre: fields.clienteName,
-      clienteEmail: fields.clienteEmail,
-      htmlContrato,
-      folio: fields.folio
-    }
-  });
+  const { data, error } = await supabase.functions.invoke('docusign-envelope', { body });
 
   if (error || data?.error) {
     showToast('Error al enviar a DocuSign: ' + (data?.error || error.message), 'error');
@@ -5310,14 +5236,24 @@ async function compartirContrato(id) {
   }
 }
 
-function verContrato(id) {
+async function verContrato(id) {
   const c = contratosDB.find(x => x.id === id);
   if (!c) return;
+
+  // Archivo subido (Word/PDF): se descarga con un link firmado temporal del bucket privado.
+  if (c.archivo_path) {
+    showToast('Generando link del archivo…', 'info');
+    const { data, error } = await supabase.storage.from('contratos').createSignedUrl(c.archivo_path, 300);
+    if (error || !data?.signedUrl) { showToast('No se pudo abrir el archivo: ' + (error?.message || 'sin respuesta'), 'error'); return; }
+    window.open(data.signedUrl, '_blank');
+    return;
+  }
+
   const fields = {
     clienteName: c.cliente, clientePhone: c.cliente_phone || '', clienteEmail: c.cliente_email || '',
     propiedad: c.propiedad, precio: c.precio, anticipo: c.anticipo,
     fechaStr: fmtDate(c.fecha), vendedor: c.vendedor, clausulas: c.clausulas || '', folio: c.folio,
-    firmaImg: '', tipoContrato: c.tipo_contrato, legal: c.datos_legales || {}
+    firmaImg: '', tipoContrato: c.tipo_contrato, legal: c.datos_legales || {}, textoContrato: c.texto_contrato || ''
   };
   const html = buildContratoHTML(fields, c.docusign_status === 'firmado_fisico' ? 'canvas' : 'docusign');
   const win = window.open('', '_blank');
@@ -5329,6 +5265,14 @@ function editContrato(id) {
   if (!canContratosFull()) { showToast('No tienes permiso para editar contratos', 'error'); return; }
   const c = contratosDB.find(x => x.id === id);
   if (!c) return;
+  // Contratos antiguos armados con plantilla (tipo_contrato) y sin texto libre ni archivo subido
+  // ya no se pueden editar con el formulario nuevo — solo verlos o eliminarlos, para no perder
+  // ni corromper sus datos legales al guardarlos con la estructura actual.
+  if (c.tipo_contrato && !c.texto_contrato && !c.archivo_path) {
+    showToast('Este es un contrato antiguo basado en plantilla — solo se puede ver o eliminar, no editar.', 'info');
+    verContrato(id);
+    return;
+  }
   openContratoModal(c);
 }
 
@@ -5401,18 +5345,21 @@ function renderContratosList() {
           <tr style="background:var(--surface);">
             <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Cliente</th>
             <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Propiedad</th>
-            <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Tipo</th>
+            <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Modo</th>
             <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Precio</th>
             <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Fecha</th>
             <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Estatus</th>
-            <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Revision</th>
+            <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Aprobación</th>
             <th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Acciones</th>
           </tr>
         </thead>
         <tbody>
           ${grp.items.map(c=>{
             const meta = DOCUSIGN_STATUS_META[c.docusign_status] || {label:c.docusign_status||'—',color:'#9CA3AF'};
-            const tipoLabel = TIPO_CONTRATO_META[c.tipo_contrato]?.label || 'Genérico';
+            const modoLabel = c.archivo_path ? '📎 Archivo' : c.texto_contrato ? '📝 Texto libre' : (TIPO_CONTRATO_META[c.tipo_contrato]?.label || 'Genérico (antiguo)');
+            const ambosAprobados = !!c.aprobado_comprador && !!c.aprobado_vendedor;
+            const aprobColor = ambosAprobados ? '#2E7D32' : '#C9A84C';
+            const aprobLabel = `${c.aprobado_comprador ? '✅' : '⬜'} Comprador &nbsp; ${c.aprobado_vendedor ? '✅' : '⬜'} Vendedor`;
             const acciones = [];
             acciones.push(`<button onclick="verContrato('${c.id}')" title="Ver" style="border:none;background:none;cursor:pointer;font-size:14px;">&#128065;</button>`);
             if (fullAccess) {
@@ -5429,11 +5376,11 @@ function renderContratosList() {
             <tr style="border-bottom:1px solid var(--border);">
               <td style="padding:11px 12px;font-weight:600;font-size:13px;">${esc(c.cliente)}</td>
               <td style="padding:11px 12px;font-size:13px;">${esc(c.propiedad||'')}</td>
-              <td style="padding:11px 12px;font-size:12px;color:var(--text-muted);">${esc(tipoLabel)}</td>
+              <td style="padding:11px 12px;font-size:12px;color:var(--text-muted);">${esc(modoLabel)}</td>
               <td style="padding:11px 12px;font-weight:600;color:var(--gold);">$${(c.precio||0).toLocaleString('en-US')}</td>
               <td style="padding:11px 12px;font-size:12px;color:var(--text-muted);">${fmtDate(c.fecha)}</td>
               <td style="padding:11px 12px;font-size:12px;"><span style="background:${meta.color}22;color:${meta.color};padding:2px 8px;border-radius:20px;font-weight:600;">${meta.label}</span></td>
-              <td style="padding:11px 12px;font-size:12px;">${(() => { const rm = REVISION_STATUS_META[c.revision_status] || REVISION_STATUS_META.borrador; return '<span style="background:'+rm.color+'22;color:'+rm.color+';padding:2px 8px;border-radius:20px;font-weight:600;">'+rm.label+'</span>'; })()}</td>
+              <td style="padding:11px 12px;font-size:12px;white-space:nowrap;"><span style="background:${aprobColor}22;color:${aprobColor};padding:2px 8px;border-radius:20px;font-weight:600;">${aprobLabel}</span></td>
               <td style="padding:11px 12px;white-space:nowrap;">${acciones.join(' ')}</td>
             </tr>`;
           }).join('')}
