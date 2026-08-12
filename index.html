@@ -1225,7 +1225,7 @@
                                     <div class="form-group"><label>Propiedad a visitar</label>
                                         <select id="cita-prop"><option value="">Seleccionar propiedad...</option></select>
                   </div>
-                  <div class="form-group"><label>Vendedor asignado</label><select id="cita-vendedor"></select></div>
+                  <div class="form-group"><label>Vendedor asignado</label><select id="cita-vendedor" onchange="toggleCitaVendedorOtro()"><option value="Fabiola Palafox">Fabiola Palafox</option><option value="__otro__">Otro...</option></select><input type="text" id="cita-vendedor-otro" placeholder="Nombre del vendedor" style="display:none;margin-top:6px;width:100%;box-sizing:border-box;"></div>
                   <div class="form-group"><label>Notas</label><textarea id="cita-notes" rows="3" placeholder="Observaciones, requerimientos especiales..."></textarea></div>
                   <div style="display:flex;gap:10px;">
                     <button class="btn-primary" onclick="agendarCita()" style="flex:1;">Agendar Cita</button>
@@ -3882,7 +3882,7 @@ function populateSelects(){
   const sellers = isAdmin()
     ? DB.users.map(u=>u.name)
     : [DB.currentUser.name];
-  ['p-seller','cita-vendedor'].forEach(id=>{
+  ['p-seller'].forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
     el.innerHTML=sellers.map(s=>`<option>${s}</option>`).join('');
@@ -6737,12 +6737,26 @@ www.mangu.mx`;
 // ══════════════════════════════════════════
 //  CITAS
 // ══════════════════════════════════════════
+function toggleCitaVendedorOtro(){
+  const sel = document.getElementById('cita-vendedor');
+  const otro = document.getElementById('cita-vendedor-otro');
+  if(!sel || !otro) return;
+  otro.style.display = sel.value === '__otro__' ? '' : 'none';
+}
+function getCitaVendedorValue(){
+  const sel = document.getElementById('cita-vendedor');
+  if(!sel) return '';
+  if(sel.value === '__otro__'){
+    return (document.getElementById('cita-vendedor-otro')?.value || '').trim();
+  }
+  return sel.value;
+}
 async function agendarCita(){
   const pid = document.getElementById('cita-prospect').value;
   const date = document.getElementById('cita-date').value;
   const time = document.getElementById('cita-time').value;
   const prop = document.getElementById('cita-prop').value;
-  const seller = document.getElementById('cita-vendedor').value;
+  const seller = getCitaVendedorValue();
   if(!pid||!date||!time){showToast('Completa los campos obligatorios','error');return;}
   const p = DB.prospects.find(pr=>String(pr.id)===String(pid));
   if(!puedeAgendarCita(p)){
@@ -6755,18 +6769,31 @@ async function agendarCita(){
   const{data:nuevaCita,error} = await supabase.from('crm_citas').insert({prospect_id:pid,date,time,prop,seller,notes:document.getElementById('cita-notes').value}).select().single();
   if(error){setSyncBadge(false);showToast('Error al guardar cita: '+error.message,'error');return;}
 
-  // Asignación de vendedor (sin cambio de fase automático - Robert decidió el 10-ago-2026
-  // que el cambio de fase a Visita debe hacerse manualmente)
+  // Asignación de vendedor + avance automático de fase a "Visita" al agendar
+  // (Robert decidió el 12-ago-2026 reactivar el auto-cambio de fase que se había
+  // quitado el 10-ago-2026; ahora sí se mueve solo al guardar la cita)
   if(p && p.phase === 'Registro'){
     const u = DB.users.find(x=>(x.name||'').toLowerCase()===(seller||'').toLowerCase());
+    const upd = { phase:'Visita', phase_updated_at: new Date().toISOString() };
     if(u){
-      const upd = {seller:u.name,seller_id:u.id};
+      upd.seller = u.name; upd.seller_id = u.id;
       const{data:cur} = await supabase.from('crm_prospects').select('notes').eq('id',pid).single();
       upd.notes = (cur?.notes||'')+`\n[${new Date().toLocaleDateString('es-MX')}] Visita agendada ${date} ${time} · ${prop}. Asignado a ${u.name}.`;
-      await supabase.from('crm_prospects').update(upd).eq('id',pid);
       p.seller=u.name;p.seller_id=u.id;
-      renderKanban();renderPipeline();
     }
+    await supabase.from('crm_prospects').update(upd).eq('id',pid);
+    p.phase='Visita';p.phase_updated_at=upd.phase_updated_at;
+    renderKanban();renderPipeline();
+    notifyFaseChange({
+      prospectName: p.name,
+      oldPhase: 'Registro',
+      newPhase: 'Visita',
+      comment: 'Visita agendada automáticamente al guardar la cita.',
+      sellerName: p.seller || seller || '',
+      assignedTo: p.seller || seller || '',
+      notifyTo: NOTIFY_MATRIX['Visita']
+    }).catch(()=>{});
+    notifyStaffWATemplate(NOTIFY_MATRIX['Visita'], 'mangu_cambio_fase', [p.name, 'Visita', p.seller || seller || ''], pid).catch(()=>{});
   }
   showToast('Cita agendada','success');
 
