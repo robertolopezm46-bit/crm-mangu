@@ -3838,7 +3838,7 @@ function puedeVerTodosProspectos(){
 }
 // Permiso para cambiar de fase un prospecto, según la fase ACTUAL en la que se encuentra:
 //  - Registro: solo Alfredo puede moverlo a cualquier otra fase
-//  - Visita / Proceso / Cierre: solo Fabiola puede moverlo a cualquier otra fase
+  //  - Visita / Proceso / Cierre: Fabiola o Alfredo pueden moverlo a cualquier otra fase (ampliado 12-ago-2026)
 //  - Perdido: solo Alfredo puede reactivarlo de vuelta a Registro (Fabiola no puede)
 //  - Roberto: siempre puede, en cualquier fase, sin restricción
 function puedeCambiarFase(prospect, newPhase){
@@ -3846,23 +3846,23 @@ function puedeCambiarFase(prospect, newPhase){
   if(u==='roberto') return true;
   const fase=prospect?.phase;
   if(fase==='Registro') return u==='alfredo';
-  if(fase==='Visita' || fase==='Proceso' || fase==='Cierre') return u==='fabiola';
+    if(fase==='Visita' || fase==='Proceso' || fase==='Cierre') return u==='fabiola' || u==='alfredo';
   if(fase==='Perdido') return newPhase==='Registro' && u==='alfredo';
   return false;
 }
 
 // Permiso para agendar o reagendar una cita: mismo dueño de fase que puedeCambiarFase
-// (Registro: Alfredo; Visita/Proceso/Cierre: Fabiola), pero aplicado a la acción de
+// (Registro: Alfredo; Visita/Proceso/Cierre: Fabiola o Alfredo desde el 12-ago-2026), pero aplicado a la acción de
 // agendar cita, no de mover de fase. Roberto siempre puede.
 // Decisión de Robert (12-ago-2026): si el prospecto ya está en Visita (o más adelante),
-// solo Fabiola puede cancelar/reagendar la cita.
+// solo Fabiola podía cancelar/reagendar la cita — ampliado el mismo 12-ago-2026: Alfredo también puede.
 function puedeAgendarCita(prospect){
   const u = (DB.currentUser?.username||'').toLowerCase();
   if(u === 'roberto') return true;
   if(!prospect) return true;
   const fase = prospect.phase;
   if(fase === 'Registro') return u === 'alfredo';
-  if(fase === 'Visita' || fase === 'Proceso' || fase === 'Cierre') return u === 'fabiola';
+    if(fase === 'Visita' || fase === 'Proceso' || fase === 'Cierre') return u === 'fabiola' || u === 'alfredo';
   if(fase === 'Perdido') return u === 'alfredo';
   return true;
 }
