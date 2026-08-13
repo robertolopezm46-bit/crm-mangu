@@ -7028,7 +7028,7 @@ if(!editId) notifyAdminNewProspect(data.name, data.seller, rawPhone, data.prop, 
 async function editProspect(id){
   const p=DB.prospects.find(pr=>String(pr.id)===String(id));
   if(!p)return;
-  if(!isAdmin()&&p.seller!==DB.currentUser?.name&&!(p.phase==='Registro'&&(DB.currentUser?.username||'').toLowerCase()==='alfredo')){showToast('No tienes acceso a este prospecto','error');return;}
+    if(!isAdmin()&&p.seller!==DB.currentUser?.name&&(DB.currentUser?.username||'').toLowerCase()!=='alfredo'){showToast('No tienes acceso a este prospecto','error');return;}
   openModal('prospect');
   // Edición: formulario completo (quitar modo simple)
   document.getElementById('modal-prospect').querySelector('.modal').classList.remove('modal-simple');
