@@ -2145,6 +2145,14 @@
         <div id="wp-fotos-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
       </div>
 
+      <!-- 8b. Video de recorrido -->
+      <div class="form-group" id="fg-video">
+        <label>Video de recorrido <span style="text-transform:none;font-weight:400;color:var(--text-muted);">— opcional, máx. 60MB (comprime el video antes de subirlo si pesa más)</span></label>
+        <input type="file" id="wp-video-input" accept="video/*" onchange="handlePropVideo(this)" style="font-size:13px;">
+        <div id="wp-video-status" style="font-size:12px;color:var(--text-muted);margin-top:4px;"></div>
+        <div id="wp-video-preview" style="margin-top:8px;"></div>
+      </div>
+
       <button type="button" onclick="openPropPreview()" style="background:transparent;border:1px dashed var(--border);color:var(--gold-dark);font-size:12.5px;font-weight:600;padding:9px;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;">👁 Vista previa rápida</button>
 
       <!-- Campos internos (ocultos) -->
@@ -7282,6 +7290,7 @@ function showToast(msg,type='info'){
 // ══════════════════════════════════════════
 let webPropsDB = [];
 let _propFotos = [];
+let _propVideo = '';
 
 async function loadWebProps(){
   const grid = document.getElementById('wp-grid');
@@ -7398,6 +7407,7 @@ function renderWebProps(){
 
 function openPropModal(id){
   _propFotos = [];
+  _propVideo = '';
   const t = document.getElementById('modal-propiedad-title');
   document.getElementById('wp-edit-id').value = id || '';
   const p = id ? webPropsDB.find(x=>x.id===id) : null;
@@ -7427,6 +7437,10 @@ function openPropModal(id){
   document.getElementById('wp-fotos-status').textContent = '';
   if (p?.fotos) _propFotos = [...p.fotos];
   renderFotosPreview();
+  document.getElementById('wp-video-input').value = '';
+  document.getElementById('wp-video-status').textContent = '';
+  if (p?.video_url) _propVideo = p.video_url;
+  renderVideoPreview();
   clearAllFieldErrors();
   document.getElementById('wp-validation-summary').style.display = 'none';
   document.getElementById('wp-autosave-label').textContent = '';
@@ -7447,6 +7461,35 @@ function renderFotosPreview(){
 }
 
   function quitarFotoProp(i){ _propFotos.splice(i,1); renderFotosPreview(); }
+
+function renderVideoPreview(){
+    const el = document.getElementById('wp-video-preview');
+    if (!el) return;
+    el.innerHTML = _propVideo ? `<div style="position:relative;display:inline-block;">
+        <video src="${esc(_propVideo)}" controls preload="metadata" style="width:180px;border-radius:8px;border:1px solid var(--border);display:block;"></video>
+        <button onclick="quitarVideoProp()" style="position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;border:none;background:var(--danger,#dc2626);color:#fff;font-size:13px;cursor:pointer;line-height:1;">×</button>
+      </div>` : '';
+}
+function quitarVideoProp(){ _propVideo = ''; document.getElementById('wp-video-input').value = ''; renderVideoPreview(); scheduleDraftSave(); }
+async function handlePropVideo(input){
+  const file = (input.files || [])[0];
+  if (!file) return;
+  const status = document.getElementById('wp-video-status');
+  if (!file.type.startsWith('video/')) { status.textContent = 'Ese archivo no es un video.'; input.value=''; return; }
+  if (file.size > 60 * 1024 * 1024) { status.textContent = 'El video pesa ' + Math.round(file.size/1024/1024) + 'MB — comprímelo a menos de 60MB antes de subirlo.'; input.value=''; return; }
+  const btn = document.getElementById('save-prop-btn');
+  const btnDraft = document.getElementById('save-draft-btn');
+  btn.disabled = true; btnDraft.disabled = true;
+  status.textContent = 'Subiendo video...';
+  const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g,'') || 'mp4';
+  const path = `videos/prop_${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const { error } = await supabase.storage.from('propiedades').upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+  btn.disabled = false; btnDraft.disabled = false;
+  if (error) { status.textContent = 'Error al subir el video: ' + error.message; input.value=''; return; }
+  const { data } = supabase.storage.from('propiedades').getPublicUrl(path);
+  if (data?.publicUrl) { _propVideo = data.publicUrl; renderVideoPreview(); scheduleDraftSave(); }
+  status.textContent = 'Video listo.';
+}
 
   let _fotoDragIdx = null;
 
@@ -7763,7 +7806,8 @@ async function savePropiedad(mode){
     destacada: document.getElementById('wp-destacada').checked,
     es_nuevo: document.getElementById('wp-nueva').checked,
     activa: mode === 'publicar',
-    fotos: _propFotos
+    fotos: _propFotos,
+    video_url: _propVideo || null
   };
   const btn = document.getElementById('save-prop-btn');
   const btnDraft = document.getElementById('save-draft-btn');
