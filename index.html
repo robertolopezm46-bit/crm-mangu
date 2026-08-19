@@ -927,6 +927,9 @@
       <div class="nav-item" onclick="showSection('kanban')">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="11"/><rect x="17" y="3" width="5" height="14"/></svg>Kanban
       </div>
+      <div class="nav-item" id="nav-vendidos" onclick="showSection('vendidos')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>Vendidos
+      </div>
     </div>
     <div class="nav-section">
       <div class="nav-label">Herramientas</div>
@@ -1117,6 +1120,19 @@
         <div id="kanban-table-view" style="display:none;"></div>
 
 
+      </div>
+
+      <!-- VENDIDOS -->
+      <div id="section-vendidos" class="section">
+        <div class="card">
+          <div class="card-header" style="flex-wrap:wrap;gap:12px;">
+            <div id="vendidos-total" style="display:flex;align-items:center;gap:10px;font-weight:600;color:var(--text);"></div>
+          </div>
+          <table id="vendidos-table">
+            <thead><tr></tr></thead>
+            <tbody id="vendidos-body"></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- WHATSAPP -->
@@ -3163,7 +3179,7 @@ async function finalizarProspecto(id){
   if(!p) return;
   const lp = (typeof webPropsDB!=='undefined') ? webPropsDB.find(x=>x.titulo===p.prop) : null;
   const propTxt = lp ? lp.titulo : (p.prop || '—');
-  if(!confirm('Finalizar la venta de '+p.name+' ('+propTxt+').\n\nSe marcará la propiedad como vendida y se abrirá el contrato. ¿Continuar?')) return;
+  if(!confirm('Finalizar la venta de '+p.name+' ('+propTxt+').\n\nSe marcará la propiedad como vendida y el prospecto se moverá a Vendidos. ¿Continuar?')) return;
   if(lp){
     const { error } = await supabase.from('web_propiedades').update({ estatus: 'vendida', destacada: false }).eq('id', lp.id);
     if(error){ alert('Error al marcar la propiedad como vendida: ' + error.message); return; }
@@ -3171,12 +3187,13 @@ async function finalizarProspecto(id){
   } else {
     alert('No se encontró una propiedad vinculada por nombre ("'+(p.prop||'—')+'"). Márcala como vendida manualmente en Sitio Web → Propiedades.');
   }
-  openContratoModal();
-  setTimeout(()=>{
-    const sel = document.getElementById('ct-prospect');
-    if(sel){ sel.value = String(p.id); sel.dispatchEvent(new Event('change')); }
-  }, 50);
+  const vendidoAt = new Date().toISOString();
+  const { error: errV } = await supabase.from('crm_prospects').update({ vendido: true, vendido_at: vendidoAt }).eq('id', p.id);
+  if(errV){ alert('Error al mover el prospecto a Vendidos: ' + errV.message); return; }
+  p.vendido = true;
+  p.vendido_at = vendidoAt;
   renderKanban();
+  if(typeof renderVendidos === 'function') renderVendidos();
 }
 
 const WA_TEMPLATES = [
@@ -3707,7 +3724,7 @@ async function loadUsers() {
 }
 async function loadProspects() {
   // notes se excluye del listado (puede crecer mucho); se consulta bajo demanda al editar/exportar/cambiar fase
-  let q=supabase.from('crm_prospects').select('id,name,phone,email,prop,value,phase,seller,seller_id,source,created_at').order('created_at',{ascending:false});
+  let q=supabase.from('crm_prospects').select('id,name,phone,email,prop,value,phase,seller,seller_id,source,created_at,vendido,vendido_at').order('created_at',{ascending:false});
   if(!puedeVerTodosProspectos()) { if(DB.currentUser.id) q=q.eq('seller_id',DB.currentUser.id); else q=q.eq('seller',DB.currentUser.name); }
   const{data,error}=await q;
   if(!error) DB.prospects=(data||[]).map(p=>({...p,phase:normalizePhase(p.phase)}));
@@ -3761,7 +3778,7 @@ function renderCitasHoyBanner(){
 // Cargar credenciales guardadas al abrir el login
 
 
-const sectionTitles={pipeline:'Pipeline de Prospectos',kanban:'Tablero Kanban',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades'};
+const sectionTitles={pipeline:'Pipeline de Prospectos',kanban:'Tablero Kanban',vendidos:'Vendidos',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades'};
 function showWaTab(tab){
   const sec = document.getElementById('section-whatsapp');
   if(!sec) return;
@@ -3793,6 +3810,7 @@ function showSection(id){
   hideGlobalSearch();
   if(id==='pipeline'){renderPipeline(); if(window.innerWidth<=768) renderMobileTabla();}
   if(id==='kanban'){renderKanban();initKanbanSwipe();}
+  if(id==='vendidos'){renderVendidos();}
   if(id==='citas'){renderCalendar(); if(window.innerWidth<=768) renderMobileCitas();}
   if(id==='whatsapp'){ renderMobileWhatsAppList(); showWaBadge(false); }
   // Actualizar chip "Sin responder" del topbar móvil al cambiar de sección
@@ -3871,7 +3889,17 @@ function puedeAgendarCita(prospect){
   return true;
 }
 function getVisibleProspects(){
-  let p = DB.prospects;
+  let p = DB.prospects.filter(x=>!x.vendido);
+  if(DB._sellerFilter){
+    const u = DB.users.find(x=>(x.username||'').toLowerCase()===DB._sellerFilter);
+    if(u){
+      p = p.filter(x=> x.seller_id===u.id || (x.seller||'').toLowerCase()===(u.name||'').toLowerCase());
+    }
+  }
+  return p;
+}
+function getVendidosProspects(){
+  let p = DB.prospects.filter(x=>x.vendido);
   if(DB._sellerFilter){
     const u = DB.users.find(x=>(x.username||'').toLowerCase()===DB._sellerFilter);
     if(u){
@@ -4099,6 +4127,37 @@ function togglePipelineGroup(gid){
   const open=rows.length&&rows[0].style.display!=='none';
   rows.forEach(r=>r.style.display=open?'none':'table-row');
   if(icon) icon.innerHTML=open?'&#9658;':'&#9660;';
+}
+
+function renderVendidos(){
+  var data=getVendidosProspects().slice().sort(function(a,b){return new Date(b.vendido_at||b.created_at)-new Date(a.vendido_at||a.created_at);});
+  var admin=isAdmin();
+  var thead=document.querySelector('#vendidos-table thead tr');
+  if(thead) thead.innerHTML='<th>Nombre</th><th>Teléfono</th><th>Propiedad</th><th style="text-align:right;">Valor</th>'+(admin?'<th>Vendedor</th>':'')+'<th>Fecha de venta</th><th></th>';
+  var totalEl=document.getElementById('vendidos-total');
+  if(totalEl) totalEl.textContent=data.length+' prospecto'+(data.length!==1?'s':'')+' vendido'+(data.length!==1?'s':'');
+  var cols=(admin?7:6);
+  if(!data.length){document.getElementById('vendidos-body').innerHTML='<tr><td colspan="'+cols+'" class="empty-state">Aún no hay prospectos vendidos</td></tr>';return;}
+  var out=data.map(function(p){
+    return '<tr style="border-bottom:1px solid var(--border);">'
+      +'<td style="padding:13px 16px;"><div style="font-weight:600;font-size:13px;color:var(--navy);">'+esc(p.name)+'</div>'+(p.email?'<div style="font-size:11.5px;color:var(--text-muted);margin-top:1px;">'+esc(p.email)+'</div>':'')+'</td>'
+      +'<td style="padding:13px 16px;font-size:12.5px;"><a href="https://wa.me/'+waDigits(encodeURIComponent(p.phone.replace(/\s|\+/g,'')))+'" target="_blank" style="color:var(--text);text-decoration:none;">'+esc(p.phone)+'</a></td>'
+      +'<td style="padding:13px 16px;font-size:12.5px;color:var(--text-muted);">'+esc(p.prop||'—')+'</td>'
+      +'<td style="padding:13px 16px;font-weight:600;color:var(--navy);font-size:13px;text-align:right;">$'+(p.value||0).toLocaleString('es-MX')+'</td>'
+      +(admin?'<td style="padding:13px 16px;font-size:12.5px;color:var(--text-muted);">'+esc(p.seller||'—')+'</td>':'')
+      +'<td style="padding:13px 16px;font-size:11.5px;color:var(--text-muted);">'+fmtDate((p.vendido_at||'').split('T')[0])+'</td>'
+      +'<td style="padding:13px 16px;text-align:right;white-space:nowrap;">'
+      +'<button class="action-btn" onclick="crearContratoDesde(\''+p.id+'\')">Crear contrato</button>'
+      +'</td></tr>';
+  }).join('');
+  document.getElementById('vendidos-body').innerHTML=out;
+}
+function crearContratoDesde(id){
+  openContratoModal();
+  setTimeout(function(){
+    var sel=document.getElementById('ct-prospect');
+    if(sel){ sel.value=String(id); sel.dispatchEvent(new Event('change')); }
+  },50);
 }
 let _searchDebounce=null;
 function filterTable(){
