@@ -153,6 +153,17 @@
   .section{display:none;}.section.active{display:block;}
 
   /* ── KPI ── */
+  .kpi-grid-top{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:24px;}
+  .kpi-top-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;text-align:center;}
+  .kpi-top-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;}
+  .kpi-top-value{font-size:26px;font-weight:700;color:var(--navy);line-height:1;margin-bottom:6px;}
+  .kpi-top-sub{font-size:11.5px;color:var(--text-muted);}
+  .dash-tabs{display:flex;gap:8px;margin-bottom:20px;}
+  .dash-tab-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted);font-family:'Inter',sans-serif;}
+  .dash-tab-btn.active{background:var(--gold);color:#fff;border-color:var(--gold);}
+  #section-dashboard .section-heading{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--navy);margin:28px 0 12px;}
+  #section-dashboard .section-heading.first{margin-top:0;}
+  #section-dashboard .section-heading svg{width:15px;height:15px;stroke:var(--gold-dark);fill:none;stroke-width:2;flex-shrink:0;}
   .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:24px;}
   .kpi-card{background:var(--white);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:0;transition:border-color .15s;}
   .kpi-card:hover{border-left-color:var(--gold);}
@@ -921,6 +932,9 @@
     </div>
     <div class="nav-section">
       <div class="nav-label">Principal</div>
+      <div class="nav-item" id="nav-dashboard" onclick="showSection('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>Dashboard
+      </div>
       <div class="nav-item active" onclick="showSection('pipeline')">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Pipeline
       </div>
@@ -1072,6 +1086,88 @@
     </div>
 
     <div class="page-content">
+      <div id="section-dashboard" class="section">
+        <div class="kpi-grid-top">
+          <div class="kpi-top-card">
+            <div class="kpi-top-label">Leads Totales</div>
+            <div class="kpi-top-value" id="dashmkt-kpi-leads">&mdash;</div>
+            <div class="kpi-top-sub">Ultimos 30 dias</div>
+          </div>
+          <div class="kpi-top-card">
+            <div class="kpi-top-label">Costo por Lead</div>
+            <div class="kpi-top-value" id="dashmkt-kpi-cpl" style="color:var(--text-muted);font-size:15px;">Sin conectar</div>
+            <div class="kpi-top-sub">Requiere Meta Ads o Google Ads</div>
+          </div>
+          <div class="kpi-top-card">
+            <div class="kpi-top-label">Inversion en Ads</div>
+            <div class="kpi-top-value" id="dashmkt-kpi-spend" style="color:var(--text-muted);font-size:15px;">Sin conectar</div>
+            <div class="kpi-top-sub">Meta Ads + Google Ads</div>
+          </div>
+          <div class="kpi-top-card">
+            <div class="kpi-top-label">Visitas al Sitio</div>
+            <div class="kpi-top-value" id="dashmkt-kpi-visits" style="color:var(--text-muted);font-size:15px;">Sin conectar</div>
+            <div class="kpi-top-sub">Requiere Google Analytics</div>
+          </div>
+        </div>
+
+        <div class="dash-tabs">
+          <button type="button" class="dash-tab-btn active" id="dashmkt-tab-btn-meta" onclick="showDashMktTab('meta')">Meta</button>
+          <button type="button" class="dash-tab-btn" id="dashmkt-tab-btn-landing" onclick="showDashMktTab('landing')">Landing Page</button>
+          <button type="button" class="dash-tab-btn" id="dashmkt-tab-btn-google" onclick="showDashMktTab('google')">Google Ads</button>
+        </div>
+
+        <div id="dashmkt-panel-meta">
+          <div class="section-heading first">
+            <svg viewBox="0 0 24 24"><path d="M3 21l1.65-3.8A9 9 0 1 1 7.2 19.35z"/></svg>
+            WhatsApp (Meta Cloud API) &mdash; datos en vivo
+          </div>
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Conversaciones Activas</div><div class="kpi-sub">Ultimos 30 dias</div></div><div class="kpi-value" id="dashmkt-wa-conv">&mdash;</div></div>
+            <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Mensajes Enviados</div><div class="kpi-sub">Plantillas + respuestas</div></div><div class="kpi-value" id="dashmkt-wa-sent">&mdash;</div></div>
+            <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Tasa de Entrega</div><div class="kpi-sub">Enviados sin error</div></div><div class="kpi-value" id="dashmkt-wa-delivery">&mdash;</div></div>
+            <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">WABA</div><div class="kpi-sub">Mangu Desarrollo Inmobiliario</div></div><div class="kpi-value" style="font-size:13px;color:var(--success);">&#9679; Activa</div></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title">Plantillas mas usadas (30 dias)</div></div>
+            <div class="card-body" style="padding:0;">
+              <table>
+                <thead><tr><th>Plantilla</th><th>Enviados</th></tr></thead>
+                <tbody id="dashmkt-wa-templates-body"><tr><td colspan="2" style="color:var(--text-muted);">Cargando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="section-heading">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Meta Ads
+          </div>
+          <div class="card">
+            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;">
+              Meta Ads todavia no esta conectado.<br>
+              <span style="font-size:12px;">Se requiere un token de sistema con permiso <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;">ads_read</code> y el ID de tu cuenta publicitaria.</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="dashmkt-panel-landing" style="display:none;">
+          <div class="card">
+            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;">
+              La Landing Page todavia no esta conectada a este dashboard.<br>
+              <span style="font-size:12px;">Google Analytics 4 ya esta instalado en mangu.mx (Measurement ID G-VRHN1DVDNJ); falta habilitar acceso de lectura (API de datos de GA4) para traer las metricas aqui.</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="dashmkt-panel-google" style="display:none;">
+          <div class="card">
+            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;">
+              Google Ads todavia no esta conectado.<br>
+              <span style="font-size:12px;">Se requiere developer token, acceso OAuth y el Customer ID de la cuenta de Google Ads.</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- PIPELINE -->
       <div id="section-pipeline" class="section active">
@@ -3786,7 +3882,7 @@ function renderCitasHoyBanner(){
 // Cargar credenciales guardadas al abrir el login
 
 
-const sectionTitles={pipeline:'Pipeline de Prospectos',kanban:'Tablero Kanban',vendidos:'Vendidos',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades'};
+const sectionTitles={dashboard:'Dashboard de Marketing',pipeline:'Pipeline de Prospectos',kanban:'Tablero Kanban',vendidos:'Vendidos',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades'};
 function showWaTab(tab){
   const sec = document.getElementById('section-whatsapp');
   if(!sec) return;
@@ -3816,6 +3912,7 @@ function showSection(id){
   document.getElementById('search-input').style.display='';
   document.getElementById('search-input').placeholder = id==='pipeline' ? 'Buscar prospecto...' : 'Buscar en todo el CRM...';
   hideGlobalSearch();
+  if(id==='dashboard'){loadDashboardMkt();}
   if(id==='pipeline'){renderPipeline(); if(window.innerWidth<=768) renderMobileTabla();}
   if(id==='kanban'){renderKanban();initKanbanSwipe();}
   if(id==='vendidos'){renderVendidos();}
@@ -5525,6 +5622,62 @@ function toggleKanbanMonth(gid) {
 //  AUDITORIA
 // ══════════════════════════════════════════
 let _auditoriaData = [];
+
+async function loadDashboardMkt() {
+  const cutoff = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+
+  // Leads totales (real, desde crm_prospects)
+  try {
+    const { count, error } = await supabase
+      .from('crm_prospects')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', cutoff);
+    document.getElementById('dashmkt-kpi-leads').textContent = error ? '—' : String(count ?? 0);
+  } catch (e) { document.getElementById('dashmkt-kpi-leads').textContent = '—'; }
+
+  // WhatsApp: mensajes enviados + tasa de entrega (real, desde crm_wa_messages)
+  try {
+    const { data, error } = await supabase
+      .from('crm_wa_messages')
+      .select('direction, status, message_type, template_name, phone, bsuid')
+      .gte('created_at', cutoff);
+    if (error) throw error;
+    const rows = data || [];
+    const outbound = rows.filter(r => r.direction === 'outbound');
+    const inbound  = rows.filter(r => r.direction === 'inbound');
+
+    document.getElementById('dashmkt-wa-sent').textContent = String(outbound.length);
+
+    const delivered = outbound.filter(r => r.status === 'sent').length;
+    const deliveryRate = outbound.length ? Math.round((delivered / outbound.length) * 100) : 0;
+    document.getElementById('dashmkt-wa-delivery').textContent = outbound.length ? (deliveryRate + '%') : '—';
+
+    const activePhones = new Set(inbound.map(r => r.phone || r.bsuid).filter(Boolean));
+    document.getElementById('dashmkt-wa-conv').textContent = String(activePhones.size);
+
+    const tplCounts = {};
+    outbound.filter(r => r.message_type === 'template' && r.template_name).forEach(r => {
+      tplCounts[r.template_name] = (tplCounts[r.template_name] || 0) + 1;
+    });
+    const tplRows = Object.entries(tplCounts).sort((a,b) => b[1]-a[1]).slice(0, 7);
+    const tbody = document.getElementById('dashmkt-wa-templates-body');
+    if (tplRows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Sin plantillas enviadas en los ultimos 30 dias.</td></tr>';
+    } else {
+      tbody.innerHTML = tplRows.map(([name, n]) => `<tr><td>${name}</td><td>${n}</td></tr>`).join('');
+    }
+  } catch (e) {
+    console.log('DashboardMkt WhatsApp error:', e.message || e);
+    document.getElementById('dashmkt-wa-templates-body').innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">No se pudo cargar (' + (e.message||'error') + ').</td></tr>';
+  }
+}
+
+function showDashMktTab(tab) {
+  ['meta','landing','google'].forEach(t => {
+    document.getElementById('dashmkt-panel-'+t).style.display = (t===tab) ? '' : 'none';
+    document.getElementById('dashmkt-tab-btn-'+t).classList.toggle('active', t===tab);
+  });
+}
 
 async function loadAuditoria() {
   const { data, error } = await supabase
