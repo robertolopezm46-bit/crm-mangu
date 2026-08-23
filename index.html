@@ -2390,6 +2390,28 @@
   </div>
 </div>
 
+<!-- MODAL COMPARTIR PROPIEDAD POR WHATSAPP -->
+<div class="modal-overlay" id="modal-compartir-prop">
+  <div class="modal" style="max-width:480px;">
+    <h3>Compartir propiedad por WhatsApp</h3>
+    <div style="display:flex;gap:10px;align-items:center;background:#F8FAFC;border-radius:8px;padding:10px;margin-bottom:14px;">
+      <img id="cp-prop-foto" src="" style="width:56px;height:56px;object-fit:cover;border-radius:6px;display:none;">
+      <div>
+        <div id="cp-prop-titulo" style="font-weight:700;font-size:14px;"></div>
+        <div id="cp-prop-precio" style="font-size:13px;color:var(--text-muted);"></div>
+      </div>
+    </div>
+    <div class="wa-select"><label>Enviar a</label><select id="compartir-prop-prospect" onchange="updateCompartirPropPreview()"><option value="">Seleccionar...</option></select></div>
+    <div style="background:#E8F5E9;padding:16px;border-radius:12px;margin-top:10px;">
+      <div class="wa-bubble" id="cp-preview-bubble">← Selecciona un prospecto para ver la vista previa</div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
+      <button class="btn-cancel" onclick="closeCompartirPropModal()">Cancelar</button>
+      <button class="btn-primary" id="cp-send-btn" onclick="sendCompartirPropiedadWA()">Enviar por WhatsApp</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL VISTA PREVIA RÁPIDA -->
 <div class="modal-overlay" id="modal-prop-preview">
   <div class="modal" style="max-width:380px;padding:0;overflow:hidden;">
@@ -3886,6 +3908,94 @@ function openWAFallback(){
   const phone=selId?DB.prospects.find(p=>p.id===selId||p.id===parseInt(selId))?.phone?.replace(/\s|\+/g,''):'522206471727';
   window.open(`https://wa.me/${waDigits(phone)}?text=${encodeURIComponent(text)}`,'_blank');
 }
+// ════════════════════════════════════════════
+//  COMPARTIR PROPIEDAD POR WHATSAPP (a un prospecto registrado)
+// ════════════════════════════════════════════
+let _compartirPropId = null;
+
+function openCompartirPropModal(propId){
+  _compartirPropId = propId;
+  const p = webPropsDB.find(x=>x.id===propId);
+  if(!p){ showToast('Propiedad no encontrada','error'); return; }
+  const foto = (p.fotos && p.fotos.length) ? p.fotos[0] : '';
+  const fotoEl = document.getElementById('cp-prop-foto');
+  if(foto){ fotoEl.src = foto; fotoEl.style.display='block'; } else { fotoEl.style.display='none'; }
+  document.getElementById('cp-prop-titulo').textContent = p.titulo || '';
+  document.getElementById('cp-prop-precio').textContent = fmtPrecio(p.precio);
+  updateProspectSelects();
+  document.getElementById('compartir-prop-prospect').value = '';
+  updateCompartirPropPreview();
+  document.getElementById('modal-compartir-prop').classList.add('open');
+}
+
+function closeCompartirPropModal(){
+  document.getElementById('modal-compartir-prop').classList.remove('open');
+  _compartirPropId = null;
+}
+
+function updateCompartirPropPreview(){
+  const bubble = document.getElementById('cp-preview-bubble');
+  const selId = document.getElementById('compartir-prop-prospect').value;
+  const p = webPropsDB.find(x=>x.id===_compartirPropId);
+  if(!selId || !p){
+    bubble.textContent = '← Selecciona un prospecto para ver la vista previa';
+    return;
+  }
+  const pr = DB.prospects.find(x=>x.id===selId || x.id===parseInt(selId));
+  const nombre = (pr && pr.name) || '';
+  const link = 'https://mangu.mx/?p=' + p.id;
+  bubble.innerHTML = 'Hola '+esc(nombre)+' 👋, quería compartirte esta propiedad que puede interesarte:<br><br>🏠 '+esc(p.titulo||'')+'<br><br>Mira fotos, precio y todos los detalles aquí: '+esc(link)+'<br><br>¿Te gustaría agendar una visita?';
+}
+
+async function sendCompartirPropiedadWA(){
+  const selId = document.getElementById('compartir-prop-prospect').value;
+  if(!selId){ showToast('Selecciona un prospecto para enviar el mensaje','info'); return; }
+  const pr = DB.prospects.find(x=>x.id===selId || x.id===parseInt(selId));
+  if(!pr){ showToast('Prospecto no encontrado','error'); return; }
+  const p = webPropsDB.find(x=>x.id===_compartirPropId);
+  if(!p){ showToast('Propiedad no encontrada','error'); return; }
+  const phoneDigits = (pr.phone||'').replace(/\D/g,'');
+  if(phoneDigits.length<10){ showToast('El prospecto no tiene un teléfono válido','error'); return; }
+
+  const link = 'https://mangu.mx/?p=' + p.id;
+  const params = [pr.name || 'Hola', p.titulo || 'esta propiedad', link];
+
+  const btn = document.getElementById('cp-send-btn');
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'Enviando...';
+  try{
+    const sessionRes = await supabase.auth.getSession();
+    const session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if(!session || !session.access_token){ throw new Error('Sesión no válida. Vuelve a iniciar sesión e intenta de nuevo.'); }
+    const resp = await fetch(WA_EDGE_FUNCTION_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+session.access_token },
+      body: JSON.stringify({
+        to: phoneDigits,
+        prospect_id: pr.id,
+        kind: 'template',
+        template_name: 'mangu_compartir_propiedad',
+        template_lang: 'es_MX',
+        params: params,
+      }),
+    });
+    const json = await resp.json().catch(()=>({}));
+    if(resp.ok && json.ok){
+      showToast('Propiedad enviada por WhatsApp ✅','success');
+      pr.last_wa_at = new Date().toISOString();
+      closeCompartirPropModal();
+    } else {
+      console.log('whatsapp-send error:', json);
+      showToast('No se pudo enviar: ' + (json.error || (json.metaError && json.metaError.message) || 'error desconocido'), 'error');
+    }
+  } catch(e){
+    showToast('No se pudo enviar: ' + e.message, 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = originalHTML;
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //  FIN INTEGRACIÓN WHATSAPP CLOUD API
 // ══════════════════════════════════════════════════════════════════════════
@@ -4450,7 +4560,7 @@ function populateSelects(){
 }
 function updateProspectSelects(){
   const visible=getVisibleProspects();
-  ['wa-prospect-select','cita-prospect'].forEach(id=>{
+  ['wa-prospect-select','cita-prospect','compartir-prop-prospect'].forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
     el.innerHTML=`<option value="">Seleccionar...</option>`+visible.map(p=>`<option value="${p.id}">${p.name} \u2014 ${p.phone}</option>`).join('');
@@ -8079,6 +8189,7 @@ function renderWebProps(){
         ${p.descripcion?`<div style="font-size:11.5px;color:var(--text-muted);white-space:pre-line;margin-bottom:10px;max-height:54px;overflow:hidden;">${renderRichText(p.descripcion)}</div>`:''}
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button onclick="openPropModal('${escJs(p.id)}')" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;">Editar</button>
+          <button onclick="openCompartirPropModal('${escJs(p.id)}')" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--success);background:var(--surface);color:var(--success);border-radius:6px;cursor:pointer;">📲 Compartir</button>
           ${p.estatus!=='vendida'?`<button onclick="marcarVendidaProp('${escJs(p.id)}')" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;">Vendida ✓</button>`:''}
           <button onclick="toggleActivaProp('${escJs(p.id)}')" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;">${p.activa?'Ocultar':'Publicar'}</button>
           <button onclick="deleteWebProp('${escJs(p.id)}')" style="padding:6px 10px;font-size:12px;border:1px solid var(--danger);background:var(--surface);color:var(--danger);border-radius:6px;cursor:pointer;">Eliminar</button>
