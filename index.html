@@ -1140,12 +1140,29 @@
 
           <div class="section-heading">
             <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Meta Ads
+            Meta Ads &mdash; datos en vivo
           </div>
-          <div class="card">
-            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;">
-              Meta Ads todavia no esta conectado.<br>
-              <span style="font-size:12px;">Se requiere un token de sistema con permiso <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;">ads_read</code> y el ID de tu cuenta publicitaria.</span>
+          <div id="dashmkt-meta-loading" class="card">
+            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;">Cargando datos de Meta Ads...</div>
+          </div>
+          <div id="dashmkt-meta-error" class="card" style="display:none;">
+            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;" id="dashmkt-meta-error-msg"></div>
+          </div>
+          <div id="dashmkt-meta-content" style="display:none;">
+            <div class="kpi-grid">
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Gasto</div><div class="kpi-sub">Ultimos 30 dias</div></div><div class="kpi-value" id="dashmkt-meta-spend">&mdash;</div></div>
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Leads</div><div class="kpi-sub">Formularios / mensajes</div></div><div class="kpi-value" id="dashmkt-meta-leads">&mdash;</div></div>
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Clics</div><div class="kpi-sub">CPC promedio</div></div><div class="kpi-value" id="dashmkt-meta-clicks">&mdash;</div></div>
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Impresiones</div><div class="kpi-sub">Alcance total</div></div><div class="kpi-value" id="dashmkt-meta-impressions">&mdash;</div></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Campañas Meta Ads (30 dias)</div></div>
+              <div class="card-body" style="padding:0;">
+                <table>
+                  <thead><tr><th>Campaña</th><th>Gasto</th><th>Clics</th><th>Leads</th><th>CPC</th></tr></thead>
+                  <tbody id="dashmkt-meta-campaigns-body"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -1160,10 +1177,31 @@
         </div>
 
         <div id="dashmkt-panel-google" style="display:none;">
-          <div class="card">
-            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;">
-              Google Ads todavia no esta conectado.<br>
-              <span style="font-size:12px;">Se requiere developer token, acceso OAuth y el Customer ID de la cuenta de Google Ads.</span>
+          <div class="section-heading first">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Google Ads &mdash; datos en vivo
+          </div>
+          <div id="dashmkt-google-loading" class="card">
+            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;">Cargando datos de Google Ads...</div>
+          </div>
+          <div id="dashmkt-google-error" class="card" style="display:none;">
+            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;" id="dashmkt-google-error-msg"></div>
+          </div>
+          <div id="dashmkt-google-content" style="display:none;">
+            <div class="kpi-grid">
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Gasto</div><div class="kpi-sub">Ultimos 30 dias</div></div><div class="kpi-value" id="dashmkt-google-spend">&mdash;</div></div>
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Conversiones</div><div class="kpi-sub">Leads estimados</div></div><div class="kpi-value" id="dashmkt-google-conversions">&mdash;</div></div>
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Clics</div><div class="kpi-sub">Total del periodo</div></div><div class="kpi-value" id="dashmkt-google-clicks">&mdash;</div></div>
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Impresiones</div><div class="kpi-sub">Alcance total</div></div><div class="kpi-value" id="dashmkt-google-impressions">&mdash;</div></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Campañas Google Ads (30 dias)</div></div>
+              <div class="card-body" style="padding:0;">
+                <table>
+                  <thead><tr><th>Campaña</th><th>Estado</th><th>Gasto</th><th>Clics</th><th>Impresiones</th><th>Conversiones</th></tr></thead>
+                  <tbody id="dashmkt-google-campaigns-body"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -5669,6 +5707,81 @@ async function loadDashboardMkt() {
   } catch (e) {
     console.log('DashboardMkt WhatsApp error:', e.message || e);
     document.getElementById('dashmkt-wa-templates-body').innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">No se pudo cargar (' + (e.message||'error') + ').</td></tr>';
+  }
+
+  // Meta Ads + Google Ads (reales, via Supabase Edge Functions) + KPIs combinados
+  const fmtMoney = (n) => '$' + Number(n||0).toLocaleString('es-MX', {minimumFractionDigits:0, maximumFractionDigits:0});
+  const fmtInt = (n) => Number(n||0).toLocaleString('es-MX');
+
+  const [metaResult, googleResult] = await Promise.allSettled([
+    supabase.functions.invoke('meta-ads-insights'),
+    supabase.functions.invoke('google-ads-report'),
+  ]);
+
+  let metaOk = false, metaSpend = 0, metaLeads = 0;
+  try {
+    const r = metaResult.status === 'fulfilled' ? metaResult.value : null;
+    const d = r && !r.error ? r.data : null;
+    document.getElementById('dashmkt-meta-loading').style.display = 'none';
+    if (d && d.ok) {
+      metaOk = true; metaSpend = d.spend || 0; metaLeads = d.leads || 0;
+      document.getElementById('dashmkt-meta-content').style.display = '';
+      document.getElementById('dashmkt-meta-spend').textContent = fmtMoney(d.spend);
+      document.getElementById('dashmkt-meta-leads').textContent = fmtInt(d.leads);
+      document.getElementById('dashmkt-meta-clicks').textContent = fmtInt(d.clicks) + (d.cpc ? ' (' + fmtMoney(d.cpc) + ' CPC)' : '');
+      document.getElementById('dashmkt-meta-impressions').textContent = fmtInt(d.impressions);
+      const camps = d.campaigns || [];
+      const tbody = document.getElementById('dashmkt-meta-campaigns-body');
+      tbody.innerHTML = camps.length ? camps.map(c => `<tr><td>${c.name||'—'}</td><td>${fmtMoney(c.spend)}</td><td>${fmtInt(c.clicks)}</td><td>${fmtInt(c.leads)}</td><td>${c.cpc ? fmtMoney(c.cpc) : '—'}</td></tr>`).join('') : '<tr><td colspan="5" style="color:var(--text-muted);">Sin campañas activas en los ultimos 30 dias.</td></tr>';
+    } else {
+      const msg = (d && d.message) || (r && r.error && r.error.message) || 'No se pudo cargar Meta Ads.';
+      document.getElementById('dashmkt-meta-error').style.display = '';
+      document.getElementById('dashmkt-meta-error-msg').innerHTML = msg + '<br><span style="font-size:12px;">Verifica los secrets META_ADS_TOKEN y META_AD_ACCOUNT_ID en Supabase.</span>';
+    }
+  } catch (e) {
+    console.log('DashboardMkt Meta Ads error:', e.message || e);
+    document.getElementById('dashmkt-meta-loading').style.display = 'none';
+    document.getElementById('dashmkt-meta-error').style.display = '';
+    document.getElementById('dashmkt-meta-error-msg').textContent = 'No se pudo cargar Meta Ads (' + (e.message||'error') + ').';
+  }
+
+  let googleOk = false, googleSpend = 0, googleConversions = 0;
+  try {
+    const r = googleResult.status === 'fulfilled' ? googleResult.value : null;
+    const d = r && !r.error ? r.data : null;
+    document.getElementById('dashmkt-google-loading').style.display = 'none';
+    if (d && d.ok) {
+      googleOk = true; googleSpend = d.spend || 0; googleConversions = d.conversions || 0;
+      document.getElementById('dashmkt-google-content').style.display = '';
+      document.getElementById('dashmkt-google-spend').textContent = fmtMoney(d.spend);
+      document.getElementById('dashmkt-google-conversions').textContent = fmtInt(d.conversions);
+      document.getElementById('dashmkt-google-clicks').textContent = fmtInt(d.clicks);
+      document.getElementById('dashmkt-google-impressions').textContent = fmtInt(d.impressions);
+      const camps = d.campaigns || [];
+      const tbody = document.getElementById('dashmkt-google-campaigns-body');
+      tbody.innerHTML = camps.length ? camps.map(c => `<tr><td>${c.name||'—'}</td><td>${c.status||'—'}</td><td>${fmtMoney(c.spend)}</td><td>${fmtInt(c.clicks)}</td><td>${fmtInt(c.impressions)}</td><td>${fmtInt(c.conversions)}</td></tr>`).join('') : '<tr><td colspan="6" style="color:var(--text-muted);">Sin campañas activas en los ultimos 30 dias.</td></tr>';
+    } else {
+      const msg = (d && d.message) || (r && r.error && r.error.message) || 'No se pudo cargar Google Ads.';
+      document.getElementById('dashmkt-google-error').style.display = '';
+      document.getElementById('dashmkt-google-error-msg').innerHTML = msg;
+    }
+  } catch (e) {
+    console.log('DashboardMkt Google Ads error:', e.message || e);
+    document.getElementById('dashmkt-google-loading').style.display = 'none';
+    document.getElementById('dashmkt-google-error').style.display = '';
+    document.getElementById('dashmkt-google-error-msg').textContent = 'No se pudo cargar Google Ads (' + (e.message||'error') + ').';
+  }
+
+  // KPIs combinados arriba del dashboard
+  const totalSpend = metaSpend + googleSpend;
+  const totalLeadsAds = metaLeads + googleConversions;
+  const spendEl = document.getElementById('dashmkt-kpi-spend');
+  const cplEl = document.getElementById('dashmkt-kpi-cpl');
+  if (metaOk || googleOk) {
+    spendEl.textContent = fmtMoney(totalSpend);
+    spendEl.style.color = ''; spendEl.style.fontSize = '';
+    cplEl.textContent = totalLeadsAds ? fmtMoney(totalSpend / totalLeadsAds) : '—';
+    cplEl.style.color = ''; cplEl.style.fontSize = '';
   }
 }
 
