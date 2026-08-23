@@ -3796,6 +3796,7 @@ const WA_BIENVENIDA_POR_CANAL = {
   'Propiedades.com': { name: 'mangu_bienvenida_propiedades', params: ['nombre','propiedad'] },
   'Referidos':       { name: 'mangu_bienvenida_referido',    params: ['nombre','referido_por'] },
   'Facebook ADS':    { name: 'mangu_bienvenida_fbads',       params: ['nombre','propiedad'] },
+  'Google Ads':      { name: 'mangu_bienvenida_googleads',   params: ['nombre','propiedad'] },
 };
 // Canales sin plantilla dedicada (Página Web, Instagram ADS, Otro, sin
 // origen) siguen usando la plantilla genérica mangu_bienvenida — así se
@@ -7402,6 +7403,7 @@ const WA_BIENVENIDA_PREVIEWS = {
   'Propiedades.com':'Hola {nombre} 👋 vimos tu solicitud de información sobre {propiedad} en Propiedades.com.\n\nSoy parte del equipo de MANGU Desarrollo Inmobiliario y estoy para asesorarte personalmente sobre esta propiedad: precio, forma de pago y disponibilidad para una visita.\n\n¿Qué día te gustaría conocerla? 🏡',
   'Referidos':'Hola {nombre} 👋, {referido_por} nos platicó de ti y nos compartió tus datos porque cree que podríamos ayudarte a encontrar tu próxima casa.\n\nSoy parte del equipo de MANGU Desarrollo Inmobiliario y será un gusto asesorarte. ¿Me compartes qué tipo de propiedad y presupuesto tienes en mente? 🏡',
   'Facebook ADS':'Hola {nombre} 👋, gracias por tu interés en el anuncio que viste en Facebook sobre {propiedad}.\n\nSoy parte del equipo de MANGU Desarrollo Inmobiliario y con gusto te comparto todos los detalles, precio y disponibilidad para una visita.\n\n¿Qué día te gustaría conocerla? 🏡',
+  'Google Ads':'Hola {nombre} 👋, gracias por tu interés en el anuncio que viste en Google sobre {propiedad}.\n\nSoy parte del equipo de MANGU Desarrollo Inmobiliario y con gusto te comparto todos los detalles, precio y disponibilidad para una visita.\n\n¿Qué día te gustaría conocerla? 🏡',
 };
 function updateWAPreview(){
   if(!selectedTemplate)return;
