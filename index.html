@@ -1168,10 +1168,31 @@
         </div>
 
         <div id="dashmkt-panel-landing" style="display:none;">
-          <div class="card">
-            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;">
-              La Landing Page todavia no esta conectada a este dashboard.<br>
-              <span style="font-size:12px;">Google Analytics 4 ya esta instalado en mangu.mx (Measurement ID G-VRHN1DVDNJ); falta habilitar acceso de lectura (API de datos de GA4) para traer las metricas aqui.</span>
+          <div class="section-heading first">
+            <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-3-3L3 17.6"/></svg>
+            Google Analytics 4 &mdash; datos en vivo
+          </div>
+          <div id="dashmkt-ga4-loading" class="card">
+            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;">Cargando datos de Google Analytics...</div>
+          </div>
+          <div id="dashmkt-ga4-error" class="card" style="display:none;">
+            <div class="card-body" style="text-align:center;color:var(--text-muted);padding:32px 20px;" id="dashmkt-ga4-error-msg"></div>
+          </div>
+          <div id="dashmkt-ga4-content" style="display:none;">
+            <div class="kpi-grid">
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Usuarios Activos</div><div class="kpi-sub">Ultimos 30 dias</div></div><div class="kpi-value" id="dashmkt-ga4-users">&mdash;</div></div>
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Sesiones</div><div class="kpi-sub">Total del periodo</div></div><div class="kpi-value" id="dashmkt-ga4-sessions">&mdash;</div></div>
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Vistas de Pagina</div><div class="kpi-sub">Total del periodo</div></div><div class="kpi-value" id="dashmkt-ga4-pageviews">&mdash;</div></div>
+              <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Conversiones</div><div class="kpi-sub">Eventos clave de GA4</div></div><div class="kpi-value" id="dashmkt-ga4-conversions">&mdash;</div></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Sesiones por canal (30 dias)</div></div>
+              <div class="card-body" style="padding:0;">
+                <table>
+                  <thead><tr><th>Canal</th><th>Sesiones</th><th>Usuarios</th><th>Conversiones</th></tr></thead>
+                  <tbody id="dashmkt-ga4-channels-body"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -5713,9 +5734,10 @@ async function loadDashboardMkt() {
   const fmtMoney = (n) => '$' + Number(n||0).toLocaleString('es-MX', {minimumFractionDigits:0, maximumFractionDigits:0});
   const fmtInt = (n) => Number(n||0).toLocaleString('es-MX');
 
-  const [metaResult, googleResult] = await Promise.allSettled([
+  const [metaResult, googleResult, ga4Result] = await Promise.allSettled([
     supabase.functions.invoke('meta-ads-insights'),
     supabase.functions.invoke('google-ads-report'),
+    supabase.functions.invoke('ga4-report'),
   ]);
 
   let metaOk = false, metaSpend = 0, metaLeads = 0;
@@ -5770,6 +5792,37 @@ async function loadDashboardMkt() {
     document.getElementById('dashmkt-google-loading').style.display = 'none';
     document.getElementById('dashmkt-google-error').style.display = '';
     document.getElementById('dashmkt-google-error-msg').textContent = 'No se pudo cargar Google Ads (' + (e.message||'error') + ').';
+  }
+
+  let ga4Ok = false;
+  try {
+    const r = ga4Result.status === 'fulfilled' ? ga4Result.value : null;
+    const d = r && !r.error ? r.data : null;
+    document.getElementById('dashmkt-ga4-loading').style.display = 'none';
+    if (d && d.ok) {
+      ga4Ok = true;
+      document.getElementById('dashmkt-ga4-content').style.display = '';
+      document.getElementById('dashmkt-ga4-users').textContent = fmtInt(d.activeUsers);
+      document.getElementById('dashmkt-ga4-sessions').textContent = fmtInt(d.sessions);
+      document.getElementById('dashmkt-ga4-pageviews').textContent = fmtInt(d.pageViews);
+      document.getElementById('dashmkt-ga4-conversions').textContent = fmtInt(d.conversions);
+      const chans = d.channels || [];
+      const tbody = document.getElementById('dashmkt-ga4-channels-body');
+      tbody.innerHTML = chans.length ? chans.map(c => `<tr><td>${c.name||'—'}</td><td>${fmtInt(c.sessions)}</td><td>${fmtInt(c.activeUsers)}</td><td>${fmtInt(c.conversions)}</td></tr>`).join('') : '<tr><td colspan="4" style="color:var(--text-muted);">Sin datos en los ultimos 30 dias.</td></tr>';
+
+      const visitsEl = document.getElementById('dashmkt-kpi-visits');
+      visitsEl.textContent = fmtInt(d.sessions);
+      visitsEl.style.color = ''; visitsEl.style.fontSize = '';
+    } else {
+      const msg = (d && d.message) || (r && r.error && r.error.message) || 'No se pudo cargar Google Analytics.';
+      document.getElementById('dashmkt-ga4-error').style.display = '';
+      document.getElementById('dashmkt-ga4-error-msg').innerHTML = msg;
+    }
+  } catch (e) {
+    console.log('DashboardMkt GA4 error:', e.message || e);
+    document.getElementById('dashmkt-ga4-loading').style.display = 'none';
+    document.getElementById('dashmkt-ga4-error').style.display = '';
+    document.getElementById('dashmkt-ga4-error-msg').textContent = 'No se pudo cargar Google Analytics (' + (e.message||'error') + ').';
   }
 
   // KPIs combinados arriba del dashboard
