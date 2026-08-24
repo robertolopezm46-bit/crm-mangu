@@ -704,6 +704,20 @@
     }
     .mwa-badge.count { background: #22C55E; }
     .mwa-badge.alert { background: #DC2626; }
+    .mwa-insights { display: flex; gap: 8px; margin-bottom: 12px; }
+    .mwa-insight-tile { flex: 1; min-width: 0; background: #2a2a3e; border-radius: 10px; padding: 10px 10px; }
+    .mwa-insight-num { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.1; }
+    .mwa-insight-tile.warn .mwa-insight-num { color: #FBBF24; }
+    .mwa-insight-tile.crit .mwa-insight-num { color: #F87171; }
+    .mwa-insight-label { font-size: 10px; color: #8888A5; margin-top: 3px; line-height: 1.2; }
+    .mwa-filters { display: flex; gap: 6px; margin-bottom: 4px; overflow-x: auto; padding-bottom: 4px; }
+    .mwa-filters::-webkit-scrollbar { display: none; }
+    .mwa-chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 999px; background: #2a2a3e; border: none; font-family: inherit; font-size: 12px; font-weight: 600; color: #8888A5; cursor: pointer; }
+    .mwa-chip .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .mwa-chip .cnt { font-weight: 700; }
+    .mwa-chip.active { background: #fff; color: #1a1a2e; }
+    .mwa-origin-badge { display: inline-flex; align-items: center; font-size: 9px; font-weight: 700; color: #fff; padding: 1px 6px; border-radius: 999px; margin-top: 4px; letter-spacing: .02em; }
+
 
     /* ══════════ VISTA CITAS ══════════ */
     #section-citas .citas-grid { display: none; }
@@ -3251,66 +3265,84 @@ async function loadUnregisteredWA(){
     window.__waUnregistered = window.__waUnregistered || [];
   }
 }
-function renderMobileWhatsAppList(){
+let __mConvFilter = 'all';
+
+async function renderMobileWhatsAppList(){
   const el = document.getElementById('mob-wa-list');
   if (!el) return;
-  const _waNow = Date.now();
-  if (!window.__waUnregTs || _waNow - window.__waUnregTs > 15000) {
-    window.__waUnregTs = _waNow;
-    loadUnregisteredWA().then(renderMobileWhatsAppList);
-  }
-  let visible = getVisibleProspects();
-  // Excluir Perdido explícito
-  visible = visible.filter(p => p.phase !== 'Perdido');
-  // Ordenar por last_wa_at desc (sin contacto al final por urgencia)
-  visible.sort((a,b) => {
-    const ta = a.last_wa_at ? new Date(a.last_wa_at).getTime() : 0;
-    const tb = b.last_wa_at ? new Date(b.last_wa_at).getTime() : 0;
-    return tb - ta;
-  });
-  const rows = visible.map(p => {
-    const [c1,c2] = _waColorFor(p.name);
-    const time = _waTimeLabel(p.last_wa_at);
-    const preview = _waPreview(p);
-    const noWa = !p.last_wa_at || sinContactoReciente(p);
-    let badge = '';
-    if (!p.last_wa_at) badge = `<span class="mwa-badge alert">!</span>`;
-    else if (noWa) badge = `<span class="mwa-badge alert">!</span>`;
-    // No tenemos contador real de no leídos; los recientes muestran un "2" simbólico si son de hoy y no atendidos
-    return `<div class="mwa-row" onclick="openWaChatModal('${p.phone}', null, '${p.id}')">
-      <div class="mwa-avatar" style="background:linear-gradient(135deg,${c1},${c2});">${_waInitials(p.name)}</div>
-      <div class="mwa-body">
-        <div class="mwa-name">${esc(p.name)}</div>
-        <div class="mwa-preview">${esc(preview)}</div>
-      </div>
-      <div class="mwa-right">
-        <span class="mwa-time ${time.cls}">${time.text}</span>
-        ${badge}
-      </div>
-    </div>`;
-  }).join('');
-  const unregRows = (window.__waUnregistered||[]).map(u => {
-    const time = _waTimeLabel(u.last_at);
-    const preview = (u.last_dir==='outbound' ? 'Tú: ' : '') + esc(u.last_body||'');
-    const waiting = u.last_dir === 'inbound';
-    return `<div class="mwa-row" onclick="openWaChatModal('${u.phone}','${u.phone_fmt}',null)">
-      <div class="mwa-avatar" style="background:linear-gradient(135deg,#f5c451,#e8a33d);">🆕</div>
-      <div class="mwa-body">
-        <div class="mwa-name">${esc(u.phone_fmt||u.phone)}</div>
-        <div class="mwa-preview">${preview}</div>
-      </div>
-      <div class="mwa-right">
-        <span class="mwa-time ${time.cls}">${time.text}</span>
-        ${waiting ? '<span class="mwa-badge alert">!</span>' : ''}
-      </div>
-    </div>`;
-  }).join('');
-  el.innerHTML = `<div class="mwa-head">
+  if (window.innerWidth > 768) return;
+  const list = await loadConversationsBoardData();
+  el.innerHTML = `
+    <div class="mwa-head">
       <h2>WhatsApp</h2>
       <button onclick="showGlobalSearch()" aria-label="Buscar">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
-    </div>${unregRows ? `<div class="mwa-section-label" style="padding:12px 16px 4px;font-size:12px;font-weight:700;color:#b8860b;text-transform:uppercase;letter-spacing:.04em;">Nuevos contactos (sin registrar)</div>${unregRows}<div class="mwa-section-label" style="padding:14px 16px 4px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;">Prospectos</div>` : ''}${rows || '<div class="mcit-empty">Sin conversaciones</div>'}`;
+    </div>
+    <div class="mwa-insights" id="mwa-insights"></div>
+    <div class="mwa-filters" id="mwa-filters"></div>
+    <div id="mwa-rows"></div>
+  `;
+  renderMobileConvBody(list);
+}
+
+function renderMobileConvBody(list){
+  const insightsEl = document.getElementById('mwa-insights');
+  const filtersEl = document.getElementById('mwa-filters');
+  const rowsEl = document.getElementById('mwa-rows');
+  if (!insightsEl || !filtersEl || !rowsEl) return;
+
+  const {active, waiting, expired} = computeConvInsights(list);
+  insightsEl.innerHTML = `
+    <div class="mwa-insight-tile"><div class="mwa-insight-num">${active}</div><div class="mwa-insight-label">Activas</div></div>
+    <div class="mwa-insight-tile warn"><div class="mwa-insight-num">${waiting}</div><div class="mwa-insight-label">Esperando</div></div>
+    <div class="mwa-insight-tile crit"><div class="mwa-insight-num">${expired}</div><div class="mwa-insight-label">Fuera 24h</div></div>
+  `;
+
+  const counts = {};
+  list.forEach(c=>{
+    const m = convOriginMeta(c);
+    if (!counts[m.key]) counts[m.key] = {meta:m, n:0};
+    counts[m.key].n++;
+  });
+  const chips = [`<button type="button" class="mwa-chip ${__mConvFilter==='all'?'active':''}" onclick="setMobileConvFilter('all')">Todos <span class="cnt">${list.length}</span></button>`];
+  Object.values(counts).sort((a,b)=>b.n-a.n).forEach(({meta,n})=>{
+    chips.push(`<button type="button" class="mwa-chip ${__mConvFilter===meta.key?'active':''}" onclick="setMobileConvFilter('${meta.key}')"><span class="dot" style="background:${meta.color}"></span>${esc(meta.label)} <span class="cnt">${n}</span></button>`);
+  });
+  filtersEl.innerHTML = chips.join('');
+
+  const filtered = __mConvFilter==='all' ? list : list.filter(c=>convOriginMeta(c).key===__mConvFilter);
+  if (!filtered.length) {
+    rowsEl.innerHTML = '<div class="mcit-empty">Sin conversaciones</div>';
+    return;
+  }
+  rowsEl.innerHTML = filtered.map(c=>{
+    const meta = convOriginMeta(c);
+    const time = _waTimeLabel(c.lastAt);
+    const waitingRow = c.lastDir === 'inbound';
+    const [g1,g2] = c.kind==='unreg' ? ['#f5c451','#e8a33d'] : _waColorFor(c.name);
+    const initials = c.kind==='unreg' ? '🆕' : _waInitials(c.name);
+    const clickArgs = c.kind==='unreg'
+      ? `'${c.phone}','${c.name}',null`
+      : `'${c.phone}', null, '${c.id}'`;
+    return `<div class="mwa-row" onclick="openWaChatModal(${clickArgs})">
+      <div class="mwa-avatar" style="background:linear-gradient(135deg,${g1},${g2});">${initials}</div>
+      <div class="mwa-body">
+        <div class="mwa-name">${esc(c.name)}</div>
+        <div class="mwa-preview">${esc(c.lastBody||'Sin mensajes')}</div>
+        <span class="mwa-origin-badge" style="background:${meta.color}">${esc(meta.abbr)}</span>
+      </div>
+      <div class="mwa-right">
+        <span class="mwa-time ${time.cls}">${time.text}</span>
+        ${waitingRow ? '<span class="mwa-badge alert">!</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setMobileConvFilter(key){
+  __mConvFilter = key;
+  renderMobileConvBody(window.__convList || []);
 }
 // ══════════════════════════════════════════
 // CONVERSACIONES MANGU — tablero de 2 columnas (desktop)
