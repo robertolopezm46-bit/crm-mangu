@@ -8711,12 +8711,30 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function (err) {
+      console.error('SW registration failed:', err);
+    });
+  });
+}
 
 // ── Push real (Fase 2 PWA, 26-ago-2026) ─────────────────────────────────
 (function () {
   var VAPID_PUBLIC_KEY = 'BJv8Gs7alD8LDrQfvD7KZE68dcyfYIBXp3pXg7hY2TTmmfANwTwRQtiTSdOfFPJ622PTjBYWdBpLBrv5Kd-HFwk';
   var SUPABASE_URL = 'https://dgpuqlnjwisqyynpvdyw.supabase.co';
   var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRncHVxbG5qd2lzcXl5bnB2ZHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NTUyMjEsImV4cCI6MjA5ODEzMTIyMX0.Y-cPHMzlsVCQtlmKsXOW69nhFODK3_6PIKNuJs9mWt4';
+
+  function getCurrentUser() {
+    try {
+      if (typeof DB !== 'undefined' && DB && DB.currentUser) return DB.currentUser;
+    } catch (e) {}
+    try {
+      if (window.DB && window.DB.currentUser) return window.DB.currentUser;
+    } catch (e) {}
+    return null;
+  }
 
   function getSupabaseClient() {
     try {
@@ -8771,7 +8789,7 @@ if ('serviceWorker' in navigator) {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
       var raw = sub.toJSON();
-      var user =       var user = (typeof DB !== 'undefined' && DB && DB.currentUser) || (window.DB && window.DB.currentUser) || null;;
+      var user = getCurrentUser();
       if (!user || !user.username) {
         alert('Inicia sesión antes de activar notificaciones.');
         return;
@@ -8818,7 +8836,7 @@ if ('serviceWorker' in navigator) {
 
   async function checkAndRender() {
     if (!pushSupported()) return;
-    var user =       var user = (typeof DB !== 'undefined' && DB && DB.currentUser) || (window.DB && window.DB.currentUser) || null;;
+    var user = getCurrentUser();
     if (!user || !user.username) { hidePushButton(); return; }
     try {
       var reg = await navigator.serviceWorker.ready;
