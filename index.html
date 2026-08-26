@@ -3707,6 +3707,26 @@ function renderMobileCitas(){
   const pMap = Object.fromEntries(DB.prospects.map(p=>[String(p.id), p]));
   const tipoLabel = {visita:'Visita', firma:'Firma', seguim:'Seguimiento'};
 
+  const todayISO = _fmtDayISO(today);
+  const upcomingCitas = citasUnicas.filter(c => {
+    if (c.date < todayISO) return false;
+    if (visiblePids && !visiblePids.has(c.prospect_id) && !visiblePids.has(String(c.prospect_id))) return false;
+    return true;
+  }).sort((a,b) => a.date+a.time > b.date+b.time ? 1 : -1);
+  const upcomingHtml = upcomingCitas.length ? upcomingCitas.map(c=>{
+    const p = pMap[String(c.prospect_id)];
+    const tipo = _tipoCita(c);
+    return `<div class="mcit-item">
+      <div class="mcit-item-head">
+        <span class="mcit-dot ${tipo}"></span>
+        <span class="mcit-time">${c.date} · ${c.time||''}</span>
+        <span class="mcit-type">${tipoLabel[tipo]}</span>
+      </div>
+      <div class="mcit-name">${esc(p ? p.name : 'Prospecto')}</div>
+      <div class="mcit-prop">${esc((c.prop||'').split('—')[0].trim())}</div>
+    </div>`;
+  }).join('') : '<div class="mcit-empty">No hay próximas citas</div>';
+
   const listHtml = dayCitas.length ? dayCitas.map(c=>{
     const p = pMap[String(c.prospect_id)];
     const tipo = _tipoCita(c);
@@ -3723,6 +3743,10 @@ function renderMobileCitas(){
 
   el.innerHTML = `
     <div class="mcit-head"><h2>Citas</h2></div>
+    <div class="mcit-upcoming" style="margin-bottom:24px;">
+      <div style="font-size:13px;font-weight:600;color:#8888A5;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px;">Próximas Citas</div>
+      <div class="mcit-list">${upcomingHtml}</div>
+    </div>
     <div class="mcit-strip">${stripHtml}</div>
     <div class="mcit-list">${listHtml}</div>
   `;
