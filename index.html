@@ -8771,7 +8771,7 @@ if ('serviceWorker' in navigator) {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
       var raw = sub.toJSON();
-      var user = window.DB && window.DB.currentUser;
+      var user =       var user = (typeof DB !== 'undefined' && DB && DB.currentUser) || (window.DB && window.DB.currentUser) || null;;
       if (!user || !user.username) {
         alert('Inicia sesión antes de activar notificaciones.');
         return;
@@ -8818,7 +8818,7 @@ if ('serviceWorker' in navigator) {
 
   async function checkAndRender() {
     if (!pushSupported()) return;
-    var user = window.DB && window.DB.currentUser;
+    var user =       var user = (typeof DB !== 'undefined' && DB && DB.currentUser) || (window.DB && window.DB.currentUser) || null;;
     if (!user || !user.username) { hidePushButton(); return; }
     try {
       var reg = await navigator.serviceWorker.ready;
