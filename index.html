@@ -1142,6 +1142,9 @@
         <button class="mt-refresh" id="mt-refresh-btn" onclick="refreshData()" aria-label="Actualizar">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         </button>
+        <button class="mt-refresh" id="mt-notif-btn" onclick="toggleNotif()" aria-label="Activar notificaciones" title="Activar notificaciones" style="display:none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
         <button class="mt-hamburger" onclick="openMobileDrawer()" aria-label="Menú">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
@@ -1166,7 +1169,7 @@
         </select>
         <input type="text" class="search-bar" id="search-input" placeholder="Buscar prospecto..." oninput="filterTable()">
         <button class="btn-secondary" id="btn-refresh-desktop" onclick="refreshData()" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Actualizar</button>
-        <button id="btn-nuevo-prospecto" class="btn-primary" onclick="openModal('prospect')">
+        <button class="btn-secondary" id="btn-notif-desktop" onclick="toggleNotif()" title="Activar notificaciones" aria-label="Activar notificaciones" style="display:none;align-items:center;justify-content:center;padding:6px 9px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>        <button id="btn-nuevo-prospecto" class="btn-primary" onclick="openModal('prospect')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nuevo Prospecto
         </button>
@@ -8772,7 +8775,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ── Push real (Fase 2 PWA, 26-ago-2026) ─────────────────────────────────
+// ── Push real (Fase 2 PWA, 26-ago-2026) ─────────────────────────────
 (function () {
   var VAPID_PUBLIC_KEY = 'BJv8Gs7alD8LDrQfvD7KZE68dcyfYIBXp3pXg7hY2TTmmfANwTwRQtiTSdOfFPJ622PTjBYWdBpLBrv5Kd-HFwk';
   var SUPABASE_URL = 'https://dgpuqlnjwisqyynpvdyw.supabase.co';
@@ -8819,6 +8822,32 @@ if ('serviceWorker' in navigator) {
     return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
   }
 
+  function notifBtns() {
+    var els = [];
+    var a = document.getElementById('btn-notif-desktop'); if (a) els.push(a);
+    var b = document.getElementById('mt-notif-btn'); if (b) els.push(b);
+    return els;
+  }
+
+  function paintNotifBtns(state, visible) {
+    notifBtns().forEach(function (btn) {
+      btn.style.display = visible ? 'flex' : 'none';
+      var svg = btn.querySelector('svg');
+      if (state === 'on') {
+        btn.title = 'Notificaciones activadas — clic para silenciar';
+        btn.setAttribute('aria-label', 'Silenciar notificaciones');
+        btn.style.color = '#C9A84C';
+        if (svg) svg.setAttribute('fill', 'currentColor');
+      } else {
+        btn.title = state === 'busy' ? 'Procesando...' : 'Activar notificaciones';
+        btn.setAttribute('aria-label', 'Activar notificaciones');
+        btn.style.color = '';
+        if (svg) svg.setAttribute('fill', 'none');
+      }
+      btn.disabled = (state === 'busy');
+    });
+  }
+
   async function subscribeToPush() {
     if (!pushSupported()) {
       alert('Este navegador no soporta notificaciones push.');
@@ -8829,10 +8858,12 @@ if ('serviceWorker' in navigator) {
       alert('Para activar notificaciones en iPhone, primero agrega el CRM a tu pantalla de inicio (botón Compartir → "Agregar a pantalla de inicio") y ábrelo desde ese ícono.');
       return;
     }
+    paintNotifBtns('busy', true);
     try {
       var permission = await Notification.requestPermission();
       if (permission !== 'granted') {
         alert('No se activaron las notificaciones (permiso no concedido).');
+        paintNotifBtns('off', true);
         return;
       }
       var reg = await navigator.serviceWorker.ready;
@@ -8844,11 +8875,13 @@ if ('serviceWorker' in navigator) {
       var user = getCurrentUser();
       if (!user || !user.username) {
         alert('Inicia sesión antes de activar notificaciones.');
+        paintNotifBtns('off', true);
         return;
       }
       var client = getSupabaseClient();
       if (!client) {
         alert('No se pudo conectar con la base de datos para guardar la suscripción.');
+        paintNotifBtns('off', true);
         return;
       }
       var result = await client.from('crm_push_subscriptions').upsert({
@@ -8862,45 +8895,70 @@ if ('serviceWorker' in navigator) {
       if (result.error) {
         console.error('No se pudo guardar la suscripcion push:', result.error);
         alert('No se pudo guardar la suscripción. Intenta de nuevo.');
+        paintNotifBtns('off', true);
         return;
       }
-      hidePushButton();
+      paintNotifBtns('on', true);
       alert('¡Notificaciones activadas!');
     } catch (e) {
       console.error('Error activando push:', e);
       alert('No se pudieron activar las notificaciones.');
+      paintNotifBtns('off', true);
     }
   }
 
-  var pushBtn = null;
-  function showPushButton() {
-    if (pushBtn) return;
-    pushBtn = document.createElement('button');
-    pushBtn.textContent = '🔔 Activar notificaciones';
-    pushBtn.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:99999;background:#1a1a2e;color:#fff;border:none;border-radius:24px;padding:12px 18px;font-size:14px;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;';
-    pushBtn.onclick = subscribeToPush;
-    document.body.appendChild(pushBtn);
-  }
-  function hidePushButton() {
-    if (pushBtn && pushBtn.parentNode) pushBtn.parentNode.removeChild(pushBtn);
-    pushBtn = null;
+  async function unsubscribeFromPush() {
+    paintNotifBtns('busy', true);
+    try {
+      var reg = await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        var endpoint = sub.endpoint;
+        await sub.unsubscribe();
+        var client = getSupabaseClient();
+        if (client) {
+          await client.from('crm_push_subscriptions').delete().eq('endpoint', endpoint);
+        }
+      }
+      paintNotifBtns('off', true);
+      alert('Notificaciones silenciadas en este dispositivo.');
+    } catch (e) {
+      console.error('Error silenciando push:', e);
+      paintNotifBtns('off', true);
+    }
   }
 
-  async function checkAndRender() {
-    if (!pushSupported()) return;
-    var user = getCurrentUser();
-    if (!user || !user.username) { hidePushButton(); return; }
+  window.toggleNotif = async function () {
+    if (!pushSupported()) {
+      alert('Este navegador no soporta notificaciones push.');
+      return;
+    }
     try {
       var reg = await navigator.serviceWorker.ready;
       var existing = await reg.pushManager.getSubscription();
-      if (existing) { hidePushButton(); return; }
-      if (Notification.permission === 'denied') { hidePushButton(); return; }
-      showPushButton();
+      if (existing && Notification.permission === 'granted') {
+        if (confirm('¿Silenciar notificaciones en este dispositivo?')) await unsubscribeFromPush();
+      } else {
+        await subscribeToPush();
+      }
+    } catch (e) {
+      console.error('Error en toggleNotif:', e);
+    }
+  };
+
+  async function checkAndRender() {
+    if (!pushSupported()) { notifBtns().forEach(function (b) { b.style.display = 'none'; }); return; }
+    var user = getCurrentUser();
+    if (!user || !user.username) { notifBtns().forEach(function (b) { b.style.display = 'none'; }); return; }
+    try {
+      var reg = await navigator.serviceWorker.ready;
+      var existing = await reg.pushManager.getSubscription();
+      paintNotifBtns((existing && Notification.permission === 'granted') ? 'on' : 'off', true);
     } catch (e) {}
   }
 
   setInterval(checkAndRender, 3000);
-  window.addEventListener('load', function () { setTimeout(checkAndRender, 2000); });
+  window.addEventListener('load', function () { setTimeout(checkAndRender, 500); });
 })();
 </script></body>
 </html>
