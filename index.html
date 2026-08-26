@@ -870,7 +870,7 @@
     .form-row { grid-template-columns: 1fr !important; gap: 14px !important; }
 
     /* Ocultar módulos que no son parte de la app móvil */
-    #section-anuncios, #section-contratos, #section-rentabilidad,
+    #section-dashboard, #section-anuncios, #section-contratos, #section-rentabilidad,
     #section-auditoria, #section-presupuesto, #section-equipo,
     #section-sitioweb, #section-mensajes {
       /* Se muestran cuando se navega desde el drawer */
@@ -2767,6 +2767,8 @@ function buildMobileDrawer(){
 
   // Items disponibles según rol
   const items = [];
+  // Dashboard de Marketing: mismo acceso que en el sidebar de escritorio (solo Admin)
+  if (admin) items.push({id:'dashboard', label:'Dashboard', icon:'dashboard'});
   // Todos ven Reportes (Auditoría) si son admin; Comercial/Atn ve resumen básico
   if (admin) items.push({id:'auditoria', label:'Reportes', icon:'chart'});
   if (admin) items.push({id:'equipo',    label:'Equipo',   icon:'users'});
@@ -2780,6 +2782,7 @@ function buildMobileDrawer(){
   if (admin) items.push({id:'__export', label:'Exportar datos', icon:'download'});
 
   const icons = {
+    dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',
     chart:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
     users:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     msg:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
