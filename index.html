@@ -7226,8 +7226,9 @@ async function saveNotaRapida(){
     if(p){
           const notaCorta=txt.length>150?txt.slice(0,150)+'…':txt;
           notaWANotifyRecipients(p).forEach(u=>{ if(u.phone) sendWATemplateStaff(u.phone,'mangu_nueva_nota',[p.name,DB.currentUser?.name||'',notaCorta],p.id); });
+          sendCrmPush(notaWANotifyRecipients(p).map(u=>u.username), `📝 Nota: ${p.name}`, notaCorta, '/');
     }
-    showToast('Nota guardada','success');
+ showToast('Nota guardada','success');
 }
 
 // ── Vista Tabla del tablero (prototipo v2) ──
@@ -7497,9 +7498,21 @@ async function notifyFaseChange({ prospectName, oldPhase, newPhase, comment, sel
       },
       body: JSON.stringify({ type: 'cambio_fase', prospectName, oldPhase, newPhase, comment, sellerName, assignedTo, notifyTo })
     });
-  } catch(e) { console.log('Notify fase error:', e.message); }
+  } catch(e) { console.log('Notify fase error:', e.message); } 
+  sendCrmPush(notifyTo, `🔄 ${prospectName}`, `${oldPhase} → ${newPhase}${comment ? ' — ' + comment : ''}`, '/');
 }
-
+async function sendCrmPush(usernames, title, body, url){
+  try{
+    if(!usernames || !usernames.length) return;
+    const {data:{session}}=await supabase.auth.getSession();
+    if(!session?.access_token) return;
+    await fetch('https://dgpuqlnjwisqyynpvdyw.supabase.co/functions/v1/send-push',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({ usernames, title, body, url: url||'/' })
+    });
+  }catch(e){ console.log('Push CRM error:', e.message); }
+}
   async function sendWATemplateStaff(phone, templateName, params, prospectId){
   try{
   const digits=(phone||'').replace(/\D/g,'');
