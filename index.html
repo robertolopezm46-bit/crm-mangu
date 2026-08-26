@@ -3353,6 +3353,7 @@ function renderMobileConvBody(list){
       <div class="mwa-body">
         <div class="mwa-name">${esc(c.name)}</div>
         <div class="mwa-preview">${esc(c.lastBody||'Sin mensajes')}</div>
+        ${c.adReferral ? `<div class="mwa-ad" style="font-size:11px;color:#8a5a00;margin-top:2px;">📢 ${esc(c.adReferral.headline||'Anuncio')}</div>` : ''}
         <span class="mwa-origin-badge" style="background:${meta.color}">${esc(meta.abbr)}</span>
       </div>
       <div class="mwa-right">
@@ -3400,17 +3401,18 @@ return (m.dir==='outbound' ? 'Tú: ' : '') + t;
 async function loadConversationsBoardData(){
 const [{data: staffRows}, {data: waRows}] = await Promise.all([
 supabase.from('crm_users').select('phone'),
-supabase.from('crm_wa_messages').select('phone, direction, body, message_type, created_at, prospect_id').order('created_at',{ascending:false}).limit(1500)
+supabase.from('crm_wa_messages').select('phone, direction, body, message_type, created_at, prospect_id, ad_referral').order('created_at',{ascending:false}).limit(1500)
 ]);
 const staffLast10 = (staffRows||[]).map(u => (u.phone||'').replace(/\D/g,'').slice(-10)).filter(Boolean);
 const byPhone = {};
 (waRows||[]).forEach(m=>{
 const last10 = (m.phone||'').replace(/\D/g,'').slice(-10);
 if (!last10) return;
-if (!byPhone[last10]) byPhone[last10] = {phoneRaw:m.phone, lastAny:null, lastInboundAt:null, matchedProspect:false};
+if (!byPhone[last10]) byPhone[last10] = {phoneRaw:m.phone, lastAny:null, lastInboundAt:null, matchedProspect:false, adReferral:null};
 const rec = byPhone[last10];
 if (!rec.lastAny) rec.lastAny = {dir:m.direction, body:m.body, type:m.message_type, at:m.created_at};
 if (m.direction==='inbound' && !rec.lastInboundAt) rec.lastInboundAt = m.created_at;
+if (m.ad_referral && !rec.adReferral) rec.adReferral = m.ad_referral;
 });
 const visible = getVisibleProspects().filter(p=>p.phase!=='Perdido');
 const list = [];
@@ -3424,7 +3426,8 @@ source:p.source||'', phase:p.phase,
 lastDir: rec && rec.lastAny ? rec.lastAny.dir : null,
 lastBody: rec && rec.lastAny ? _convMsgPreview(rec.lastAny) : '',
 lastAt: rec && rec.lastAny ? rec.lastAny.at : null,
-lastInboundAt: rec ? rec.lastInboundAt : null
+lastInboundAt: rec ? rec.lastInboundAt : null,
+adReferral: rec ? rec.adReferral : null
 });
 });
 Object.keys(byPhone).forEach(last10=>{
@@ -3439,7 +3442,8 @@ source:'', phase:null,
 lastDir: rec.lastAny ? rec.lastAny.dir : null,
 lastBody: rec.lastAny ? _convMsgPreview(rec.lastAny) : '',
 lastAt: rec.lastAny ? rec.lastAny.at : null,
-lastInboundAt: rec.lastInboundAt
+lastInboundAt: rec.lastInboundAt,
+adReferral: rec.adReferral
 });
 });
 list.sort((a,b)=>{
@@ -3505,6 +3509,7 @@ return `<div class="conv-item ${__convActiveKey===c.key?'active':''}" onclick="s
 <div class="conv-item-body">
 <div class="conv-item-top"><span class="conv-item-name">${esc(c.name)}</span><span class="conv-item-time">${time.text}</span></div>
 <div class="conv-item-preview">${esc(c.lastBody||'Sin mensajes')}</div>
+${c.adReferral ? `<div class="conv-item-ad" style="font-size:11px;color:#8a5a00;margin-top:2px;">📢 ${esc(c.adReferral.headline||'Anuncio')}</div>` : ''}
 <span class="conv-badge" style="background:${meta.color}">${esc(meta.abbr)}</span>
 </div>
 ${waiting ? '<span class="conv-item-waiting" title="Esperando respuesta"></span>' : ''}
@@ -3550,6 +3555,18 @@ panel.innerHTML = `
 <div class="cchat-header-sub">+${esc(__convChatDigits)} <span class="conv-badge" style="background:${meta.color};">${esc(meta.label)}</span></div>
 </div>
 </div>
+${conv.kind==='unreg' ? `<div class="cchat-register-bar" style="padding:8px 16px;background:#fff8e6;border-bottom:1px solid #f0d68a;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+<span style="font-size:12px;color:#7a5b00;">Contacto sin registrar</span>
+<button type="button" onclick="registrarDesdeConversacion('${conv.key}')" style="font-size:12px;padding:5px 10px;border-radius:6px;border:1px solid #d4a017;background:#fff;color:#7a5b00;cursor:pointer;font-family:'Inter',sans-serif;">+ Registrar prospecto</button>
+</div>` : ''}
+${conv.adReferral ? `<div class="cchat-ad-box" style="padding:10px 16px;background:#f4f0ff;border-bottom:1px solid #ded4ff;display:flex;gap:10px;align-items:flex-start;">
+${(conv.adReferral.thumbnail_url||conv.adReferral.image_url) ? `<img src="${esc(conv.adReferral.thumbnail_url||conv.adReferral.image_url)}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;">` : ''}
+<div style="font-size:12px;color:#4a3b8a;">
+<div style="font-weight:600;margin-bottom:2px;">📢 Llegó desde un anuncio${(conv.adReferral.source_url||'').toLowerCase().includes('instagram') ? ' (Instagram)' : ' (Facebook)'}</div>
+${conv.adReferral.headline ? `<div>${esc(conv.adReferral.headline)}</div>` : ''}
+${conv.adReferral.body ? `<div style="opacity:.85;">${esc(conv.adReferral.body)}</div>` : ''}
+</div>
+</div>` : ''}
 <div class="cchat-warn" id="cchat-warn" style="display:none;"></div>
 <div class="cchat-body" id="cchat-body"><div class="conv-panel-empty">Cargando...</div></div>
 <div class="cchat-footer">
@@ -7847,7 +7864,7 @@ function renderEquipo(){
 // ══════════════════════════════════════════
 //  MODALS
 // ══════════════════════════════════════════
-function openModal(type){
+function openModal(type, prefill){
   if(type==='prospect'){
         loadWebProps(); // refresca el select de propiedad al abrir Nuevo Prospecto (fix 3 ago 2026)
     document.getElementById('modal-prospect-title').textContent='Nuevo Prospecto';
@@ -7864,6 +7881,15 @@ function openModal(type){
     const sg=document.getElementById('p-seller-group');
     if(isAdmin()){sg.style.display='';document.getElementById('p-seller').innerHTML=DB.users.map(u=>`<option>${u.name}</option>`).join('');}
     else{sg.style.display='none';document.getElementById('p-seller').innerHTML=`<option>${DB.currentUser.name}</option>`;}
+    // Prefill opcional (usado al registrar desde una conversación de WhatsApp
+    // sin registrar — ver registrarDesdeConversacion()). No pisa el flujo
+    // normal: si no se pasa "prefill", el formulario queda igual que antes.
+    if(prefill){
+      if(prefill.phone){document.getElementById('p-phone').value=prefill.phone;handlePhoneInput(document.getElementById('p-phone'));}
+      if(prefill.name)document.getElementById('p-name').value=prefill.name;
+      if(prefill.source){document.getElementById('p-source').value=prefill.source;toggleReferredByField(prefill.source);}
+      if(prefill.notes)document.getElementById('p-notes').value=prefill.notes;
+    }
   }
   if(type==='user'){
     document.getElementById('modal-user-title').textContent='Nuevo Usuario';
@@ -7874,6 +7900,32 @@ function openModal(type){
   document.getElementById('modal-'+type).classList.add('open');
 }
 function closeModal(type){const m=document.getElementById('modal-'+type); if(m) m.classList.remove('open');}
+
+// Abre "Nuevo Prospecto" prellenado desde una conversación de WhatsApp sin
+// registrar (botón "+ Registrar prospecto" en el panel de chat de
+// Conversaciones). Si el primer mensaje vino de un anuncio de clic-a-
+// WhatsApp de Meta (crm_wa_messages.ad_referral, capturado por el webhook
+// desde el 26-ago-2026), se prellenan Origen y Notas con los datos del
+// anuncio (título, texto, link) para no perder esa pista — agregado
+// 26-ago-2026 a pedido de Robert (leads sin origen/propiedad claros).
+function registrarDesdeConversacion(key){
+  const list = window.__convList || [];
+  const conv = list.find(c=>c.key===key);
+  if(!conv) return;
+  const last10 = waLast10(conv.phone);
+  const ref = conv.adReferral;
+  let source = '';
+  let notes = '';
+  if(ref){
+    source = (ref.source_url||'').toLowerCase().includes('instagram') ? 'Instagram ADS' : 'Facebook ADS';
+    const parts=[];
+    if(ref.headline) parts.push('Anuncio: '+ref.headline);
+    if(ref.body) parts.push(ref.body);
+    if(ref.source_url) parts.push(ref.source_url);
+    notes = parts.join('\n');
+  }
+  openModal('prospect', { phone:last10, source, notes });
+}
 
 // Muestra/oculta el campo "Referido por" según el Origen del Lead elegido.
 // Se guarda dentro de Notas con el prefijo "Referido por: " (sin agregar
