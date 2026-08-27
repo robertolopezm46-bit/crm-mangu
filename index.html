@@ -7572,7 +7572,6 @@ async function sendCrmPush(usernames, title, body, url){
   }catch(e){ console.log('Push CRM error:', e.message); }
 }
   async function sendWATemplateStaff(phone, templateName, params, prospectId){
-    // DESACTIVADO 26-ago-2026: WhatsApp de aviso al staff apagado (Fabiola, Alfredo y Roberto ya tienen push via PWA). Cubre los 5 call-sites de esta funcion a la vez. Para reactivar, borra este bloque.
     return;
   try{
   const digits=(phone||'').replace(/\D/g,'');
