@@ -7804,14 +7804,7 @@ function sendCitaWA(){
   const p=DB.prospects.find(pr=>pr.id===pid||pr.id===parseInt(pid));
   if(!p)return;
   const phone=p.phone.replace(/\s|\+/g,'');
-  const msg=`Hola ${p.name} \ud83d\udc4b, te confirmamos tu cita con MANGU Inmobiliaria:\
-\
-\ud83d\udcc5 Fecha: ${date||'Por confirmar'}\
-\ud83d\udd50 Hora: ${time||'Por confirmar'}\
-\ud83c\udfe0 Propiedad: ${prop}\
-\ud83d\udccd Pachuca, Hidalgo\
-\
-\u00a1Te esperamos! Si necesitas cambiar la cita, escr\u00edbenos aqu\u00ed. \ud83d\ude0a`;
+  const msg=`Hola ${p.name} \ud83d\udc4b, te confirmamos tu cita con MANGU Inmobiliaria:\n\n\ud83d\udcc5 Fecha: ${date||'Por confirmar'}\n\ud83d\udd50 Hora: ${time||'Por confirmar'}\n\ud83c\udfe0 Propiedad: ${prop}\n\ud83d\udccd Pachuca, Hidalgo\n\n\u00a1Te esperamos! Si necesitas cambiar la cita, escr\u00edbenos aqu\u00ed. \ud83d\ude0a`;
   window.open(`https://wa.me/${waDigits(phone)}?text=${encodeURIComponent(msg)}`,'_blank');
 }
 function renderCalendar(){
