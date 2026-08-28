@@ -4424,11 +4424,20 @@ function showWaBadge(show){
   const b1=document.getElementById('nav-wa-badge'); if(b1) b1.style.display=show?'inline':'none';
   const b2=document.getElementById('mnav-wa-badge'); if(b2) b2.style.display=show?'block':'none';
 }
+// Usuarios que deben ver el aviso en pantalla de un WhatsApp entrante
+// aunque el prospecto no tenga asignado a ese vendedor (restaurado
+// 27-ago-2026 — se habia perdido en algun cambio posterior al fix
+// original del 22-jul-2026; Alfredo dejo de ver el toast de mensajes
+// nuevos con el CRM abierto en el navegador).
+const WA_NOTIFY_USERNAMES = ['alfredo','fabiola'];
+function esUsuarioNotificadoWA(){
+  return WA_NOTIFY_USERNAMES.includes((DB.currentUser?.username||'').toLowerCase());
+}
 function handleInboundWA(msg){
   const prospect=DB.prospects.find(p=>p.id===msg.prospect_id);
 if(prospect){ DB._waLastInbound=DB._waLastInbound||{}; DB._waLastInbound[prospect.id]=msg.created_at||new Date().toISOString(); }
   const soyResponsable = prospect && DB.currentUser?.id && prospect.seller_id===DB.currentUser.id;
-  const relevante = isAdmin() || soyResponsable;
+  const relevante = isAdmin() || soyResponsable || esUsuarioNotificadoWA();
   if(!relevante) return;
   const quien = prospect ? prospect.name : msg.phone;
   const preview = (msg.body||'Mensaje nuevo').slice(0,80);
@@ -7572,7 +7581,6 @@ async function sendCrmPush(usernames, title, body, url){
   }catch(e){ console.log('Push CRM error:', e.message); }
 }
   async function sendWATemplateStaff(phone, templateName, params, prospectId){
-    return;
   try{
   const digits=(phone||'').replace(/\D/g,'');
   if(digits.length<10) return;
