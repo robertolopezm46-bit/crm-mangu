@@ -209,8 +209,8 @@
   .wa-warn{background:#FEE2E2;color:#B91C1C;}
   .wa-none{background:var(--surface);color:var(--text-muted);}
   .kanban-card.urgente{border-color:#FECACA;box-shadow:0 0 0 1px #FECACA;}
-  .kanban-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 16px 14px;margin-bottom:10px;cursor:grab;transition:box-shadow .15s;}
-.kanban-card.kcard-unread{background:#FFF3C4;border-color:#F5D67A;}
+  .kanban-card{position:relative;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 16px 14px;margin-bottom:10px;cursor:grab;transition:box-shadow .15s;}
+.kanban-card.kcard-unread{border-left:4px solid var(--gold);}
   .kanban-card:hover{box-shadow:var(--shadow-md);}
   .kanban-card.dragging{opacity:.5;cursor:grabbing;}
   .kanban-card h4{font-size:15px;font-weight:700;margin:0 0 8px;cursor:pointer;}
@@ -221,7 +221,7 @@
   .kcard-divider{height:1px;background:var(--border);margin:12px 0 8px;}
   .kcard-activity{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin-bottom:10px;}
   .kcard-avatar{width:18px;height:18px;border-radius:50%;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .kcard-activity b{color:var(--text);font-weight:600;}
+  .kcard-activity b{color:var(--text);font-weight:600;}.kcard-badges{position:absolute;top:12px;right:14px;display:flex;gap:6px;}.kcard-badge{background:var(--gold);color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;line-height:1.4;white-space:nowrap;}.kcard-badge.wa{background:#16A34A;}.kcard-pills{display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-bottom:10px;}.kcard-pill{display:inline-flex;align-items:center;gap:6px;background:#FBF3DE;color:var(--gold-dark);font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;}.kcard-pill b{color:var(--gold-dark);}.kcard-pill .muted{color:var(--text-muted);font-weight:500;}.kcard-pill.wa{background:#E9F9EF;color:#16A34A;}.kcard-pill.wa b{color:#16A34A;}
   .kanban-card .card-actions{display:flex;flex-direction:column;gap:8px;margin-top:0;}
   .kbtn{width:100%;border:none;border-radius:10px;padding:11px 12px;font-size:13.5px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;}
   .kbtn svg{width:16px;height:16px;flex-shrink:0;}
@@ -2714,11 +2714,11 @@ function parseManualNotes(p){
 function notesSeenKey(p){return 'mangu_notes_seen_'+(DB.currentUser?.id||DB.currentUser?.name||'anon')+'_'+p.id;}
 function notesInfo(p){
   const list=parseManualNotes(p);
-  if(!list.length) return {count:0,unread:false};
+  if(!list.length) return {count:0,unread:false,newCount:0};
   const last=list[list.length-1];
   const seen=parseInt(localStorage.getItem(notesSeenKey(p))||'0',10);
   const isMine=(last.author||'').toLowerCase()===(DB.currentUser?.name||'').toLowerCase();
-  return {count:list.length, unread: !isMine && list.length>seen};
+  const unread=!isMine && list.length>seen; return {count:list.length, unread, newCount: unread?Math.max(1,list.length-seen):0};
 }
 function markNotesSeen(p){
   const list=parseManualNotes(p);
@@ -2727,6 +2727,7 @@ function markNotesSeen(p){
 function waSeenKey(p){return 'mangu_wa_seen_'+(DB.currentUser?.id||DB.currentUser?.name||'anon')+'_'+p.id;}
 function isRelevantToMe(p){return isAdmin() || !!(p && DB.currentUser?.id && p.seller_id===DB.currentUser.id);}
 function markWaSeen(p){if(!p)return; try{localStorage.setItem(waSeenKey(p), new Date().toISOString());}catch(e){}}
+function waUnreadInfo(p){ if(!isRelevantToMe(p)) return {unread:false}; const lastIn=DB._waLastInbound&&DB._waLastInbound[p.id]; if(!lastIn) return {unread:false}; const seen=localStorage.getItem(waSeenKey(p)); const unread=!seen || new Date(lastIn).getTime()>new Date(seen).getTime(); return {unread, ago: unread?fmtAgo(lastIn):null}; }
 function cardHasUnread(p){if(!isRelevantToMe(p))return false; const ninfo=notesInfo(p); if(ninfo.unread)return true; const lastIn=DB._waLastInbound&&DB._waLastInbound[p.id]; if(!lastIn)return false; const seen=localStorage.getItem(waSeenKey(p)); return !seen || new Date(lastIn).getTime()>new Date(seen).getTime();}
 async function loadKanbanUnreadCache(){if(!DB.prospects||!DB.prospects.length)return; let q=supabase.from('crm_prospects').select('id,notes'); if(!puedeVerTodosProspectos()){ if(DB.currentUser.id) q=q.eq('seller_id',DB.currentUser.id); else q=q.eq('seller',DB.currentUser.name); } const {data:notesData}=await q; if(notesData){ const byId={}; notesData.forEach(r=>{byId[r.id]=r.notes;}); DB.prospects.forEach(p=>{ if(Object.prototype.hasOwnProperty.call(byId,p.id)) p.notes=byId[p.id]; }); } const idSet=new Set(DB.prospects.map(p=>String(p.id))); const {data:waData}=await supabase.from('crm_wa_messages').select('prospect_id,created_at').eq('direction','inbound').order('created_at',{ascending:false}).limit(1500); DB._waLastInbound={}; if(waData){ waData.forEach(r=>{ if(r.prospect_id&&idSet.has(String(r.prospect_id))&&!DB._waLastInbound[r.prospect_id]) DB._waLastInbound[r.prospect_id]=r.created_at; }); }}
 function lastNoteActivity(p){
@@ -7205,14 +7206,16 @@ function renderKanban(){
       const ni=notesInfo(p);
       const act=lastNoteActivity(p);
       const lp=(phase==='Cierre'&&typeof webPropsDB!=='undefined')?webPropsDB.find(x=>x.titulo===p.prop):null;
-const cardUnread=cardHasUnread(p);
+const wa=waUnreadInfo(p);
+      const cardUnread=ni.unread||wa.unread;
       return `
       <div class="kswipe" data-pid="${p.id}">
       <div class="kswipe-action" onclick="quickWAProspect('${p.id}')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
       </div>
       <div class="kanban-card${urgente?' urgente':''}${cardUnread?' kcard-unread':''}" draggable="true" ondragstart="onDragStart(event,'${p.id}')" id="kcard-${p.id}">
-        <h4 onclick="${phase==='Registro'?`editProspect('${p.id}')`:`openNotaRapida('${p.id}')`}" title="${phase==='Registro'?'Editar prospecto':'Ver notas'}">${esc(p.name)}</h4>
+   
+        ${(ni.unread||wa.unread)?`<div class="kcard-badges">${ni.unread?`<span class="kcard-badge">📝 ${ni.newCount}</span>`:''}${wa.unread?`<span class="kcard-badge wa">💬</span>`:''}</div>`:''}     <h4 onclick="${phase==='Registro'?`editProspect('${p.id}')`:`openNotaRapida('${p.id}')`}" title="${phase==='Registro'?'Editar prospecto':'Ver notas'}">${esc(p.name)}</h4>
         <div class="kcard-info-row">
           <div>
             <p>${esc(p.prop||'\u2014')}</p>
@@ -7220,7 +7223,7 @@ const cardUnread=cardHasUnread(p);
           </div>
         </div>
         <div class="kcard-divider"></div>
-        ${(act&&ni.unread)?`<div class="kcard-activity"><span class="kcard-avatar" style="background:${sellerColor(p)};">${esc((act.author||'?').charAt(0).toUpperCase())}</span><span><b>${esc(act.author)}</b> dejó una nota${act.ago?' · '+act.ago:''}</span></div>`:''}
+        ${((ni.unread&&act)||wa.unread)?`<div class="kcard-pills">${(ni.unread&&act)?`<span class="kcard-pill">📝 <b>${esc(act.author)}</b> dejó una nota${act.ago?' · '+act.ago:''}${ni.newCount>1?` <span class="muted">· +${ni.newCount-1} antes</span>`:''}</span>`:''}${wa.unread?`<span class="kcard-pill wa">💬 Mensaje nuevo de WhatsApp${wa.ago?' · '+wa.ago:''}</span>`:''}</div>`:''}
         <div class="card-actions">
           ${hasModule('whatsapp')&&phase!=='Cierre'?`<button class="kbtn kbtn-wa" onclick="quickWAProspect('${p.id}')" title="WhatsApp API">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.28-1.38a9.9 9.9 0 0 0 4.76 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2z"/></svg>
