@@ -609,6 +609,9 @@
 
     /* Perdido → opacidad 60% */
     #section-kanban .kanban-col[id="col-Perdido"].mobile-active .kanban-card { opacity: 0.6; }
+    /* Fix (1-sep-2026): con la tarjeta semitransparente, el boton verde de WhatsApp (detras, dentro del mismo .kswipe) se transparentaba tambien y se veia "pegado"/en conflicto con la tarjeta sin necesidad de hacer swipe. Se oculta hasta que se abra con el swipe, igual que en las demas columnas. */
+    #section-kanban .kanban-col[id="col-Perdido"].mobile-active .kswipe-action { opacity: 0; }
+    #section-kanban .kanban-col[id="col-Perdido"].mobile-active .kswipe.open .kswipe-action { opacity: 1; transition: opacity .18s ease; }
 
     /* Swipe: botón WA verde detrás */
     .kswipe {
