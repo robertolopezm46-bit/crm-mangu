@@ -221,7 +221,7 @@
   .kcard-divider{height:1px;background:var(--border);margin:12px 0 8px;}
   .kcard-activity{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin-bottom:10px;}
   .kcard-avatar{width:18px;height:18px;border-radius:50%;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .kcard-activity b{color:var(--text);font-weight:600;}.kcard-badges{position:absolute;top:12px;right:14px;display:flex;gap:6px;}.kcard-badge{background:var(--gold);color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;line-height:1.4;white-space:nowrap;}.kcard-badge.wa{background:#16A34A;}.kcard-pills{display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-bottom:10px;}.kcard-pill{display:inline-flex;align-items:center;gap:6px;background:#FBF3DE;color:var(--gold-dark);font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;}.kcard-pill b{color:var(--gold-dark);}.kcard-pill .muted{color:var(--text-muted);font-weight:500;}.kcard-pill.wa{background:#E9F9EF;color:#16A34A;}.kcard-pill.wa b{color:#16A34A;}
+  .kcard-activity b{color:var(--text);font-weight:600;}.kcard-badges{position:absolute;top:12px;right:14px;display:flex;gap:6px;}.kcard-badge{background:var(--gold);color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;line-height:1.4;white-space:nowrap;}.kcard-badge.wa{background:#16A34A;}.kcard-pills{display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-bottom:10px;}.kcard-pill{display:inline-flex;align-items:center;gap:6px;background:#FBF3DE;color:var(--gold-dark);font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;}.kcard-pill b{color:var(--gold-dark);}.kcard-pill .muted{color:var(--text-muted);font-weight:500;}.kcard-pill.wa{background:#E9F9EF;color:#16A34A;}.kcard-pill.wa b{color:#16A34A;}button.kcard-pill{border:none;font-family:inherit;cursor:pointer;text-align:left;}button.kcard-pill:hover{filter:brightness(.97);}
   .kanban-card .card-actions{display:flex;flex-direction:column;gap:8px;margin-top:0;}
   .kbtn{width:100%;border:none;border-radius:10px;padding:11px 12px;font-size:13.5px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;}
   .kbtn svg{width:16px;height:16px;flex-shrink:0;}
@@ -7290,7 +7290,7 @@ function renderKanban(){
 const wa=waUnreadInfo(p);
       const cardUnread=ni.unread||wa.unread;
       return `
-      <div class="kanban-card${urgente?' urgente':''}${cardUnread?' kcard-unread':''}" draggable="true" ondragstart="onDragStart(event,'${p.id}')" id="kcard-${p.id}">
+      <div class="kanban-card${urgente?' urgente':''}${cardUnread?' kcard-unread':''}" draggable="true" ondragstart="onDragStart(event,'${p.id}')" ondragend="onDragEnd(event)" id="kcard-${p.id}">
    
         ${(ni.unread||wa.unread)?`<div class="kcard-badges">${ni.unread?`<span class="kcard-badge">📝 ${ni.newCount}</span>`:''}${wa.unread?`<span class="kcard-badge wa">💬</span>`:''}</div>`:''}     <h4 onclick="${phase==='Registro'?`editProspect('${p.id}')`:`openNotaRapida('${p.id}')`}" title="${phase==='Registro'?'Editar prospecto':'Ver notas'}">${esc(p.name)}</h4>
         <div class="kcard-info-row">
@@ -7300,7 +7300,7 @@ const wa=waUnreadInfo(p);
           </div>
         </div>
         <div class="kcard-divider"></div>
-        ${((ni.unread&&act)||wa.unread)?`<div class="kcard-pills">${(ni.unread&&act)?`<span class="kcard-pill">📝 <b>${esc(act.author)}</b> dejó una nota${act.ago?' · '+act.ago:''}${ni.newCount>1?` <span class="muted">· +${ni.newCount-1} antes</span>`:''}</span>`:''}${wa.unread?`<span class="kcard-pill wa">💬 Mensaje nuevo de WhatsApp${wa.ago?' · '+wa.ago:''}</span>`:''}</div>`:''}
+        ${((ni.unread&&act)||wa.unread)?`<div class="kcard-pills">${(ni.unread&&act)?`<button type="button" class="kcard-pill" onclick="openNotaRapida('${p.id}')" title="Ver nota">📝 <b>${esc(act.author)}</b> dejó una nota${act.ago?' · '+act.ago:''}${ni.newCount>1?` <span class="muted">· +${ni.newCount-1} antes</span>`:''} →</button>`:''}${wa.unread?`<span class="kcard-pill wa">💬 Mensaje nuevo de WhatsApp${wa.ago?' · '+wa.ago:''}</span>`:''}</div>`:''}
         <div class="card-actions">
           ${hasModule('whatsapp')&&phase!=='Cierre'?`<button class="kbtn kbtn-wa" onclick="quickWAProspect('${p.id}')" title="WhatsApp API">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.28-1.38a9.9 9.9 0 0 0 4.76 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2z"/></svg>
@@ -7510,6 +7510,7 @@ function showAllKanban(phase){
 
 
 function onDragStart(e,id){draggedId=id;e.dataTransfer.effectAllowed='move';document.getElementById('kcard-'+id)?.classList.add('dragging');}
+function onDragEnd(e){e.currentTarget.classList.remove('dragging');draggedId=null;}
 function onDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
 function onDragLeave(e){e.currentTarget.classList.remove('drag-over');}
 // Estado temporal del cambio de fase
