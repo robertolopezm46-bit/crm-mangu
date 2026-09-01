@@ -390,9 +390,6 @@
   #kanban-mobile-tabs,
   #mobile-nav { display: none; }
 
-  /* Estructura swipe (usada en móvil y desktop grid) */
-  .kswipe { position: relative; }
-  .kswipe-action { display: none; }
 
   /* Estado vacío del Kanban */
   .kanban-empty {
@@ -591,7 +588,7 @@
     /* Tarjeta estilo mockup: blanca, redondeada */
     #section-kanban .kanban-card {
       background: #fff; border-radius: 12px;
-      padding: 14px; margin-bottom: 0;
+      padding: 14px; margin-bottom: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.25);
       color: #1F2937; border-left: none !important;
     }
@@ -609,25 +606,6 @@
 
     /* Perdido → opacidad 60% */
     #section-kanban .kanban-col[id="col-Perdido"].mobile-active .kanban-card { opacity: 0.6; }
-    /* Fix (1-sep-2026): con la tarjeta semitransparente, el boton verde de WhatsApp (detras, dentro del mismo .kswipe) se transparentaba tambien y se veia "pegado"/en conflicto con la tarjeta sin necesidad de hacer swipe. Se oculta hasta que se abra con el swipe, igual que en las demas columnas. */
-    #section-kanban .kanban-col[id="col-Perdido"].mobile-active .kswipe-action { opacity: 0; }
-    #section-kanban .kanban-col[id="col-Perdido"].mobile-active .kswipe.open .kswipe-action { opacity: 1; transition: opacity .18s ease; }
-
-    /* Swipe: botón WA verde detrás */
-    .kswipe {
-      overflow: hidden; border-radius: 12px; margin-bottom: 10px;
-    }
-    .kswipe .kanban-card {
-      margin-bottom: 0; transition: transform .18s ease;
-      position: relative; z-index: 1;
-    }
-    .kswipe-action {
-      display: flex; position: absolute; top: 0; right: 0; bottom: 0;
-      width: 72px; background: #22C55E;
-      align-items: center; justify-content: center;
-      border-radius: 0 12px 12px 0; z-index: 0;
-    }
-    .kswipe.open .kanban-card { transform: translateX(-72px); }
 
     /* ══════════ VISTA "TABLA" ══════════ */
     /* Ocultar tabla de escritorio, KPIs, header */
@@ -4559,7 +4537,7 @@ function showSection(id){
   hideGlobalSearch();
   if(id==='dashboard'){loadDashboardMkt();}
   if(id==='pipeline'){renderPipeline(); if(window.innerWidth<=768) renderMobileTabla();}
-  if(id==='kanban'){renderKanban();initKanbanSwipe();}
+  if(id==='kanban'){renderKanban();}
   if(id==='vendidos'){renderVendidos();}
   if(id==='citas'){renderCalendar(); if(window.innerWidth<=768) renderMobileCitas();}
   if(id==='whatsapp'){ renderMobileWhatsAppList(); showWaBadge(false); renderConvBoard(); }
@@ -7213,10 +7191,6 @@ function renderKanban(){
 const wa=waUnreadInfo(p);
       const cardUnread=ni.unread||wa.unread;
       return `
-      <div class="kswipe" data-pid="${p.id}">
-      <div class="kswipe-action" onclick="quickWAProspect('${p.id}')">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-      </div>
       <div class="kanban-card${urgente?' urgente':''}${cardUnread?' kcard-unread':''}" draggable="true" ondragstart="onDragStart(event,'${p.id}')" id="kcard-${p.id}">
    
         ${(ni.unread||wa.unread)?`<div class="kcard-badges">${ni.unread?`<span class="kcard-badge">📝 ${ni.newCount}</span>`:''}${wa.unread?`<span class="kcard-badge wa">💬</span>`:''}</div>`:''}     <h4 onclick="${phase==='Registro'?`editProspect('${p.id}')`:`openNotaRapida('${p.id}')`}" title="${phase==='Registro'?'Editar prospecto':'Ver notas'}">${esc(p.name)}</h4>
@@ -7242,7 +7216,6 @@ const wa=waUnreadInfo(p);
             <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>
-      </div>
       </div>`;}).join('');
     let verMas='';
     const oldMonths2 = inPhase.length - allData.length;
@@ -7339,36 +7312,6 @@ function renderKanbanTable(){
       </tr>`;}).join('')}</tbody></table></div>`;
 }
 
-// ── Swipe izquierdo en tarjeta → revela botón WhatsApp (móvil) ──
-let _swipeEl=null,_swipeX=0,_swipeY=0,_swipeOpen=null,_swipeMoved=false;
-function initKanbanSwipe(){
-  const board=document.getElementById('kanban-board');
-  if(!board||board.dataset.swipe)return;
-  board.dataset.swipe='1';
-  board.addEventListener('touchstart',e=>{
-    const card=e.target.closest('.kanban-card');
-    if(_swipeOpen&&(!card||_swipeOpen!==card.parentElement)){_swipeOpen.classList.remove('open');_swipeOpen=null;}
-    if(!card)return;
-    _swipeEl=card;_swipeMoved=false;
-    _swipeX=e.touches[0].clientX;_swipeY=e.touches[0].clientY;
-  },{passive:true});
-  board.addEventListener('touchmove',e=>{
-    if(!_swipeEl)return;
-    const dx=e.touches[0].clientX-_swipeX, dy=e.touches[0].clientY-_swipeY;
-    if(Math.abs(dy)>Math.abs(dx)){_swipeEl=null;return;} // scroll vertical, no swipe
-    if(dx<-10){_swipeMoved=true;_swipeEl.style.transform='translateX('+Math.max(dx,-96)+'px)';}
-  },{passive:true});
-  board.addEventListener('touchend',()=>{
-    if(!_swipeEl)return;
-    const wrap=_swipeEl.parentElement;
-    const m=/translateX\((-?\d+)/.exec(_swipeEl.style.transform||'');
-    const dx=m?parseInt(m[1]):0;
-    _swipeEl.style.transform='';
-    if(_swipeMoved&&dx<-60&&wrap&&wrap.classList.contains('kswipe')){wrap.classList.add('open');_swipeOpen=wrap;}
-    _swipeEl=null;
-  },{passive:true});
-}
-document.addEventListener('DOMContentLoaded',initKanbanSwipe);
 
 // Reactivar un prospecto perdido → regresa a Registro (Alfred)
 function reactivarProspecto(id){
