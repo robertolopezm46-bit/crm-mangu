@@ -1187,6 +1187,7 @@
           <button type="button" class="dash-tab-btn active" id="dashmkt-tab-btn-meta" onclick="showDashMktTab('meta')">Meta</button>
           <button type="button" class="dash-tab-btn" id="dashmkt-tab-btn-landing" onclick="showDashMktTab('landing')">Landing Page</button>
           <button type="button" class="dash-tab-btn" id="dashmkt-tab-btn-google" onclick="showDashMktTab('google')">Google Ads</button>
+          <button type="button" class="dash-tab-btn" id="dashmkt-tab-btn-embudo" onclick="showDashMktTab('embudo')">Embudo</button>
         </div>
 
         <div id="dashmkt-panel-meta">
@@ -1298,6 +1299,27 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <div id="dashmkt-panel-embudo" style="display:none;">
+          <div class="section-heading first">
+            <svg viewBox="0 0 24 24"><path d="M3 4h18l-7 9v6l-4 2v-8z"/></svg>
+            Embudo de conversión por origen &mdash; datos del CRM
+          </div>
+          <div class="card">
+            <div class="card-body" style="padding:0;overflow-x:auto;">
+              <table style="width:100%;">
+                <thead><tr>
+                  <th>Origen</th><th style="text-align:center;">Total</th><th style="text-align:center;">Registro</th>
+                  <th style="text-align:center;">Visita</th><th style="text-align:center;">Proceso</th>
+                  <th style="text-align:center;">Cierre</th><th style="text-align:center;">Perdido</th>
+                  <th style="text-align:center;">% Cierre</th>
+                </tr></thead>
+                <tbody id="dashmkt-embudo-body"><tr><td colspan="8" style="color:var(--text-muted);">Cargando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <p style="font-size:11.5px;color:var(--text-muted);margin-top:10px;">Cuenta todos los prospectos registrados en el CRM por su campo "Origen", sin importar cuándo se crearon. "% Cierre" = Cierre &divide; Total de ese origen.</p>
         </div>
       </div>
 
@@ -2465,6 +2487,18 @@
   </div>
 </div>
 
+<!-- Modal de confirmacion/aviso reutilizable (reemplaza confirm()/alert() nativos, 1-sep-2026) -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="width:400px;">
+    <h3 id="confirm-title" style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:14px;">Confirmar</h3>
+    <p id="confirm-message" style="font-size:13.5px;color:var(--text);white-space:pre-line;line-height:1.5;"></p>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+      <button id="confirm-cancel-btn" style="padding:9px 18px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;">Cancelar</button>
+      <button id="confirm-ok-btn" class="btn-gold" style="padding:9px 18px;font-size:13px;">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-prospect">
   <div class="modal">
     <h3 id="modal-prospect-title">Nuevo Prospecto</h3>
@@ -2597,6 +2631,25 @@ function initSupabase(url, key) {
     document.getElementById('setup-screen').style.display='none';
     document.getElementById('login-screen').style.display='flex';
     setConnStatus(true);
+    // Manejo proactivo de sesion expirada/cerrada (1-sep-2026): si el refresh
+    // token deja de ser valido (expiro, se revoco, o se cerro sesion en otra
+    // pestana), Supabase dispara SIGNED_OUT solo. Antes esto solo se notaba
+    // cuando una accion fallaba con "Sesion no valida" -- ahora se regresa a
+    // la pantalla de login de inmediato, avisando, sin esperar a que el
+    // usuario pierda lo que estaba escribiendo.
+    supabase.auth.onAuthStateChange(function(event, session){
+      if (event === 'SIGNED_OUT' && !__manualLogout) {
+        var appEl = document.getElementById('app');
+        var wasLoggedIn = appEl && appEl.style.display !== 'none';
+        DB = { users:[], prospects:[], citas:[], currentUser:null };
+        if (window._realtimeSub) supabase.removeChannel(window._realtimeSub);
+        if (window._realtimeWaSub) supabase.removeChannel(window._realtimeWaSub);
+        document.getElementById('login-screen').style.display='flex';
+        if (appEl) appEl.style.display='none';
+        if (wasLoggedIn) showToast('Tu sesion expiro. Vuelve a iniciar sesion.', 'error');
+      }
+      __manualLogout = false;
+    });
   } catch(e) {
     document.getElementById('setup-error').textContent = 'Error al conectar: ' + e.message;
     document.getElementById('setup-error').style.display='block';
@@ -2614,6 +2667,7 @@ function setConnStatus(online) {
 //  LOCAL STATE (cache for UI speed)
 // ══════════════════════════════════════════
 let DB = { users:[], prospects:[], citas:[], currentUser:null };
+let __manualLogout = false; // true justo antes de un doLogout() manual (ver onAuthStateChange en initSupabase), para no mostrar "tu sesion expiro" en un cierre de sesion normal
 
 // ══════════════════════════════════════════
 //  CONFIGURACIÓN DEL PROCESO DE VENTA MANGU
@@ -3804,17 +3858,17 @@ async function finalizarProspecto(id){
   if(!p) return;
   const lp = (typeof webPropsDB!=='undefined') ? webPropsDB.find(x=>x.titulo===p.prop) : null;
   const propTxt = lp ? lp.titulo : (p.prop || '—');
-  if(!confirm('Finalizar la venta de '+p.name+' ('+propTxt+').\n\nSe marcará la propiedad como vendida y el prospecto se moverá a Vendidos. ¿Continuar?')) return;
+  if(!(await showConfirm('Finalizar la venta de '+p.name+' ('+propTxt+').\n\nSe marcará la propiedad como vendida y el prospecto se moverá a Vendidos. ¿Continuar?'))) return;
   if(lp){
     const { error } = await supabase.from('web_propiedades').update({ estatus: 'vendida', destacada: false }).eq('id', lp.id);
-    if(error){ alert('Error al marcar la propiedad como vendida: ' + error.message); return; }
+    if(error){ showToast('Error al marcar la propiedad como vendida: ' + error.message, 'error'); return; }
     if(typeof loadWebProps === 'function') loadWebProps();
   } else {
-    alert('No se encontró una propiedad vinculada por nombre ("'+(p.prop||'—')+'"). Márcala como vendida manualmente en Sitio Web → Propiedades.');
+    showToast('No se encontró una propiedad vinculada por nombre ("'+(p.prop||'—')+'"). Márcala como vendida manualmente en Sitio Web → Propiedades.', 'error', 6000);
   }
   const vendidoAt = new Date().toISOString();
   const { error: errV } = await supabase.from('crm_prospects').update({ vendido: true, vendido_at: vendidoAt }).eq('id', p.id);
-  if(errV){ alert('Error al mover el prospecto a Vendidos: ' + errV.message); return; }
+  if(errV){ showToast('Error al mover el prospecto a Vendidos: ' + errV.message, 'error'); return; }
   p.vendido = true;
   p.vendido_at = vendidoAt;
   renderKanban();
@@ -4213,7 +4267,7 @@ function setView(v) {
 
 async function exportCSV() {
   const prospects = getVisibleProspects();
-  if (!prospects.length) { alert('No hay prospectos para exportar.'); return; }
+  if (!prospects.length) { showToast('No hay prospectos para exportar.', 'error'); return; }
   // Consultar notas bajo demanda (una sola query) para incluirlas en el export
   const ids = prospects.map(p => p.id);
   const notesMap = {};
@@ -4320,10 +4374,12 @@ async function doLogin() {
     applyUserModules(DB.currentUser);
     hideLoading();
     subscribeRealtime();
+    flushNotasPendientes();
   } catch(e){ hideLoading(); showToast('Error de conexión: '+e.message,'error'); }
 }
 
 async function doLogout() {
+  __manualLogout = true;
   await supabase.auth.signOut();
   DB={users:[],prospects:[],citas:[],currentUser:null};
   if(window._realtimeSub) supabase.removeChannel(window._realtimeSub);
@@ -4348,6 +4404,7 @@ async function checkExistingSession(){
   hideLoading();
   subscribeRealtime();
   requestWaNotifyPermission();
+  flushNotasPendientes();
 }
 
 // ══════════════════════════════════════════
@@ -5117,8 +5174,8 @@ function fmtMXN(n) {
   return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-function deleteBudgetRow(tipo, idx) {
-  if (!confirm('¿Eliminar este registro?')) return;
+async function deleteBudgetRow(tipo, idx) {
+  if (!(await showConfirm('¿Eliminar este registro?'))) return;
   const rows = loadBudgetData();
   rows.splice(idx, 1);
   saveBudgetData(rows);
@@ -6088,7 +6145,7 @@ function editContrato(id) {
 
 async function eliminarContrato(id) {
   if (!canContratosFull()) { showToast('No tienes permiso para eliminar contratos', 'error'); return; }
-  if (!confirm('¿Eliminar este contrato? Esta acción no se puede deshacer.')) return;
+  if (!(await showConfirm('¿Eliminar este contrato? Esta acción no se puede deshacer.'))) return;
   const { error } = await supabase.from('crm_contratos').delete().eq('id', id);
   if (error) { showToast('No se pudo eliminar: ' + error.message, 'error'); return; }
   showToast('Contrato eliminado', 'success');
@@ -6261,6 +6318,20 @@ async function loadDashboardMkt() {
     document.getElementById('dashmkt-kpi-leads').textContent = error ? '—' : String(count ?? 0);
   } catch (e) { document.getElementById('dashmkt-kpi-leads').textContent = '—'; }
 
+  // Embudo de conversión por origen (1-sep-2026): usa datos propios del CRM
+  // (crm_prospects), no depende de ninguna API externa de ads. Cuenta todo
+  // el historial (no solo los últimos 30 días) porque con pocos prospectos
+  // por mes, un embudo de 30 días sería demasiado chico para ser útil.
+  try {
+    const { data: funnelRows, error: funnelErr } = await supabase.from('crm_prospects').select('source, phase');
+    if (funnelErr) throw funnelErr;
+    renderEmbudoConversion(funnelRows || []);
+  } catch (e) {
+    console.log('DashboardMkt Embudo error:', e.message || e);
+    const tbody = document.getElementById('dashmkt-embudo-body');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text-muted);">No se pudo cargar (' + (e.message||'error') + ').</td></tr>';
+  }
+
   // WhatsApp: mensajes enviados + tasa de entrega (real, desde crm_wa_messages)
   try {
     const { data, error } = await supabase
@@ -6406,10 +6477,38 @@ async function loadDashboardMkt() {
 }
 
 function showDashMktTab(tab) {
-  ['meta','landing','google'].forEach(t => {
+  ['meta','landing','google','embudo'].forEach(t => {
     document.getElementById('dashmkt-panel-'+t).style.display = (t===tab) ? '' : 'none';
     document.getElementById('dashmkt-tab-btn-'+t).classList.toggle('active', t===tab);
   });
+}
+// Agrupa los prospectos (source, phase) del embudo de conversión por origen.
+function renderEmbudoConversion(rows){
+  const bySource={};
+  rows.forEach(r=>{
+    const src=r.source||'Sin especificar';
+    if(!bySource[src]) bySource[src]={total:0,Registro:0,Visita:0,Proceso:0,Cierre:0,Perdido:0};
+    bySource[src].total++;
+    const ph=normalizePhase(r.phase);
+    if(bySource[src][ph]!==undefined) bySource[src][ph]++;
+  });
+  const entries=Object.entries(bySource).sort((a,b)=>b[1].total-a[1].total);
+  const tbody=document.getElementById('dashmkt-embudo-body');
+  if(!tbody) return;
+  if(!entries.length){ tbody.innerHTML='<tr><td colspan="8" style="color:var(--text-muted);">Sin prospectos registrados todavía.</td></tr>'; return; }
+  tbody.innerHTML=entries.map(([src,c])=>{
+    const pctCierre=c.total?Math.round((c.Cierre/c.total)*100):0;
+    return `<tr>
+      <td>${src==='Sin especificar'?'<span style="color:#9CA3AF;">Sin especificar</span>':sourceBadge(src)}</td>
+      <td style="text-align:center;font-weight:600;">${c.total}</td>
+      <td style="text-align:center;">${c.Registro}</td>
+      <td style="text-align:center;">${c.Visita}</td>
+      <td style="text-align:center;">${c.Proceso}</td>
+      <td style="text-align:center;color:var(--success);font-weight:600;">${c.Cierre}</td>
+      <td style="text-align:center;color:var(--text-muted);">${c.Perdido}</td>
+      <td style="text-align:center;font-weight:700;color:${pctCierre>=20?'var(--success)':'var(--text)'};">${pctCierre}%</td>
+    </tr>`;
+  }).join('');
 }
 
 async function loadAuditoria() {
@@ -7252,30 +7351,81 @@ function openNotaRapida(id){
   renderKanban();
   setTimeout(()=>document.getElementById('modal-nota-texto').focus(),100);
 }
+// ── Cola local de notas sin conexion (1-sep-2026) ───────────────────────
+// Si el guardado de una nota falla por falta de red, se guarda en
+// localStorage y se reintenta sola al recuperar conexion (evento 'online')
+// o al volver a iniciar sesion. Siempre se relee "notes" desde la base al
+// momento de aplicarla (no al momento de escribirla) para no perder notas
+// que otra persona haya agregado mientras tanto.
+const NOTAS_PENDIENTES_KEY='mangu_notas_pendientes';
+function getNotasPendientes(){ try{ return JSON.parse(localStorage.getItem(NOTAS_PENDIENTES_KEY))||[]; }catch(e){ return []; } }
+function setNotasPendientes(list){ try{ localStorage.setItem(NOTAS_PENDIENTES_KEY, JSON.stringify(list)); }catch(e){} }
+function esErrorDeRed(e){
+  const m=((e&&e.message)||'').toLowerCase();
+  return !navigator.onLine || m.includes('failed to fetch') || m.includes('network') || m.includes('load failed');
+}
+async function commitNotaRapida(pendiente){
+  const{id,texto,autor,ts}=pendiente;
+  const{data:cur,error:selErr}=await supabase.from('crm_prospects').select('notes').eq('id',id).single();
+  if(selErr) throw selErr;
+  const nuevas=(cur?.notes||'')+`\n[${ts}] Nota de ${autor}: ${texto}`;
+  const{error}=await supabase.from('crm_prospects').update({notes:nuevas}).eq('id',id);
+  if(error) throw error;
+  const p=DB.prospects.find(x=>String(x.id)===String(id));
+  if(p){
+    p.notes=nuevas;
+    if(['Visita','Proceso','Cierre'].includes(p.phase)){
+      notifyFaseChange({prospectName:p.name,oldPhase:p.phase,newPhase:p.phase,comment:'Nuevo comentario: '+texto,sellerName:autor,assignedTo:p.seller||'',notifyTo:NOTIFY_MATRIX[p.phase]});
+    }
+    const notaCorta=texto.length>150?texto.slice(0,150)+'…':texto;
+    notaWANotifyRecipients(p).forEach(u=>{ if(u.phone) sendWATemplateStaff(u.phone,'mangu_nueva_nota',[p.name,autor,notaCorta],p.id); });
+    sendCrmPush(notaWANotifyRecipients(p).map(u=>u.username), `📝 Nota: ${p.name}`, notaCorta, '/');
+  }
+}
+async function flushNotasPendientes(){
+  const pendientes=getNotasPendientes();
+  if(!pendientes.length) return;
+  const quedan=[];
+  let enviadas=0;
+  for(const nota of pendientes){
+    try{ await commitNotaRapida(nota); enviadas++; }
+    catch(e){ quedan.push(nota); if(!esErrorDeRed(e)) console.log('Nota pendiente con error no de red:', e.message||e); }
+  }
+  setNotasPendientes(quedan);
+  if(enviadas) showToast(enviadas===1?'1 nota pendiente enviada':enviadas+' notas pendientes enviadas','success');
+}
+window.addEventListener('online', flushNotasPendientes);
+
 async function saveNotaRapida(){
   const txt=document.getElementById('modal-nota-texto').value.trim();
   if(!txt){showToast('Escribe la nota antes de guardar','error');return;}
   const id=_notaProspectId;
+  const autor=DB.currentUser?.name||'';
   closeModal('nota');
-  setSyncBadge(true);
-  const{data:cur}=await supabase.from('crm_prospects').select('notes').eq('id',id).single();
-  const nuevas=(cur?.notes||'')+`\n[${nowStamp()}] Nota de ${DB.currentUser?.name||''}: ${txt}`;
-  const{error}=await supabase.from('crm_prospects').update({notes:nuevas}).eq('id',id);
-  setSyncBadge(false);
-  if(error){showToast('Error al guardar: '+error.message,'error');return;}
-  const p=DB.prospects.find(x=>String(x.id)===String(id));
-  if(p)p.notes=nuevas;
-  // Notificar comentarios en Visita, Proceso y Cierre (según matriz de fase)
-  if(p && ['Visita','Proceso','Cierre'].includes(p.phase)){
-    notifyFaseChange({prospectName:p.name,oldPhase:p.phase,newPhase:p.phase,comment:'Nuevo comentario: '+txt,sellerName:DB.currentUser?.name||'',assignedTo:p.seller||'',notifyTo:NOTIFY_MATRIX[p.phase]});
+  const pendiente={id,texto:txt,autor,ts:nowStamp()};
+  if(!navigator.onLine){
+    const lista=getNotasPendientes(); lista.push(pendiente); setNotasPendientes(lista);
+    const pOff=DB.prospects.find(x=>String(x.id)===String(id));
+    if(pOff) pOff.notes=(pOff.notes||'')+`\n[${pendiente.ts}] Nota de ${autor}: ${txt}`;
+    showToast('Sin conexión: la nota se guardó en este dispositivo y se enviará sola cuando vuelva la señal','info',5000);
+    return;
   }
-  // Aviso por WhatsApp al celular del staff relevante (mismo criterio que la tarjeta amarilla del Kanban)
-    if(p){
-          const notaCorta=txt.length>150?txt.slice(0,150)+'…':txt;
-          notaWANotifyRecipients(p).forEach(u=>{ if(u.phone) sendWATemplateStaff(u.phone,'mangu_nueva_nota',[p.name,DB.currentUser?.name||'',notaCorta],p.id); });
-          sendCrmPush(notaWANotifyRecipients(p).map(u=>u.username), `📝 Nota: ${p.name}`, notaCorta, '/');
+  setSyncBadge(true);
+  try{
+    await commitNotaRapida(pendiente);
+    setSyncBadge(false);
+    showToast('Nota guardada','success');
+  }catch(e){
+    setSyncBadge(false);
+    if(esErrorDeRed(e)){
+      const lista=getNotasPendientes(); lista.push(pendiente); setNotasPendientes(lista);
+      const pOff=DB.prospects.find(x=>String(x.id)===String(id));
+      if(pOff) pOff.notes=(pOff.notes||'')+`\n[${pendiente.ts}] Nota de ${autor}: ${txt}`;
+      showToast('Sin conexión: la nota se guardó en este dispositivo y se enviará sola cuando vuelva la señal','info',5000);
+    } else {
+      showToast('Error al guardar: '+e.message,'error');
     }
- showToast('Nota guardada','success');
+  }
 }
 
 // ── Vista Tabla del tablero (prototipo v2) ──
@@ -7971,6 +8121,16 @@ async function saveProspect(){
     else showToast('Ingresa un teléfono de 10 dígitos','error');
     return;
   }
+  // Deteccion de prospecto duplicado por telefono (1-sep-2026): solo al
+  // crear uno nuevo (no al editar), avisa si el mismo numero ya esta
+  // registrado antes de guardar otro prospecto distinto.
+  if(!editId){
+    const dupProspect=DB.prospects.find(x=>((x.phone||'').replace(/\D/g,'')).slice(-10)===rawPhone);
+    if(dupProspect){
+      const seguirDeTodasFormas=await showConfirm('Ya existe un prospecto con este teléfono:\n\n'+dupProspect.name+' — fase '+dupProspect.phase+(dupProspect.seller?' — '+dupProspect.seller:'')+'\n\n¿Registrar de todas formas?');
+      if(!seguirDeTodasFormas) return;
+    }
+  }
   const btn=document.getElementById('save-prospect-btn');
   btn.textContent='Guardando...';btn.disabled=true;
   setSyncBadge(true);
@@ -8030,7 +8190,7 @@ async function deleteProspect(id){
   const p=DB.prospects.find(pr=>String(pr.id)===String(id));
   if(!p)return;
   if(!isAdmin()&&p.seller!==DB.currentUser?.name){showToast('Sin permiso para eliminar este prospecto','error');return;}
-  if(!confirm('\u00bfEliminar este prospecto? Esta acción no se puede deshacer.'))return;
+  if(!(await showConfirm('\u00bfEliminar este prospecto? Esta acción no se puede deshacer.')))return;
   setSyncBadge(true);
   const{error}=await supabase.from('crm_prospects').delete().eq('id',id);
   setSyncBadge(false);
@@ -8072,7 +8232,7 @@ async function deleteSelectedProspects(){
   if(!isAdmin()){showToast('Sin permisos','error');return;}
   const ids=Array.from(_selectedIds);
   if(!ids.length){showToast('Selecciona al menos un prospecto','error');return;}
-  if(!confirm('\u00bfEliminar '+ids.length+' prospecto(s) seleccionado(s)? Esta acción no se puede deshacer.'))return;
+  if(!(await showConfirm('\u00bfEliminar '+ids.length+' prospecto(s) seleccionado(s)? Esta acción no se puede deshacer.')))return;
   setSyncBadge(true);
   const{error}=await supabase.from('crm_prospects').delete().in('id',ids);
   setSyncBadge(false);
@@ -8110,7 +8270,7 @@ function updateWpSelectCountUI(){
 async function deleteWebProp(id){
   const p=webPropsDB.find(x=>String(x.id)===String(id));
   if(!p)return;
-  if(!confirm('¿Eliminar la propiedad "'+(p.titulo||'')+'"? Esta acción no se puede deshacer.'))return;
+  if(!(await showConfirm('¿Eliminar la propiedad "'+(p.titulo||'')+'"? Esta acción no se puede deshacer.')))return;
   setSyncBadge(true);
   const{error}=await supabase.from('web_propiedades').delete().eq('id',id);
   setSyncBadge(false);
@@ -8121,7 +8281,7 @@ async function deleteWebProp(id){
 async function deleteSelectedWebProps(){
   const ids=Array.from(_wpSelectedIds);
   if(!ids.length){showToast('Selecciona al menos una propiedad','error');return;}
-  if(!confirm('¿Eliminar '+ids.length+' propiedad(es) seleccionada(s)? Esta acción no se puede deshacer.'))return;
+  if(!(await showConfirm('¿Eliminar '+ids.length+' propiedad(es) seleccionada(s)? Esta acción no se puede deshacer.')))return;
   setSyncBadge(true);
   const{error}=await supabase.from('web_propiedades').delete().in('id',ids);
   setSyncBadge(false);
@@ -8159,7 +8319,7 @@ function editUser(id){
 }
 async function deleteUser(id){
   if(String(id)===String(DB.currentUser?.id)){showToast('No puedes eliminarte a ti mismo','error');return;}
-  if(!confirm('\u00bfEliminar este usuario?'))return;
+  if(!(await showConfirm('\u00bfEliminar este usuario?')))return;
   setSyncBadge(true);
   const{error}=await supabase.from('crm_users').delete().eq('id',id);
   setSyncBadge(false);
@@ -8171,10 +8331,38 @@ async function deleteUser(id){
 // ══════════════════════════════════════════
 //  TOAST
 // ══════════════════════════════════════════
-function showToast(msg,type='info'){
+function showToast(msg,type='info',ms=3000){
   const t=document.getElementById('toast');
   t.textContent=msg;t.className=`toast ${type} show`;
-  setTimeout(()=>t.classList.remove('show'),3000);
+  setTimeout(()=>t.classList.remove('show'),ms);
+}
+
+// ── Modal de confirmacion/aviso reutilizable (reemplaza confirm()/alert() nativos, 1-sep-2026) ──
+function showConfirm(message, opts){
+  opts = opts || {};
+  return new Promise(function(resolve){
+    const modal = document.getElementById('modal-confirm');
+    document.getElementById('confirm-title').textContent = opts.title || (opts.hideCancel ? 'Aviso' : 'Confirmar');
+    document.getElementById('confirm-message').textContent = message;
+    const okBtn = document.getElementById('confirm-ok-btn');
+    const cancelBtn = document.getElementById('confirm-cancel-btn');
+    okBtn.textContent = opts.okText || 'Confirmar';
+    cancelBtn.style.display = opts.hideCancel ? 'none' : '';
+    modal.classList.add('open');
+    function cleanup(result){
+      modal.classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+function showAlertModal(message, title){
+  return showConfirm(message, {hideCancel:true, okText:'Entendido', title:title});
 }
 
 // ══════════════════════════════════════════
@@ -8680,7 +8868,7 @@ async function savePropiedad(mode){
 
   // Si se está "Guardando" (no publicando) una propiedad que ya estaba visible, confirmamos que se oculte
   if (mode === 'guardar' && existing?.activa) {
-    if (!confirm('Esta propiedad ya está publicada. "Guardar" la ocultará del sitio web hasta que la publiques de nuevo. ¿Continuar?')) return;
+    if (!(await showConfirm('Esta propiedad ya está publicada. "Guardar" la ocultará del sitio web hasta que la publiques de nuevo. ¿Continuar?'))) return;
   }
 
   const row = {
@@ -8719,7 +8907,7 @@ async function savePropiedad(mode){
   btn.disabled = false; btnDraft.disabled = false;
   btn.textContent = 'Publicar'; btnDraft.textContent = 'Guardar';
 
-  if (error) { alert('Error al guardar: ' + error.message); return; }
+  if (error) { showToast('Error al guardar: ' + error.message, 'error'); return; }
   clearDraftProp();
   closeModal('propiedad');
   loadWebProps();
@@ -8727,9 +8915,9 @@ async function savePropiedad(mode){
 }
 
 async function marcarVendidaProp(id){
-  if (!confirm('¿Marcar esta propiedad como vendida?')) return;
+  if (!(await showConfirm('¿Marcar esta propiedad como vendida?'))) return;
   const { error } = await supabase.from('web_propiedades').update({ estatus: 'vendida', destacada: false }).eq('id', id);
-  if (error) { alert('Error: ' + error.message); return; }
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
   loadWebProps();
 }
 
@@ -8737,7 +8925,7 @@ async function toggleActivaProp(id){
   const p = webPropsDB.find(x=>x.id===id);
   if (!p) return;
   const { error } = await supabase.from('web_propiedades').update({ activa: !p.activa }).eq('id', id);
-  if (error) { alert('Error: ' + error.message); return; }
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
   loadWebProps();
 }
 
@@ -8854,19 +9042,19 @@ if ('serviceWorker' in navigator) {
 
   async function subscribeToPush() {
     if (!pushSupported()) {
-      alert('Este navegador no soporta notificaciones push.');
+      showToast('Este navegador no soporta notificaciones push.', 'error');
       return;
     }
     var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     if (isIOS && !isStandalone()) {
-      alert('Para activar notificaciones en iPhone, primero agrega el CRM a tu pantalla de inicio (botón Compartir → "Agregar a pantalla de inicio") y ábrelo desde ese ícono.');
+      await showAlertModal('Para activar notificaciones en iPhone, primero agrega el CRM a tu pantalla de inicio (botón Compartir → "Agregar a pantalla de inicio") y ábrelo desde ese ícono.');
       return;
     }
     paintNotifBtns('busy', true);
     try {
       var permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        alert('No se activaron las notificaciones (permiso no concedido).');
+        showToast('No se activaron las notificaciones (permiso no concedido).', 'error');
         paintNotifBtns('off', true);
         return;
       }
@@ -8878,13 +9066,13 @@ if ('serviceWorker' in navigator) {
       var raw = sub.toJSON();
       var user = getCurrentUser();
       if (!user || !user.username) {
-        alert('Inicia sesión antes de activar notificaciones.');
+        showToast('Inicia sesión antes de activar notificaciones.', 'error');
         paintNotifBtns('off', true);
         return;
       }
       var client = getSupabaseClient();
       if (!client) {
-        alert('No se pudo conectar con la base de datos para guardar la suscripción.');
+        showToast('No se pudo conectar con la base de datos para guardar la suscripción.', 'error');
         paintNotifBtns('off', true);
         return;
       }
@@ -8898,15 +9086,15 @@ if ('serviceWorker' in navigator) {
       }, { onConflict: 'endpoint' });
       if (result.error) {
         console.error('No se pudo guardar la suscripcion push:', result.error);
-        alert('No se pudo guardar la suscripción. Intenta de nuevo.');
+        showToast('No se pudo guardar la suscripción. Intenta de nuevo.', 'error');
         paintNotifBtns('off', true);
         return;
       }
       paintNotifBtns('on', true);
-      alert('¡Notificaciones activadas!');
+      showToast('¡Notificaciones activadas!', 'success');
     } catch (e) {
       console.error('Error activando push:', e);
-      alert('No se pudieron activar las notificaciones.');
+      showToast('No se pudieron activar las notificaciones.', 'error');
       paintNotifBtns('off', true);
     }
   }
@@ -8925,7 +9113,7 @@ if ('serviceWorker' in navigator) {
         }
       }
       paintNotifBtns('off', true);
-      alert('Notificaciones silenciadas en este dispositivo.');
+      showToast('Notificaciones silenciadas en este dispositivo.', 'success');
     } catch (e) {
       console.error('Error silenciando push:', e);
       paintNotifBtns('off', true);
@@ -8934,14 +9122,14 @@ if ('serviceWorker' in navigator) {
 
   window.toggleNotif = async function () {
     if (!pushSupported()) {
-      alert('Este navegador no soporta notificaciones push.');
+      showToast('Este navegador no soporta notificaciones push.', 'error');
       return;
     }
     try {
       var reg = await navigator.serviceWorker.ready;
       var existing = await reg.pushManager.getSubscription();
       if (existing && Notification.permission === 'granted') {
-        if (confirm('¿Silenciar notificaciones en este dispositivo?')) await unsubscribeFromPush();
+        if (await showConfirm('¿Silenciar notificaciones en este dispositivo?')) await unsubscribeFromPush();
       } else {
         await subscribeToPush();
       }
