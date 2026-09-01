@@ -1086,6 +1086,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <span>Citas</span>
     </button>
+    <button class="mnav-btn" id="mnav-dashboard" onclick="showSection('dashboard')" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+      <span>Dashboard</span>
+    </button>
   </nav>
 
   <!-- ══════════ DRAWER LATERAL DERECHO (Menú) ══════════ -->
@@ -2785,9 +2789,9 @@ let _mobilePhase = 'Registro';
 function setMobilePhase(f){ _mobilePhase = f; renderKanban(); }
 function updateMobileNav(id){
   // Mapeo: sección visible → botón de la nav móvil que debe quedar activo
-  const map = { kanban:'pipeline', pipeline:'tabla', whatsapp:'whatsapp', citas:'citas' };
+  const map = { kanban:'pipeline', pipeline:'tabla', whatsapp:'whatsapp', citas:'citas', dashboard:'dashboard' };
   const activeBtn = map[id] || null;
-  ['pipeline','tabla','whatsapp','citas'].forEach(x=>{
+  ['pipeline','tabla','whatsapp','citas','dashboard'].forEach(x=>{
     const b=document.getElementById('mnav-'+x);
     if(b) b.classList.toggle('active', x===activeBtn);
   });
@@ -4197,6 +4201,24 @@ function applyUserModules(user) {
   const mw=document.getElementById('mnav-whatsapp'); if(mw) mw.style.display = allowed.includes('whatsapp')||isAdmin() ? '' : 'none';
   const mc=document.getElementById('mnav-citas'); if(mc) mc.style.display = allowed.includes('citas')||isAdmin() ? '' : 'none';
 
+  // Nav inferior móvil personalizada para Roberto: Kanban, WhatsApp, Citas, Dashboard (sin Tabla)
+  const mPipeline = document.getElementById('mnav-pipeline');
+  const mTabla = document.getElementById('mnav-tabla');
+  const mDash = document.getElementById('mnav-dashboard');
+  if (u === 'roberto') {
+    if (mPipeline) { const sp = mPipeline.querySelector('span'); if (sp) sp.textContent = 'Kanban'; mPipeline.style.order = '1'; }
+    if (mw) mw.style.order = '2';
+    if (mc) mc.style.order = '3';
+    if (mTabla) mTabla.style.display = 'none';
+    if (mDash) { mDash.style.display = ''; mDash.style.order = '4'; }
+  } else {
+    if (mPipeline) { const sp = mPipeline.querySelector('span'); if (sp) sp.textContent = 'Pipeline'; mPipeline.style.order = ''; }
+    if (mw) mw.style.order = '';
+    if (mc) mc.style.order = '';
+    if (mTabla) mTabla.style.display = '';
+    if (mDash) mDash.style.display = 'none';
+  }
+
   // Botón Nuevo Prospecto: solo Atención a Cliente (Alfred) registra prospectos
   const btnNuevo = document.getElementById('btn-nuevo-prospecto');
   const esAtnCliente = isAdmin() || user.role === 'Atención a Cliente' || u === 'alfredo';
@@ -4594,7 +4616,7 @@ function showSection(id){
   hideGlobalSearch();
   if(id==='dashboard'){loadDashboardMkt();}
   if(id==='pipeline'){renderPipeline(); if(window.innerWidth<=768) renderMobileTabla();}
-  if(id==='kanban'){renderKanban();}
+  if(id==='kanban'){_mobilePhase='Visita'; renderKanban();}
   if(id==='vendidos'){renderVendidos();}
   if(id==='citas'){renderCalendar(); if(window.innerWidth<=768) renderMobileCitas();}
   if(id==='whatsapp'){ renderMobileWhatsAppList(); showWaBadge(false); renderConvBoard(); }
