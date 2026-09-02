@@ -3128,6 +3128,16 @@ function closeWaChatModal(){
 async function loadAndRenderWaChat(){
   if (!__waChatPhone) return;
   const body = document.getElementById('wachat-body');
+  // Antes de reconstruir el hilo, guarda qué tan lejos del fondo estaba el
+  // usuario. Si ya estaba abajo (o es la carga inicial) lo seguimos llevando
+  // al fondo como siempre; si había hecho scroll hacia arriba para leer
+  // mensajes viejos, restauramos esa misma posición relativa en vez de
+  // jalarlo de vuelta al final — antes SIEMPRE se forzaba
+  // scrollTop=scrollHeight, lo que "jalaba"/trababa la pantalla cada vez que
+  // llegaba un mensaje nuevo (de esta conversación o de cualquier otra)
+  // mientras el usuario leía el historial (arreglado 2-sep-2026).
+  const __distFromBottom = body ? (body.scrollHeight - body.scrollTop - body.clientHeight) : 0;
+  const __wasNearBottom = __distFromBottom < 80;
   const { data, error } = await supabase
     .from('crm_wa_messages')
     .select('id, direction, message_type, body, status, created_at, sent_by, error_detail, media_url')
@@ -3168,7 +3178,8 @@ async function loadAndRenderWaChat(){
       return '<div class="wachat-msg ' + (isOut ? 'out' : 'in') + (failed ? ' failed' : '') + '">' + senderLabel + content + failNote + '</div>';
     }).join('');
   }
-  body.scrollTop = body.scrollHeight;
+  if (__wasNearBottom) { body.scrollTop = body.scrollHeight; }
+  else { body.scrollTop = Math.max(0, body.scrollHeight - body.clientHeight - __distFromBottom); }
 
   const warn = document.getElementById('wachat-warn');
   const lastInbound = data.slice().reverse().find(function(m){ return m.direction === 'inbound'; });
