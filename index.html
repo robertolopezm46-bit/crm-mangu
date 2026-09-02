@@ -3644,6 +3644,13 @@ async function loadAndRenderConvChat(){
 if (!__convChatPhone) return;
 const body = document.getElementById('cchat-body');
 if (!body) return;
+// Mismo fix que loadAndRenderWaChat() (móvil, 2-sep-2026): antes de
+// reconstruir el hilo, guarda qué tan lejos del fondo estaba el usuario.
+// Si ya estaba abajo (o es la carga inicial) lo seguimos llevando al
+// fondo; si había hecho scroll hacia arriba para leer historial,
+// restauramos esa misma posición en vez de jalarlo de vuelta al final.
+const __distFromBottom = body.scrollHeight - body.scrollTop - body.clientHeight;
+const __wasNearBottom = __distFromBottom < 80;
 const { data, error } = await supabase
 .from('crm_wa_messages')
 .select('id, direction, message_type, body, status, created_at, sent_by, error_detail, media_url')
@@ -3684,7 +3691,8 @@ const failNote = failed
 return '<div class="cchat-msg ' + (isOut ? 'out' : 'in') + (failed ? ' failed' : '') + '">' + senderLabel + content + failNote + '</div>';
 }).join('');
 }
-body.scrollTop = body.scrollHeight;
+if (__wasNearBottom) { body.scrollTop = body.scrollHeight; }
+else { body.scrollTop = Math.max(0, body.scrollHeight - body.clientHeight - __distFromBottom); }
 const warn = document.getElementById('cchat-warn');
 const lastInbound = data.slice().reverse().find(function(m){ return m.direction === 'inbound'; });
 if (lastInbound) {
