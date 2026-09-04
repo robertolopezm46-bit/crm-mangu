@@ -4661,9 +4661,14 @@ loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban();
   renderEquipo();
   renderCitasHoyBanner();
   updateMobileFab();
-  // En móvil, arrancar mostrando el Kanban (vista "Pipeline" del mockup)
+  // En móvil, arrancar mostrando la última sección visitada (o Kanban si no hay ninguna guardada) — evita que "Actualizar"/recargar la página mande siempre a Kanban
   if (window.innerWidth <= 768) {
-    showSection('kanban');
+    let lastSection = 'kanban';
+    try {
+      const saved = localStorage.getItem('mangu_last_section');
+      if (saved && document.getElementById('section-'+saved)) lastSection = saved;
+    } catch(e) {}
+    showSection(lastSection);
   }
   hideLoading();
 }
@@ -4711,6 +4716,8 @@ function showWaTab(tab){
   }
 }
 function showSection(id){
+  // Recuerda la última sección para que un refresh/reload en móvil no siempre mande a Kanban
+  try { localStorage.setItem('mangu_last_section', id); } catch(e) {}
   // Cerrar sidebar en mobile al navegar
   if (window.innerWidth <= 768) closeSidebar();
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
