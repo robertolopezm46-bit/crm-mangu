@@ -3855,6 +3855,11 @@ function _tipoCita(c){
   if (notes.includes('seguim')) return 'seguim';
   return 'visita';
 }
+function _asistenciaBadgeHtml(c){
+  if (c.asistencia_status === 'confirmada') return '<span class="badge" style="background:#D1FAE5;color:#065F46;margin-left:6px;">✓ Confirmada</span>';
+  if (c.asistencia_status === 'no_asistira') return '<span class="badge" style="background:#FEE2E2;color:#991B1B;margin-left:6px;">✕ No asistirá</span>';
+  return '';
+}
 function renderMobileCitas(){
   const el = document.getElementById('mob-citas-view');
   if (!el) return;
@@ -3905,8 +3910,8 @@ function renderMobileCitas(){
       <div class="mcit-item-head">
         <span class="mcit-dot ${tipo}"></span>
         <span class="mcit-time">${c.date} · ${c.time||''}</span>
-        <span class="mcit-type">${tipoLabel[tipo]}</span>
-      </div>
+        <span class="mcit-type">${tipoLabel[tipo]}</span>${_asistenciaBadgeHtml(c)}
+        </div>
       <div class="mcit-name">${esc(p ? p.name : 'Prospecto')}</div>
       <div class="mcit-prop">${esc((c.prop||'').split('—')[0].trim())}</div>
     </div>`;
@@ -3919,8 +3924,8 @@ function renderMobileCitas(){
       <div class="mcit-item-head">
         <span class="mcit-dot ${tipo}"></span>
         <span class="mcit-time">${c.time||''}</span>
-        <span class="mcit-type">${tipoLabel[tipo]}</span>
-      </div>
+        <span class="mcit-type">${tipoLabel[tipo]}</span>${_asistenciaBadgeHtml(c)}
+        </div>
       <div class="mcit-name">${esc(p ? p.name : 'Prospecto')}</div>
       <div class="mcit-prop">${esc((c.prop||'').split('—')[0].trim())}</div>
     </div>`;
@@ -8073,8 +8078,8 @@ function renderCalendar(){
   document.getElementById('upcoming-citas').innerHTML=upcoming.length?upcoming.map(c=>`
     <div class="cita-item">
       <div class="cita-time">${c.time}</div>
-      <div class="cita-info"><h4>${pMap[String(c.prospect_id)]||'Prospecto'}</h4><p>${c.date} \u00b7 ${c.prop.split('\u2014')[0]}</p><p>${c.seller}</p></div>
-    </div>`).join(''):'<div class="empty-state" style="padding:20px;">Sin citas próximas</div>';
+      <div class="cita-info"><h4>${pMap[String(c.prospect_id)]||'Prospecto'}${_asistenciaBadgeHtml(c)}</h4><p>${c.date} · ${c.prop.split('—')[0]}</p><p>${c.seller}</p></div>
+      </div>`).join(''):'<div class="empty-state" style="padding:20px;">Sin citas próximas</div>';
 }
 function changeMonth(d){calDate.setMonth(calDate.getMonth()+d);renderCalendar();}
 
