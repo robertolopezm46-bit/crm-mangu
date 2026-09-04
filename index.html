@@ -471,6 +471,11 @@
     #conv-board .cchat-footer textarea{flex:1;min-width:0;border:1px solid var(--border);border-radius:20px;padding:10px 14px;font-size:13.5px;resize:none;max-height:90px;font-family:inherit;}
     #conv-board .cchat-footer button{background:var(--gold);color:#fff;border:none;border-radius:50%;width:38px;height:38px;flex-shrink:0;cursor:pointer;font-size:15px;}
     #conv-board .cchat-footer button:disabled{opacity:.5;cursor:default;}
+    #conv-board .cchat-attach-btn{cursor:pointer;font-size:19px;padding:6px;flex-shrink:0;color:var(--gold);line-height:1;}
+    #conv-board .cchat-preview{padding:8px 12px;background:var(--white);border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+    #conv-board .cchat-preview .cchat-preview-thumb{width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;}
+    #conv-board .cchat-preview .cchat-preview-name{flex:1;font-size:12.5px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    #conv-board .cchat-preview .cchat-preview-cancel{cursor:pointer;font-size:15px;color:#999;padding:4px;flex-shrink:0;}
   }
   #kv-btn-tabla{display:none !important;}
 
@@ -3601,6 +3606,7 @@ let __convChatPhone = null;
 let __convChatDigits = '';
 let __convChatProspectId = null;
 async function renderConvChatPanel(conv){
+clearConvChatAttach();
 __convChatPhone = waLast10(conv.phone);
 __convChatDigits = waDigits(conv.phone);
 __convChatProspectId = conv.id;
@@ -3628,7 +3634,10 @@ ${conv.adReferral.body ? `<div style="opacity:.85;">${esc(conv.adReferral.body)}
 </div>` : ''}
 <div class="cchat-warn" id="cchat-warn" style="display:none;"></div>
 <div class="cchat-body" id="cchat-body"><div class="conv-panel-empty">Cargando...</div></div>
+<div class="cchat-preview" id="cchat-preview" style="display:none;"></div>
 <div class="cchat-footer">
+<label class="cchat-attach-btn" for="cchat-file" title="Adjuntar foto o video">&#128206;</label>
+<input type="file" id="cchat-file" accept="image/*,video/*" style="display:none;" onchange="handleConvChatAttach(this)">
 <textarea id="cchat-input" rows="1" placeholder="Escribe un mensaje..."></textarea>
 <button id="cchat-send" onclick="sendConvChatMessage()">&#10148;</button>
 </div>
@@ -3639,6 +3648,75 @@ if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendConvChatMessage(
 });
 await loadAndRenderConvChat();
 if (inputEl) inputEl.focus();
+}
+let __convChatPendingFile = null;
+async function handleConvChatAttach(input){
+const file = (input.files || [])[0];
+input.value = '';
+if (!file) return;
+const isImage = file.type.startsWith('image/');
+const isVideo = file.type.startsWith('video/');
+if (!isImage && !isVideo) { showToast('Solo se permiten fotos o videos.', 'error'); return; }
+if (isVideo && file.size > 16 * 1024 * 1024) { showToast('El video no puede pesar más de 16MB.', 'error'); return; }
+let blob = file;
+if (isImage) {
+const compressedRes = await compressImageFile(file);
+blob = compressedRes.blob;
+if (blob.size > 5 * 1024 * 1024) { showToast('La foto sigue pesando más de 5MB incluso comprimida.', 'error'); return; }
+}
+const previewUrl = URL.createObjectURL(blob);
+__convChatPendingFile = { blob: blob, name: file.name, type: isImage ? 'image' : 'video', previewUrl: previewUrl };
+renderConvChatPreview();
+}
+function renderConvChatPreview(){
+const box = document.getElementById('cchat-preview');
+if (!box) return;
+if (!__convChatPendingFile) { box.style.display = 'none'; box.innerHTML = ''; return; }
+const p = __convChatPendingFile;
+const thumb = p.type === 'image'
+? ('<img class="cchat-preview-thumb" src="' + p.previewUrl + '">')
+: ('<video class="cchat-preview-thumb" src="' + p.previewUrl + '"></video>');
+box.innerHTML = thumb + '<span class="cchat-preview-name">' + esc(p.name) + '</span><span class="cchat-preview-cancel" onclick="clearConvChatAttach()">&times;</span>';
+box.style.display = 'flex';
+}
+function clearConvChatAttach(){
+if (__convChatPendingFile && __convChatPendingFile.previewUrl) { try { URL.revokeObjectURL(__convChatPendingFile.previewUrl); } catch(e) {} }
+__convChatPendingFile = null;
+renderConvChatPreview();
+}
+async function sendConvChatMedia(){
+const p = __convChatPendingFile;
+if (!p || !__convChatDigits) return;
+const btn = document.getElementById('cchat-send');
+btn.disabled = true;
+try {
+const ext = p.type === 'image' ? 'jpg' : ((p.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g,'') || 'mp4');
+const path = 'wachat_' + Date.now() + '_' + Math.random().toString(36).slice(2,8) + '.' + ext;
+const contentType = p.blob.type || (p.type === 'image' ? 'image/jpeg' : 'video/mp4');
+const { error: upErr } = await supabase.storage.from('propiedades').upload(path, p.blob, { cacheControl: '3600', upsert: false, contentType: contentType });
+if (upErr) throw new Error('No se pudo subir el archivo: ' + upErr.message);
+const { data: pub } = supabase.storage.from('propiedades').getPublicUrl(path);
+if (!pub || !pub.publicUrl) throw new Error('No se pudo obtener el enlace del archivo.');
+const sessionRes = await supabase.auth.getSession();
+const session = sessionRes && sessionRes.data && sessionRes.data.session;
+if (!session || !session.access_token) throw new Error('Sesión no válida. Vuelve a iniciar sesión.');
+const resp = await fetch(WA_EDGE_FUNCTION_URL, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+body: JSON.stringify({ to: __convChatDigits, prospect_id: __convChatProspectId, kind: p.type, link: pub.publicUrl })
+});
+const json = await resp.json().catch(function(){ return {}; });
+if (!(resp.ok && json.ok)) {
+showToast('No se pudo enviar: ' + (json.error || (json.metaError && json.metaError.message) || 'error desconocido'), 'error');
+} else {
+clearConvChatAttach();
+}
+} catch(e) {
+showToast('No se pudo enviar: ' + e.message, 'error');
+}
+btn.disabled = false;
+await loadAndRenderConvChat();
+renderConvBoard();
 }
 async function loadAndRenderConvChat(){
 if (!__convChatPhone) return;
@@ -3708,6 +3786,7 @@ warn.style.display = 'none';
 }
 }
 async function sendConvChatMessage(){
+if (__convChatPendingFile) { await sendConvChatMedia(); return; }
 const input = document.getElementById('cchat-input');
 if (!input) return;
 const text = (input.value || '').trim();
