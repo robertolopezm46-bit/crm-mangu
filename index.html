@@ -237,8 +237,7 @@
   .view-toggle{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
   .view-btn{padding:7px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;color:var(--text-muted);}
   .view-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
-  .filter-nowa{padding:7px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;color:var(--text-muted);margin-left:auto;}
-  .filter-nowa.on{border-color:#EF4444;color:#B91C1C;background:#FEF2F2;}
+
   .action-btn{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;font-size:12px;color:var(--text-muted);font-family:'Inter',sans-serif;}
   .action-btn:hover{background:var(--surface);color:var(--text);}
   .search-bar{padding:8px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:'Inter',sans-serif;width:220px;outline:none;}
@@ -508,25 +507,7 @@
     }
     #mobile-topbar .mt-logo-fb span { color: #DC2626; }
     #mobile-topbar .mt-right { display: flex; align-items: center; gap: 10px; }
-    #mobile-topbar .mt-alert {
-      display: flex; align-items: center; gap: 6px;
-      background: #2a2a3e; border: none;
-      border-radius: 999px; padding: 4px 6px 4px 10px;
-      color: #B9B9CE; cursor: pointer;
-      transition: background 0.15s ease;
-    }
-    #mobile-topbar .mt-alert:hover { background: #33334d; }
-    #mobile-topbar .mt-alert svg { flex-shrink: 0; }
-    #mobile-topbar .mt-alert-badge {
-      background: #DC2626; color: #fff; font-weight: 700;
-      font-size: 11px; min-width: 20px; height: 20px;
-      border-radius: 50%; display: inline-flex;
-      align-items: center; justify-content: center; padding: 0 5px;
-    }
-    #mobile-topbar .mt-alert.on {
-      background: rgba(220,38,38,0.15); color: #FCA5A5;
-    }
-    #mobile-topbar .mt-alert.on svg { stroke: #FCA5A5; }
+
     #mobile-topbar .mt-refresh {
       background: none; border: none; color: #fff;
       cursor: pointer; padding: 6px;
@@ -1140,10 +1121,6 @@
       <img src="logo-sidebar.png" alt="MANGU" class="mt-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block';">
       <span class="mt-logo-fb" style="display:none;">M<span>A</span>NGU</span>
       <div class="mt-right">
-        <button class="mt-alert" id="mt-alert-btn" onclick="mobileToggleSinResponder()" aria-label="Sin responder">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span class="mt-alert-badge" id="mt-alert-badge">0</span>
-        </button>
         <button class="mt-refresh" id="mt-refresh-btn" onclick="refreshData()" aria-label="Actualizar">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         </button>
@@ -1386,7 +1363,6 @@
         <div class="view-toggle">
           <button id="kv-btn-kanban" class="view-btn active" onclick="setKanbanView('kanban')">Kanban</button>
           <button id="kv-btn-tabla" class="view-btn" onclick="setKanbanView('tabla')">Tabla</button>
-          <button id="kv-filter-nowa" class="filter-nowa" onclick="toggleFiltroSinContacto()">⚠ Sin responder<span id="kv-filter-badge" style="display:none;background:#EF4444;color:#fff;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:6px;"></span></button>
         </div>
         <div class="kanban-metrics" id="kanban-metrics"></div>
         <div class="kanban-board" id="kanban-board"></div>
@@ -2888,29 +2864,7 @@ function buildMobileDrawer(){
   const rl = document.getElementById('mdr-role'); if (rl) rl.textContent = u.role || '';
 }
 
-// Chip "Sin responder" del topbar móvil
-function updateMobileAlertBadge(){
-  const badge = document.getElementById('mt-alert-badge');
-  const btn   = document.getElementById('mt-alert-btn');
-  if (!badge || !btn) return;
-  const visible = getVisibleProspects();
-  const pend = visible.filter(p => p.phase !== 'Perdido' && sinContactoReciente(p)).length;
-  badge.textContent = pend;
-  badge.style.display = pend > 0 ? 'inline-flex' : 'none';
-  btn.classList.toggle('on', _filtroSinContacto);
-}
-function mobileToggleSinResponder(){
-  // Si no estamos en Kanban, navegar primero
-  if (!isSectionActive('kanban')) {
-    showSection('kanban');
-    // Activar filtro si no está
-    if (!_filtroSinContacto) toggleFiltroSinContacto();
-    updateMobileAlertBadge();
-    return;
-  }
-  toggleFiltroSinContacto();
-  updateMobileAlertBadge();
-}
+
 
 // ── Tabla móvil (mockup: Prospecto/Propiedad/Valor/Fase/Días) ──
 function renderMobileTabla(){
@@ -2953,14 +2907,13 @@ function renderMobileTabla(){
     <tbody>${visible.map(p=>{
       const dias = daysInPhase(p);
       const urg  = dias > 7 && p.phase !== 'Perdido';
-      const noWa = p.phase !== 'Perdido' && sinContactoReciente(p);
       const perdido = p.phase === 'Perdido';
       const pc = pillColor[p.phase] || pillColor['Perdido'];
       return `<tr class="${perdido?'perdido':''}" onclick="editProspect('${p.id}')">
         <td>${esc(p.name)}</td>
         <td>${esc(p.prop||'')}</td>
         <td><span class="val">${fmtVal(p.value)}</span></td>
-        <td><span class="fase-pill" style="background:${pc.bg};color:${pc.fg};">${p.phase}${(urg||noWa)?' ⚠':''}</span></td>
+        <td><span class="fase-pill" style="background:${pc.bg};color:${pc.fg};">${p.phase}${urg?' ⚠':''}</span></td>
         <td class="right">${dias}</td>
       </tr>`;
     }).join('')}</tbody>
@@ -3996,7 +3949,6 @@ function openMobileAgendarCita(){
 function closeMobileAgendarCita(){
   document.body.classList.remove('mobile-agendar-open');
 }
-let _filtroSinContacto = false;
 function setKanbanView(v){
   _kanbanView = v;
   document.getElementById('kv-btn-kanban').classList.toggle('active', v==='kanban');
@@ -4004,15 +3956,6 @@ function setKanbanView(v){
   document.getElementById('kanban-board').style.display = v==='kanban' ? '' : 'none';
   document.getElementById('kanban-table-view').style.display = v==='tabla' ? '' : 'none';
   if(v==='tabla') renderKanbanTable();
-}
-function toggleFiltroSinContacto(){
-  _filtroSinContacto = !_filtroSinContacto;
-  document.getElementById('kv-filter-nowa').classList.toggle('on', _filtroSinContacto);
-  renderKanban();
-  if(_kanbanView==='tabla') renderKanbanTable();
-}
-function sinContactoReciente(p){
-  return !p.last_wa_at || (Date.now() - new Date(p.last_wa_at).getTime()) > 24*3600000;
 }
 // Registrar contacto WA y abrir la conversación
 function quickWAProspect(id){
@@ -4608,7 +4551,6 @@ function subscribeRealtime() {
 loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban(); });
       if(window.innerWidth<=768){
         if(isSectionActive('pipeline')) renderMobileTabla();
-        updateMobileAlertBadge();
       }
       if(isSectionActive('whatsapp')) renderMobileWhatsAppList();
       renderConvBoard();
@@ -4675,7 +4617,6 @@ if(prospect){ DB._waLastInbound=DB._waLastInbound||{}; DB._waLastInbound[prospec
   showWaBadge(true);
   if(isSectionActive('whatsapp')) renderMobileWhatsAppList();
   renderConvBoard();
-  if(window.innerWidth<=768) updateMobileAlertBadge();
   try{
     if(window.Notification && Notification.permission==='granted'){
       new Notification('Nuevo mensaje de WhatsApp — '+quien,{body:preview,icon:'logo-sidebar.png'});
@@ -4721,8 +4662,6 @@ loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban();
   // En móvil, arrancar mostrando el Kanban (vista "Pipeline" del mockup)
   if (window.innerWidth <= 768) {
     showSection('kanban');
-  } else {
-    updateMobileAlertBadge();
   }
   hideLoading();
 }
@@ -4788,8 +4727,6 @@ function showSection(id){
   if(id==='vendidos'){renderVendidos();}
   if(id==='citas'){renderCalendar(); if(window.innerWidth<=768) renderMobileCitas();}
   if(id==='whatsapp'){ renderMobileWhatsAppList(); showWaBadge(false); renderConvBoard(); }
-  // Actualizar chip "Sin responder" del topbar móvil al cambiar de sección
-  if(window.innerWidth<=768) updateMobileAlertBadge();
   if(id==='equipo')renderEquipo();
   if(id==='auditoria'){ initAuditoriaMonthFilter(); loadAuditoria(); }
   if(id==='mensajes') initChat();
@@ -7448,19 +7385,8 @@ function renderKanban(){
     }).join('');
   }
 
-  // Badge del filtro: cuántos siguen sin responder (excluye Perdido)
-  const fb = document.getElementById('kv-filter-badge');
-  if (fb) {
-    const pend = visible.filter(p => p.phase !== 'Perdido' && sinContactoReciente(p)).length;
-    fb.textContent = pend;
-    fb.style.display = pend > 0 ? 'inline-block' : 'none';
-  }
-  // Chip del topbar móvil (siempre sincronizado con el Kanban)
-  if (typeof updateMobileAlertBadge === 'function') updateMobileAlertBadge();
-
   ALL_PHASES.forEach(phase=>{
     let inPhase = visible.filter(p => p.phase === phase);
-    if (_filtroSinContacto) inPhase = inPhase.filter(sinContactoReciente);
     const allData = (phase === 'Perdido') ? inPhase.filter(p => (p.created_at || '').substring(0, 7) === currentMonth) : inPhase;
 
     const LIMIT = 5;
@@ -7623,7 +7549,6 @@ function renderKanbanTable(){
   const el = document.getElementById('kanban-table-view');
   if(!el) return;
   let visible = getVisibleProspects();
-  if(_filtroSinContacto) visible = visible.filter(sinContactoReciente);
   const orden = Object.fromEntries(ALL_PHASES.map((f,i)=>[f,i]));
   visible.sort((a,b)=>(orden[a.phase]??9)-(orden[b.phase]??9)||daysInPhase(b)-daysInPhase(a));
   if(!visible.length){
