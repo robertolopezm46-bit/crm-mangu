@@ -435,6 +435,8 @@
     #conv-board .conv-insight-label{font-size:11px;color:var(--text-muted);margin-top:2px;}
     #conv-board .conv-insight-tile.warn .conv-insight-num{color:var(--warning);}
     #conv-board .conv-insight-tile.crit .conv-insight-num{color:var(--danger);}
+    #conv-board .conv-search{margin-bottom:12px;}
+    #conv-board .conv-search input{width:100%;padding:8px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:'Inter',sans-serif;outline:none;box-sizing:border-box;}
     #conv-board .conv-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
     #conv-board .conv-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;}
     #conv-board .conv-chip .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
@@ -714,6 +716,9 @@
     .mwa-chip .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
     .mwa-chip .cnt { font-weight: 700; }
     .mwa-chip.active { background: #fff; color: #1a1a2e; }
+    .mwa-search{margin-bottom:10px;}
+    .mwa-search input{width:100%;background:#2a2a3e;border:none;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;color:#fff;outline:none;box-sizing:border-box;}
+    .mwa-search input::placeholder{color:#8888A5;}
     .mwa-origin-badge { display: inline-flex; align-items: center; font-size: 9px; font-weight: 700; color: #fff; padding: 1px 6px; border-radius: 999px; margin-top: 4px; letter-spacing: .02em; }
 
 
@@ -1412,6 +1417,7 @@
         <div id="conv-board" class="conv-board">
           <div class="conv-main">
             <div class="conv-insights" id="conv-insights"></div>
+            <div class="conv-search"><input type="text" id="conv-search-input" placeholder="Buscar por nombre o teléfono..." oninput="setConvSearch(this.value)"></div>
             <div class="conv-filters" id="conv-filters"></div>
             <div class="conv-list" id="conv-list"></div>
           </div>
@@ -3353,6 +3359,20 @@ async function loadUnregisteredWA(){
   }
 }
 let __mConvFilter = 'all';
+let __mConvSearchQuery = '';
+function toggleMobileConvSearch(){
+const box = document.getElementById('mwa-search');
+if (!box) return;
+const show = box.style.display === 'none';
+box.style.display = show ? 'block' : 'none';
+const inp = document.getElementById('mwa-search-input');
+if (show) { if (inp) inp.focus(); }
+else { __mConvSearchQuery = ''; if (inp) inp.value = ''; renderMobileConvBody(window.__convList || []); }
+}
+function setMobileConvSearch(v){
+__mConvSearchQuery = (v||'').trim().toLowerCase();
+renderMobileConvBody(window.__convList || []);
+}
 
 async function renderMobileWhatsAppList(){
   const el = document.getElementById('mob-wa-list');
@@ -3362,10 +3382,11 @@ async function renderMobileWhatsAppList(){
   el.innerHTML = `
     <div class="mwa-head">
       <h2>WhatsApp</h2>
-      <button onclick="showGlobalSearch()" aria-label="Buscar">
+      <button onclick="toggleMobileConvSearch()" aria-label="Buscar">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
     </div>
+    <div class="mwa-search" id="mwa-search" style="display:none;"><input type="text" id="mwa-search-input" placeholder="Buscar por nombre o teléfono..." oninput="setMobileConvSearch(this.value)"></div>
     <div class="mwa-insights" id="mwa-insights"></div>
     <div class="mwa-filters" id="mwa-filters"></div>
     <div id="mwa-rows"></div>
@@ -3398,7 +3419,14 @@ function renderMobileConvBody(list){
   });
   filtersEl.innerHTML = chips.join('');
 
-  const filtered = __mConvFilter==='all' ? list : list.filter(c=>convOriginMeta(c).key===__mConvFilter);
+  const __mq = __mConvSearchQuery;
+  const __mqDigits = __mq.replace(/\D/g,'');
+  const filtered = (__mConvFilter==='all' ? list : list.filter(c=>convOriginMeta(c).key===__mConvFilter)).filter(c=>{
+    if (!__mq) return true;
+    const nameMatch = (c.name||'').toLowerCase().includes(__mq);
+    const phoneMatch = __mqDigits && (c.phone||'').replace(/\D/g,'').includes(__mqDigits);
+    return nameMatch || phoneMatch;
+  });
   if (!filtered.length) {
     rowsEl.innerHTML = '<div class="mcit-empty">Sin conversaciones</div>';
     return;
@@ -3535,6 +3563,11 @@ el.innerHTML = `
 `;
 }
 let __convFilter = 'all';
+let __convSearchQuery = '';
+function setConvSearch(v){
+__convSearchQuery = (v||'').trim().toLowerCase();
+renderConvList(window.__convList || []);
+}
 let __convActiveKey = null;
 function renderConvFilters(list){
 const el = document.getElementById('conv-filters');
@@ -3560,7 +3593,14 @@ renderConvList(list);
 function renderConvList(list){
 const el = document.getElementById('conv-list');
 if (!el) return;
-const filtered = __convFilter==='all' ? list : list.filter(c=>convOriginMeta(c).key===__convFilter);
+const __cq = __convSearchQuery;
+const __cqDigits = __cq.replace(/\D/g,'');
+const filtered = (__convFilter==='all' ? list : list.filter(c=>convOriginMeta(c).key===__convFilter)).filter(c=>{
+if (!__cq) return true;
+const nameMatch = (c.name||'').toLowerCase().includes(__cq);
+const phoneMatch = __cqDigits && (c.phone||'').replace(/\D/g,'').includes(__cqDigits);
+return nameMatch || phoneMatch;
+});
 if (!filtered.length) { el.innerHTML = '<div class="conv-panel-empty" style="padding:24px;">Sin conversaciones</div>'; return; }
 el.innerHTML = filtered.map(c=>{
 const meta = convOriginMeta(c);
