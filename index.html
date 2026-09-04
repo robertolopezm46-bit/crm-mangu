@@ -3402,10 +3402,9 @@ function renderMobileConvBody(list){
   const rowsEl = document.getElementById('mwa-rows');
   if (!insightsEl || !filtersEl || !rowsEl) return;
 
-  const {active, waiting, expired} = computeConvInsights(list);
+  const {active, expired} = computeConvInsights(list);
   insightsEl.innerHTML = `
     <div class="mwa-insight-tile"><div class="mwa-insight-num">${active}</div><div class="mwa-insight-label">Activas</div></div>
-    <div class="mwa-insight-tile warn"><div class="mwa-insight-num">${waiting}</div><div class="mwa-insight-label">Esperando</div></div>
     <div class="mwa-insight-tile crit"><div class="mwa-insight-num">${expired}</div><div class="mwa-insight-label">Fuera 24h</div></div>
   `;
 
@@ -3444,7 +3443,6 @@ function renderMobileConvBody(list){
   rowsEl.innerHTML = (__mOldestFirst ? '<div class="mwa-list-hint">Ordenado por más antiguos primero, para no perder leads viejos sin registrar</div>' : '') + filtered.map(c=>{
     const meta = convOriginMeta(c);
     const time = _waTimeLabel(c.lastAt);
-    const waitingRow = c.lastDir === 'inbound';
     const [g1,g2] = c.kind==='unreg' ? ['#f5c451','#e8a33d'] : _waColorFor(c.name);
     const initials = c.kind==='unreg' ? '🆕' : _waInitials(c.name);
     const clickArgs = c.kind==='unreg'
@@ -3460,7 +3458,6 @@ function renderMobileConvBody(list){
       </div>
       <div class="mwa-right">
         <span class="mwa-time ${time.cls}">${time.text}</span>
-        ${waitingRow ? '<span class="mwa-badge alert">!</span>' : ''}
       </div>
     </div>`;
   }).join('');
@@ -3558,17 +3555,15 @@ return list;
 }
 function computeConvInsights(list){
 const active = list.length;
-const waiting = list.filter(c=>c.lastDir==='inbound').length;
 const expired = list.filter(c=>!c.lastInboundAt || (Date.now()-new Date(c.lastInboundAt).getTime())>24*3600000).length;
-return {active, waiting, expired};
+return {active, expired};
 }
 function renderConvInsights(list){
 const el = document.getElementById('conv-insights');
 if (!el) return;
-const {active,waiting,expired} = computeConvInsights(list);
+const {active,expired} = computeConvInsights(list);
 el.innerHTML = `
 <div class="conv-insight-tile"><div class="conv-insight-num">${active}</div><div class="conv-insight-label">Conversaciones activas</div></div>
-<div class="conv-insight-tile warn"><div class="conv-insight-num">${waiting}</div><div class="conv-insight-label">Esperando respuesta</div></div>
 <div class="conv-insight-tile crit"><div class="conv-insight-num">${expired}</div><div class="conv-insight-label">Fuera de ventana 24h</div></div>
 `;
 }
@@ -3623,7 +3618,6 @@ if (!filtered.length) { el.innerHTML = '<div class="conv-panel-empty" style="pad
 el.innerHTML = (__oldestFirst ? '<div class="conv-list-hint">Ordenado por más antiguos primero, para no perder leads viejos sin registrar</div>' : '') + filtered.map(c=>{
 const meta = convOriginMeta(c);
 const time = _waTimeLabel(c.lastAt);
-const waiting = c.lastDir === 'inbound';
 const [g1,g2] = _waColorFor(c.name);
 const initials = c.kind==='unreg' ? '🆕' : _waInitials(c.name);
 return `<div class="conv-item ${__convActiveKey===c.key?'active':''}" onclick="selectConversation('${c.key}')">
@@ -3634,7 +3628,6 @@ return `<div class="conv-item ${__convActiveKey===c.key?'active':''}" onclick="s
 ${c.adReferral ? `<div class="conv-item-ad" style="font-size:11px;color:#8a5a00;margin-top:2px;">📢 ${esc(c.adReferral.headline||'Anuncio')}</div>` : ''}
 <span class="conv-badge" style="background:${meta.color}">${esc(meta.abbr)}</span>
 </div>
-${waiting ? '<span class="conv-item-waiting" title="Esperando respuesta"></span>' : ''}
 </div>`;
 }).join('');
 }
