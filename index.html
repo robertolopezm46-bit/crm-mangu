@@ -1439,18 +1439,18 @@
         <div class="anuncio-card">
           <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Generador de Enlace · Clic a WhatsApp</h3>
           <div class="form-row">
-            <div class="form-group"><label>N\u00famero WhatsApp</label><input type="text" id="wa-numero" value="+52 220 647 1727" readonly style="background:var(--surface);"></div>
+            <div class="form-group"><label>Número WhatsApp</label><input type="text" id="wa-numero" value="+52 220 647 1727" readonly style="background:var(--surface);"></div>
             <div class="form-group"><label>Propiedad a promocionar</label>
               <select id="wa-prop">
-                <option>Casa Castaño 101 \u2014 $8,450,000 MXN</option><option>Casa Trinidad 5 \u2014 $6,300,000 MXN</option>
-                <option>Casa Miraflores \u2014 $6,150,000 MXN</option><option>Casa S O U L \u2014 $5,852,332 MXN</option>
-                <option>Casa Juniperos 126 \u2014 $5,600,000 MXN</option><option>Casa Artemisa \u2014 $4,980,000 MXN</option>
-                <option>Casa Esmeralda 16 \u2014 $4,790,000 MXN</option><option>Casa Ontario \u2014 $4,300,000 MXN</option>
+                <option>Casa Castaño 101 — $8,450,000 MXN</option><option>Casa Trinidad 5 — $6,300,000 MXN</option>
+                <option>Casa Miraflores — $6,150,000 MXN</option><option>Casa S O U L — $5,852,332 MXN</option>
+                <option>Casa Juniperos 126 — $5,600,000 MXN</option><option>Casa Artemisa — $4,980,000 MXN</option>
+                <option>Casa Esmeralda 16 — $4,790,000 MXN</option><option>Casa Ontario — $4,300,000 MXN</option>
                 <option>Otra propiedad</option>
               </select>
             </div>
           </div>
-          <div class="form-group" style="margin-bottom:16px;"><label>Mensaje personalizado</label><textarea id="wa-msg-custom" rows="3">Hola, vi tu anuncio y me interesa obtener m\u00e1s información sobre esta propiedad. \u00bfPodr\u00edamos hablar?</textarea></div>
+          <div class="form-group" style="margin-bottom:16px;"><label>Mensaje personalizado</label><textarea id="wa-msg-custom" rows="3">Hola, vi tu anuncio y me interesa obtener más información sobre esta propiedad. ¿Podríamos hablar?</textarea></div>
           <button class="btn-primary" onclick="generateWALink()">Generar enlace</button>
           <div class="link-result" id="wa-link-result"></div>
           <button class="copy-btn" id="wa-copy-btn" onclick="copyWALink()" style="display:none;">Copiar enlace</button>
@@ -1596,9 +1596,10 @@
               <div class="form-group">
                 <label>Propiedad</label>
                 <!-- Opciones reales (Disponibles/Reservadas/Preventas) se cargan en vivo desde Sitio Web — ver populateContratoPropSelect() -->
-                <select id="ct-prop">
+                <select id="ct-prop" onchange="toggleCtPropOtra(this.value)">
                   <option value="Otra">Otra</option>
                 </select>
+                <input type="text" id="ct-prop-otra" placeholder="Escribe el nombre de la propiedad..." style="display:none;margin-top:8px;">
               </div>
             </div>
 
@@ -2522,6 +2523,7 @@
             <option value="">Seleccionar propiedad...</option>
             <!-- Opciones reales (Disponibles/Reservadas/Preventas) se cargan en vivo desde Sitio Web — ver populatePropSelect() -->
             <option value="Otra" data-price="">Otra</option></select>
+          <input type="text" id="p-prop-otra" placeholder="Escribe el nombre de la propiedad..." style="display:none;margin-top:8px;">
         </div>
       </div>
       <div class="form-row">
@@ -5552,6 +5554,7 @@ function openContratoModal(existing = null) {
       propSel.insertAdjacentHTML('afterbegin', `<option value="${esc(existing.propiedad)}">${esc(existing.propiedad)} (inactiva)</option>`);
     }
     propSel.value = existing.propiedad || '';
+    { const otraEl=document.getElementById('ct-prop-otra'); if(otraEl){otraEl.style.display='none';otraEl.value='';} }
     document.getElementById('ct-precio').value = existing.precio || '';
     document.getElementById('ct-anticipo').value = existing.anticipo || '';
     document.getElementById('ct-fecha').value = existing.fecha || new Date().toISOString().split('T')[0];
@@ -5566,6 +5569,7 @@ function openContratoModal(existing = null) {
     const modoRadio = document.querySelector(`input[name="ct-modo"][value="${existing.archivo_path ? 'archivo' : 'texto'}"]`);
     if (modoRadio) modoRadio.checked = true;
   } else {
+    { const otraEl=document.getElementById('ct-prop-otra'); if(otraEl){otraEl.style.display='none';otraEl.value='';} }
     document.getElementById('ct-fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('ct-vendedor').value = DB.currentUser?.name || '';
     document.getElementById('ct-precio').value = '';
@@ -6036,7 +6040,7 @@ function readContratoForm() {
     prospectId,
     prospecto,
     modo: document.querySelector('input[name="ct-modo"]:checked')?.value || 'texto',
-    propiedad: document.getElementById('ct-prop').value,
+    propiedad: (document.getElementById('ct-prop').value==='Otra' ? (document.getElementById('ct-prop-otra')?.value.trim()||'Otra') : document.getElementById('ct-prop').value),
     precio:    document.getElementById('ct-precio').value || '0',
     anticipo:  document.getElementById('ct-anticipo').value || '0',
     fechaVal,
@@ -8104,6 +8108,7 @@ function openModal(type, prefill){
     document.getElementById('p-value').value='';
     document.getElementById('p-date').value=new Date().toISOString().split('T')[0];
     document.getElementById('p-edit-id').value='';
+    { const otraEl=document.getElementById('p-prop-otra'); if(otraEl){otraEl.style.display='none';otraEl.value='';} }
     document.getElementById('p-phase').value='Registro';
     document.getElementById('p-source').value='';
     toggleReferredByField('');
@@ -8181,6 +8186,17 @@ function autofillPropValue(propName) {
     const num = parseInt(price);
     document.getElementById('p-value').value = num.toLocaleString('en-US');
   }
+  const otraEl = document.getElementById('p-prop-otra');
+  if (otraEl) {
+    if (propName === 'Otra') { otraEl.style.display = ''; otraEl.focus(); }
+    else { otraEl.style.display = 'none'; otraEl.value = ''; }
+  }
+}
+function toggleCtPropOtra(val) {
+  const otraEl = document.getElementById('ct-prop-otra');
+  if (!otraEl) return;
+  if (val === 'Otra') { otraEl.style.display = ''; otraEl.focus(); }
+  else { otraEl.style.display = 'none'; otraEl.value = ''; }
 }
 
 function formatValueInput(el) {
@@ -8236,7 +8252,7 @@ async function saveProspect(){
     name:document.getElementById('p-name').value,
     phone: '+52 ' + rawPhone,
     email:document.getElementById('p-email').value,
-    prop:document.getElementById('p-prop').value,
+    prop:(document.getElementById('p-prop').value==='Otra' ? (document.getElementById('p-prop-otra').value.trim()||'Otra') : document.getElementById('p-prop').value),
     value:parseInt(document.getElementById('p-value').value.replace(/,/g,''))||0,
     phase:document.getElementById('p-phase').value,
     seller:document.getElementById('p-seller').value,
@@ -8296,7 +8312,12 @@ async function editProspect(id){
   // ya afectados la próxima vez que se editen.
   document.getElementById('p-phone').value=((p.phone||'').replace(/\D/g,'')).slice(-10);
   document.getElementById('p-email').value=p.email||'';
-  document.getElementById('p-prop').value=p.prop;
+  {
+    const propSel=document.getElementById('p-prop'); propSel.value=p.prop;
+    const otraEl=document.getElementById('p-prop-otra');
+    if(propSel.value!==p.prop){ propSel.value='Otra'; if(otraEl){otraEl.style.display='';otraEl.value=p.prop||'';} }
+    else if(otraEl){ otraEl.style.display='none'; otraEl.value=''; }
+  }
   document.getElementById('p-value').value=p.value;
   document.getElementById('p-phase').value=p.phase;
   document.getElementById('p-date').value=(p.created_at||'').split('T')[0];
