@@ -3889,8 +3889,10 @@ function renderMobileCitas(){
   const tipoLabel = {visita:'Visita', firma:'Firma', seguim:'Seguimiento'};
 
   const todayISO = _fmtDayISO(today);
+  const nowTimeStr = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
   const upcomingCitas = citasUnicas.filter(c => {
     if (c.date < todayISO) return false;
+    if (c.date === todayISO && c.time && c.time < nowTimeStr) return false;
     if (visiblePids && !visiblePids.has(c.prospect_id) && !visiblePids.has(String(c.prospect_id))) return false;
     return true;
   }).sort((a,b) => a.date+a.time > b.date+b.time ? 1 : -1);
@@ -8045,11 +8047,13 @@ function renderCalendar(){
   document.getElementById('cal-grid').innerHTML=html;
   // Fecha local hoy (evita desfase UTC)
   const todayStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const nowTimeStr = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
   // Deduplicar por id antes de filtrar
   const citasUnicas = [...new Map(DB.citas.map(c => [c.id, c])).values()];
   const upcoming = citasUnicas.filter(c => {
-    // Ocultar citas pasadas (fecha anterior a hoy)
+    // Ocultar citas pasadas (fecha anterior a hoy, u hoy con hora ya pasada)
     if (c.date < todayStr) return false;
+    if (c.date === todayStr && c.time && c.time < nowTimeStr) return false;
     // Filtrar por vendedor si no es admin
     if (!isAdmin() && visiblePids && !visiblePids.has(c.prospect_id) && !visiblePids.has(String(c.prospect_id))) return false;
     return true;
