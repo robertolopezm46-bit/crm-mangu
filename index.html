@@ -2836,7 +2836,8 @@ function buildMobileDrawer(){
   // Dashboard de Marketing: mismo acceso que en el sidebar de escritorio (solo Admin)
   if (admin) items.push({id:'dashboard', label:'Dashboard', icon:'dashboard'});
   // Todos ven Reportes (Auditoría) si son admin; Comercial/Atn ve resumen básico
-  if (admin) items.push({id:'auditoria', label:'Reportes', icon:'chart'});
+  // Oculto temporalmente a pedido de Robert (6-sep-2026, no lo usa por ahora)
+  // if (admin) items.push({id:'auditoria', label:'Reportes', icon:'chart'});
   if (admin) items.push({id:'equipo',    label:'Equipo',   icon:'users'});
   items.push({id:'mensajes',  label:'Mensajes internos', icon:'msg'});
   if (admin || hasModule('anuncios')) items.push({id:'anuncios',  label:'Anuncios',  icon:'megaphone'});
@@ -4375,9 +4376,9 @@ function applyUserModules(user) {
   const navRent = document.getElementById('nav-rentabilidad');
   if (navRent) navRent.style.display = isAdmin() ? '' : 'none';
 
-  // Auditoria: solo Admin
+  // Auditoria: oculto temporalmente a pedido de Robert (6-sep-2026, no lo usa por ahora)
   const navAuditoria = document.getElementById('nav-auditoria');
-  if (navAuditoria) navAuditoria.style.display = isAdmin() ? '' : 'none';
+  if (navAuditoria) navAuditoria.style.display = 'none';
 
   // Equipo: solo Admin
   const navEquipo = document.getElementById('nav-equipo');
