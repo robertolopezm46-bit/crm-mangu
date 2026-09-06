@@ -468,6 +468,8 @@
     #conv-board .cchat-msg .cchat-meta{display:block;margin-top:4px;font-size:10.5px;color:#8a8a8a;text-align:right;}
     #conv-board .cchat-msg .cchat-sender{display:block;font-size:10.5px;font-weight:700;color:#b8860b;margin-bottom:2px;}
     #conv-board .cchat-msg.failed{background:#ffe4e1;}
+    #conv-board .wa-ticks{color:#8a8a8a;margin-left:4px;font-size:11px;letter-spacing:-1px;}
+    #conv-board .wa-ticks.read{color:#53bdeb;}
     #conv-board .cchat-warn{padding:8px 16px;background:#fff6e0;color:#8a6100;font-size:12px;border-bottom:1px solid #f0e2b8;flex-shrink:0;}
     #conv-board .cchat-footer{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;}
     #conv-board .cchat-footer textarea{flex:1;min-width:0;border:1px solid var(--border);border-radius:20px;padding:10px 14px;font-size:13.5px;resize:none;max-height:90px;font-family:inherit;}
@@ -2996,6 +2998,8 @@ function ensureWaChatModalDom(){
     '.wachat-msg .wachat-meta{display:block;margin-top:4px;font-size:10.5px;color:#8a8a8a;text-align:right;}',
     '.wachat-msg .wachat-sender{display:block;font-size:10.5px;font-weight:700;color:#b8860b;margin-bottom:2px;}',
     '.wachat-msg.failed{background:#ffe4e1;}',
+    '.wa-ticks{color:#8a8a8a;margin-left:4px;font-size:11px;letter-spacing:-1px;}',
+    '.wa-ticks.read{color:#53bdeb;}',
     '#wachat-empty{margin:auto;color:#999;font-size:13px;text-align:center;}',
     '#wachat-footer{padding:10px;border-top:1px solid #eee;display:flex;gap:8px;align-items:flex-end;background:#fff;flex-shrink:0;}',
     '#wachat-input{flex:1;min-width:0;border:1px solid #ddd;border-radius:20px;padding:10px 14px;font-size:14px;resize:none;max-height:90px;font-family:inherit;}',
@@ -3140,9 +3144,10 @@ async function loadAndRenderWaChat(){
       } else {
         content = m.message_type === 'audio' ? 'ð¤ Audio' : (m.message_type === 'image' ? 'ð· Imagen' : (m.message_type === 'video' ? 'ð¥ Video' : esc(m.body || '')));
       }
+      const ticks = (isOut && !failed) ? waStatusTicks(m.status) : '';
       const failNote = failed
         ? ('<span class="wachat-meta" style="color:#c0392b;">No se pudo enviar' + (m.error_detail ? (': ' + esc(m.error_detail)) : '') + '</span>')
-        : ('<span class="wachat-meta">' + timeStr + '</span>');
+        : ('<span class="wachat-meta">' + timeStr + ticks + '</span>');
       return '<div class="wachat-msg ' + (isOut ? 'out' : 'in') + (failed ? ' failed' : '') + '">' + senderLabel + content + failNote + '</div>';
     }).join('');
   }
@@ -3769,9 +3774,10 @@ content = '<audio src="' + esc(m.media_url) + '" controls style="max-width:220px
 } else {
 content = m.message_type === 'audio' ? '🎤 Audio' : (m.message_type === 'image' ? '📷 Imagen' : (m.message_type === 'video' ? '🎥 Video' : esc(m.body || '')));
 }
+const ticks = (isOut && !failed) ? waStatusTicks(m.status) : '';
 const failNote = failed
 ? ('<span class="cchat-meta" style="color:#c0392b;">No se pudo enviar' + (m.error_detail ? (': ' + esc(m.error_detail)) : '') + '</span>')
-: ('<span class="cchat-meta">' + timeStr + '</span>');
+: ('<span class="cchat-meta">' + timeStr + ticks + '</span>');
 return '<div class="cchat-msg ' + (isOut ? 'out' : 'in') + (failed ? ' failed' : '') + '">' + senderLabel + content + failNote + '</div>';
 }).join('');
 }
@@ -4581,7 +4587,7 @@ loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban();
   // canal dedicado con un solo binding sí entrega el evento de forma
   // confiable.
   window._realtimeWaSub = supabase.channel('crm-wa-changes')
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'crm_wa_messages'},payload=>{
+    .on('postgres_changes',{event:'*',schema:'public',table:'crm_wa_messages'},payload=>{
       const msg=payload.new;
       if(msg && msg.direction==='inbound') handleInboundWA(msg);
       if(msg) refreshOpenWaChatIfMatches(msg);
@@ -4865,6 +4871,15 @@ const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','
 function fmtDate(d){if(!d)return'\u2014';const[y,m,day]=(d||'').split('-');return`${day}/${m}/${y}`;}
 // Escapa texto para insertar en innerHTML (previene XSS y HTML roto)
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// Marca de estado de un mensaje saliente (✓ enviado, ✓✓ gris entregado, ✓✓ azul leido) -
+// igual a como lo muestra WhatsApp real. Depende de que whatsapp-webhook
+// procese value.statuses y actualice crm_wa_messages.status (6-sep-2026).
+function waStatusTicks(status){
+  if (status === 'read') return '<span class="wa-ticks read" title="Leído">✓✓</span>';
+  if (status === 'delivered') return '<span class="wa-ticks" title="Entregado">✓✓</span>';
+  if (status === 'sent') return '<span class="wa-ticks" title="Enviado">✓</span>';
+  return '';
+}
 // Escapa texto para usar dentro de strings JS en atributos onclick
 function escJs(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 // ¿La sección está visible actualmente? (evita re-renders de vistas ocultas)
