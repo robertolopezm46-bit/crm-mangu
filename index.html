@@ -2271,13 +2271,21 @@
       <div id="section-sitioweb" class="section">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <select id="wp-filter-estatus" onchange="renderWebProps()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
-              <option value="">Todos los estatus</option>
-              <option value="disponible" selected>Disponible</option>
-              <option value="reservada">Reservada</option>
-              <option value="preventa">Preventa</option>
-              <option value="vendida">Vendida</option>
-            </select>
+            <div id="wp-filter-estatus-wrap" style="position:relative;">
+              <button type="button" id="wp-filter-estatus-btn" onclick="toggleWpEstatusDropdown(event)" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--white);cursor:pointer;display:flex;align-items:center;gap:6px;">
+                <span id="wp-filter-estatus-label">Disponible</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div id="wp-filter-estatus-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:8px;z-index:50;min-width:170px;">
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:13px;cursor:pointer;border-radius:6px;"><input type="checkbox" value="disponible" class="wp-estatus-chk" onchange="toggleWpEstatusFilterVal('disponible')">Disponible</label>
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:13px;cursor:pointer;border-radius:6px;"><input type="checkbox" value="reservada" class="wp-estatus-chk" onchange="toggleWpEstatusFilterVal('reservada')">Reservada</label>
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:13px;cursor:pointer;border-radius:6px;"><input type="checkbox" value="preventa" class="wp-estatus-chk" onchange="toggleWpEstatusFilterVal('preventa')">Preventa</label>
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:13px;cursor:pointer;border-radius:6px;"><input type="checkbox" value="vendida" class="wp-estatus-chk" onchange="toggleWpEstatusFilterVal('vendida')">Vendida</label>
+                <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;">
+                  <button type="button" onclick="clearWpEstatusFilter()" style="width:100%;padding:6px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;">Todos los estatus</button>
+                </div>
+              </div>
+            </div>
             <select id="wp-filter-activa" onchange="renderWebProps()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
               <option value="">Activas e inactivas</option>
               <option value="1">Solo publicadas</option>
@@ -4268,6 +4276,7 @@ async function sendCompartirPropiedadWA(){
 let selectedTemplate=null, kanbanSellerFilter='todos', draggedId=null, calDate=new Date(), filterPhase='', searchText='';
 let _selectMode=false, _selectedIds=new Set();
 let _wpSelectMode=false, _wpSelectedIds=new Set();
+let _wpFilterEstatus=new Set(['disponible']);
 
 // ══════════════════════════════════════════
 //  LOADING HELPERS
@@ -8589,20 +8598,49 @@ function populateContratoPropSelect(){
 
 function fmtPrecio(n){ return '$' + Number(n||0).toLocaleString('es-MX'); }
 
+const WP_ESTATUS_LABELS = {disponible:'Disponible', reservada:'Reservada', preventa:'Preventa', vendida:'Vendida'};
+function toggleWpEstatusDropdown(ev){
+  if (ev) ev.stopPropagation();
+  const panel = document.getElementById('wp-filter-estatus-panel');
+  if (!panel) return;
+  panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+}
+document.addEventListener('click', function(ev){
+  const wrap = document.getElementById('wp-filter-estatus-wrap');
+  const panel = document.getElementById('wp-filter-estatus-panel');
+  if (panel && panel.style.display === 'block' && wrap && !wrap.contains(ev.target)) panel.style.display = 'none';
+});
+function updateWpEstatusFilterUI(){
+  document.querySelectorAll('.wp-estatus-chk').forEach(function(chk){ chk.checked = _wpFilterEstatus.has(chk.value); });
+  const label = document.getElementById('wp-filter-estatus-label');
+  if (!label) return;
+  const vals = Array.from(_wpFilterEstatus);
+  if (!vals.length) label.textContent = 'Todos los estatus';
+  else if (vals.length === 1) label.textContent = WP_ESTATUS_LABELS[vals[0]] || vals[0];
+  else label.textContent = vals.length + ' estatus';
+}
+function toggleWpEstatusFilterVal(val){
+  if (_wpFilterEstatus.has(val)) _wpFilterEstatus.delete(val); else _wpFilterEstatus.add(val);
+  renderWebProps();
+}
+function clearWpEstatusFilter(){
+  _wpFilterEstatus.clear();
+  renderWebProps();
+  const panel = document.getElementById('wp-filter-estatus-panel');
+  if (panel) panel.style.display = 'none';
+}
 function filterWebPropsByEstatus(estatusVal){
-  const sel = document.getElementById('wp-filter-estatus');
-  if (!sel) return;
-  sel.value = (sel.value === estatusVal) ? '' : estatusVal;
+  if (_wpFilterEstatus.has(estatusVal)) _wpFilterEstatus.delete(estatusVal); else _wpFilterEstatus.add(estatusVal);
   renderWebProps();
 }
 function renderWebProps(){
   const grid = document.getElementById('wp-grid');
   const stats = document.getElementById('wp-stats');
   if (!grid) return;
-  const fe = document.getElementById('wp-filter-estatus')?.value || '';
+  updateWpEstatusFilterUI();
   const fa = document.getElementById('wp-filter-activa')?.value || '';
   let props = webPropsDB;
-  if (fe) props = props.filter(p => p.estatus === fe);
+  if (_wpFilterEstatus.size) props = props.filter(p => _wpFilterEstatus.has(p.estatus));
   if (fa !== '') props = props.filter(p => p.activa === (fa === '1'));
 
   if (stats) {
@@ -8611,8 +8649,8 @@ function renderWebProps(){
     const prev = webPropsDB.filter(p=>p.estatus==='preventa'&&p.activa).length;
     const vend = webPropsDB.filter(p=>p.estatus==='vendida').length;
     const chip = (label,val,color,estatusVal)=>{
-      const active = fe === estatusVal;
-      return `<div onclick="filterWebPropsByEstatus('${estatusVal}')" style="cursor:pointer;background:${active?color:'var(--surface2)'};border-radius:8px;padding:8px 14px;font-size:12px;transition:background .15s;${active?'box-shadow:0 0 0 2px '+color+';':''}" title="Click para filtrar"><span style="font-weight:700;color:${active?'#fff':color};font-size:16px;">${val}</span> <span style="${active?'color:#fff;':''}">${label}</span></div>`;
+      const active = _wpFilterEstatus.has(estatusVal);
+      return `<div onclick="filterWebPropsByEstatus('${estatusVal}')" style="cursor:pointer;background:${active?color:'var(--surface2)'};border-radius:8px;padding:8px 14px;font-size:12px;transition:background .15s;${active?'box-shadow:0 0 0 2px '+color+';':''}" title="Click para filtrar (selección múltiple)"><span style="font-weight:700;color:${active?'#fff':color};font-size:16px;">${val}</span> <span style="${active?'color:#fff;':''}">${label}</span></div>`;
     };
     stats.innerHTML = chip('Disponibles',disp,'var(--success)','disponible') + chip('Reservadas',res,'#b45309','reservada') + chip('Preventa',prev,'var(--warning, #d97706)','preventa') + chip('Vendidas',vend,'var(--navy)','vendida');
   }
