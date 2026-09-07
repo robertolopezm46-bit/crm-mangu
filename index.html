@@ -111,6 +111,13 @@
   .login-box input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,150,62,0.25);background:#FFFDF7;caret-color:var(--gold);}
   .btn-gold{background:var(--gold);color:var(--white);border:none;padding:11px 24px;border-radius:var(--radius);font-weight:600;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;width:100%;}
   .btn-gold:hover{background:var(--gold-dark);}
+  /* Nota rápida: chips de resultado de visita (7-sep-2026) */
+  .nota-chip-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+  .nota-chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);cursor:pointer;font-size:11.5px;font-weight:600;color:var(--text);text-align:center;font-family:'Inter',sans-serif;line-height:1.25;transition:background .12s ease,border-color .12s ease;}
+  .nota-chip:hover{background:#E2DFD6;}
+  .nota-chip .nota-chip-em{font-size:18px;line-height:1;}
+  .nota-chip.sel{background:rgba(201,168,76,0.18);border-color:var(--gold);color:var(--gold-dark);}
+  .nota-mic-hint{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin:2px 0 12px;}
   .login-error{color:var(--danger);font-size:12px;margin-top:8px;display:none;}
   .phone-complete{border-color:var(--success)!important;background:#F0FDF4;}
   .pass-wrap{position:relative;margin-bottom:16px;}
@@ -2490,6 +2497,15 @@
     <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;">📝 Nota rápida</h3>
     <p id="modal-nota-prospecto" style="font-size:12px;color:var(--text-muted);margin-bottom:10px;"></p>
     <div id="modal-nota-historial" style="max-height:180px;overflow-y:auto;margin-bottom:14px;"></div>
+    <div id="modal-nota-chips" class="nota-chip-grid">
+      <button type="button" class="nota-chip" onclick="selectNotaChip(this,'Visita muy buena, mostró bastante interés.')"><span class="nota-chip-em">👍</span>Le gustó mucho</button>
+      <button type="button" class="nota-chip" onclick="selectNotaChip(this,'Se lo va a pensar, dar seguimiento en unos días.')"><span class="nota-chip-em">🤔</span>Lo va a pensar</button>
+      <button type="button" class="nota-chip" onclick="selectNotaChip(this,'Preguntó por precio y condiciones de pago.')"><span class="nota-chip-em">💰</span>Preguntó precio</button>
+      <button type="button" class="nota-chip" onclick="selectNotaChip(this,'Quiere agendar otra visita.')"><span class="nota-chip-em">📅</span>Otra visita</button>
+      <button type="button" class="nota-chip" onclick="selectNotaChip(this,'No mostró interés en la propiedad.')"><span class="nota-chip-em">🙅</span>No hay interés</button>
+      <button type="button" class="nota-chip" onclick="selectNotaChip(this,'')"><span class="nota-chip-em">✍️</span>Otro / escribir</button>
+    </div>
+    <div class="nota-mic-hint">🎤 Tip: toca el micrófono de tu teclado para dictar la nota en vez de escribirla.</div>
     <textarea id="modal-nota-texto" rows="4" placeholder="Escribe la nota... (ej. 'Llamó para pedir fotos de la cocina')" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:'Inter',sans-serif;outline:none;resize:vertical;box-sizing:border-box;"></textarea>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;">
       <button onclick="closeModal('nota')" style="padding:9px 18px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;">Cancelar</button>
@@ -7505,10 +7521,19 @@ function openNotaRapida(id){
       </div>`).join('') : '<p style="font-size:12px;color:var(--text-muted);">Sin notas anteriores.</p>';
   }
   document.getElementById('modal-nota-texto').value='';
+  document.querySelectorAll('#modal-nota-chips .nota-chip').forEach(c=>c.classList.remove('sel'));
   document.getElementById('modal-nota').classList.add('open');
   markNotesSeen(p);
   renderKanban();
   setTimeout(()=>document.getElementById('modal-nota-texto').focus(),100);
+}
+function selectNotaChip(el,texto){
+  document.querySelectorAll('#modal-nota-chips .nota-chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  const ta=document.getElementById('modal-nota-texto');
+  if(texto){ ta.value=texto; }
+  ta.focus();
+  ta.setSelectionRange(ta.value.length,ta.value.length);
 }
 // ── Cola local de notas sin conexion (1-sep-2026) ───────────────────────
 // Si el guardado de una nota falla por falta de red, se guarda en
