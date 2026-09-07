@@ -9094,6 +9094,33 @@ function clearDraftProp(){
   document.getElementById('wp-autosave-label').textContent = '';
 }
 
+// Genera un slug URL-amigable a partir del título (mismo criterio que la
+// migración de Supabase: minúsculas, sin acentos, todo lo que no sea
+// letra/número se vuelve un guion). 7-sep-2026, a pedido de Robert: URLs
+// bonitas mangu.mx/<slug> en vez de mangu.mx/?p=<uuid>.
+function slugify(text){
+  return (text || '')
+    .toString()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// Genera un slug único para esta propiedad dentro de webPropsDB: si el
+// slug base ya lo usa otra propiedad, le agrega un sufijo -2, -3... y
+// avisa con un toast. La propiedad ya existente NUNCA se toca — solo la
+// nueva (o la que se está guardando) recibe el sufijo. 7-sep-2026.
+function slugUnico(base, idActual){
+  const ocupado = s => webPropsDB.some(x => x.slug === s && x.id !== idActual);
+  if (!ocupado(base)) return base;
+  let n = 2;
+  let candidato = `${base}-${n}`;
+  while (ocupado(candidato)) { n++; candidato = `${base}-${n}`; }
+  showToast(`Ya existe una propiedad con el nombre "${base}" — esta se guardará como "${candidato}"`, 'info');
+  return candidato;
+}
+
 async function savePropiedad(mode){
   const strict = mode === 'publicar';
   if (!validatePropForm(strict)) return;
@@ -9103,6 +9130,7 @@ async function savePropiedad(mode){
   const id = document.getElementById('wp-edit-id').value;
   const direccion = document.getElementById('wp-direccion-full').value.trim() || null;
   const existing = id ? webPropsDB.find(x=>x.id===id) : null;
+  const slug = slugUnico(slugify(titulo), id || null);
 
   // Si se está "Guardando" (no publicando) una propiedad que ya estaba visible, confirmamos que se oculte
   if (mode === 'guardar' && existing?.activa) {
@@ -9111,6 +9139,7 @@ async function savePropiedad(mode){
 
   const row = {
     titulo,
+    slug,
     precio,
     estatus: document.getElementById('wp-estatus').value,
     tipo: 'casa', // Solo vendemos casas
