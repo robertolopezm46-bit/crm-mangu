@@ -7885,13 +7885,17 @@ async function sendCrmPush(usernames, title, body, url){
   }
   }
 function notaWANotifyRecipients(p){
+    // REORGANIZACION DE NOTIFICACIONES (7-sep-2026): antes se notificaba a
+    // todo el staff activo por cada nota nueva. Ahora solo al vendedor
+    // asignado del prospecto (el dueño real de esa nota) + Roberto siempre
+    // (gerencia quiere visibilidad de todo), excluyendo al autor de la nota.
     if(!p) return [];
     const authorUsername=(DB.currentUser?.username||'').toLowerCase();
-    const staff=(DB.users||[]).filter(u=>u.active!==false);
-      // (se notifica a todo el staff activo, ya no solo admin+vendedor asignado)
     const map=new Map();
-    staff.forEach(u=>map.set((u.username||'').toLowerCase(),u));
-      // (línea reservada: ya no se filtra por vendedor asignado)
+    const asignado=(DB.users||[]).find(u=>u.id===p.seller_id) || (DB.users||[]).find(u=>(u.name||'').toLowerCase()===(p.seller||'').toLowerCase());
+    if(asignado && asignado.active!==false) map.set((asignado.username||'').toLowerCase(),asignado);
+    const roberto=(DB.users||[]).find(u=>(u.username||'').toLowerCase()==='roberto');
+    if(roberto && roberto.active!==false) map.set('roberto',roberto);
     map.delete(authorUsername);
     return [...map.values()];
 }
