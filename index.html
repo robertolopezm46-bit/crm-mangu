@@ -3440,6 +3440,7 @@ function renderMobileConvBody(list){
         <div class="mwa-preview">${esc(c.lastBody||'Sin mensajes')}</div>
         ${c.adReferral ? `<div class="mwa-ad" style="font-size:11px;color:#8a5a00;margin-top:2px;">📢 ${esc(c.adReferral.headline||'Anuncio')}</div>` : ''}
         ${c.siteProperty ? `<div class="mwa-site-prop" style="font-size:11px;color:#0a6e4a;margin-top:2px;">🏠 ${esc(c.siteProperty)}</div>` : ''}
+        ${c.googleAdsInterest ? `<div class="mwa-gads" style="font-size:11px;color:var(--src-google);margin-top:2px;">🔍 Google Ads</div>` : ''}
         <span class="mwa-origin-badge" style="background:${meta.color}">${esc(meta.abbr)}</span>
       </div>
       <div class="mwa-right">
@@ -3486,19 +3487,20 @@ return (m.dir==='outbound' ? 'Tú: ' : '') + t;
 async function loadConversationsBoardData(){
 const [{data: staffRows}, {data: waRows}] = await Promise.all([
 supabase.from('crm_users').select('phone'),
-supabase.from('crm_wa_messages').select('phone, direction, body, message_type, created_at, prospect_id, ad_referral, site_property_interest').order('created_at',{ascending:false}).limit(1500)
+supabase.from('crm_wa_messages').select('phone, direction, body, message_type, created_at, prospect_id, ad_referral, site_property_interest, google_ads_interest').order('created_at',{ascending:false}).limit(1500)
 ]);
 const staffLast10 = (staffRows||[]).map(u => (u.phone||'').replace(/\D/g,'').slice(-10)).filter(Boolean);
 const byPhone = {};
 (waRows||[]).forEach(m=>{
 const last10 = (m.phone||'').replace(/\D/g,'').slice(-10);
 if (!last10) return;
-if (!byPhone[last10]) byPhone[last10] = {phoneRaw:m.phone, lastAny:null, lastInboundAt:null, matchedProspect:false, adReferral:null, siteProperty:null};
+if (!byPhone[last10]) byPhone[last10] = {phoneRaw:m.phone, lastAny:null, lastInboundAt:null, matchedProspect:false, adReferral:null, siteProperty:null, googleAdsInterest:null};
 const rec = byPhone[last10];
 if (!rec.lastAny) rec.lastAny = {dir:m.direction, body:m.body, type:m.message_type, at:m.created_at};
 if (m.direction==='inbound' && !rec.lastInboundAt) rec.lastInboundAt = m.created_at;
 if (m.ad_referral && !rec.adReferral) rec.adReferral = m.ad_referral;
 if (m.site_property_interest && !rec.siteProperty) rec.siteProperty = m.site_property_interest;
+if (m.google_ads_interest && !rec.googleAdsInterest) rec.googleAdsInterest = m.google_ads_interest;
 });
 const visible = getVisibleProspects().filter(p=>p.phase!=='Perdido');
 const list = [];
@@ -3514,7 +3516,8 @@ lastBody: rec && rec.lastAny ? _convMsgPreview(rec.lastAny) : '',
 lastAt: rec && rec.lastAny ? rec.lastAny.at : null,
 lastInboundAt: rec ? rec.lastInboundAt : null,
 adReferral: rec ? rec.adReferral : null,
-siteProperty: rec ? rec.siteProperty : null
+siteProperty: rec ? rec.siteProperty : null,
+googleAdsInterest: rec ? rec.googleAdsInterest : null
 });
 });
 Object.keys(byPhone).forEach(last10=>{
@@ -3531,7 +3534,8 @@ lastBody: rec.lastAny ? _convMsgPreview(rec.lastAny) : '',
 lastAt: rec.lastAny ? rec.lastAny.at : null,
 lastInboundAt: rec.lastInboundAt,
 adReferral: rec.adReferral,
-siteProperty: rec.siteProperty
+siteProperty: rec.siteProperty,
+googleAdsInterest: rec.googleAdsInterest
 });
 });
 list.sort((a,b)=>{
@@ -3616,6 +3620,7 @@ return `<div class="conv-item ${__convActiveKey===c.key?'active':''}" onclick="s
 <div class="conv-item-preview">${esc(c.lastBody||'Sin mensajes')}</div>
 ${c.adReferral ? `<div class="conv-item-ad" style="font-size:11px;color:#8a5a00;margin-top:2px;">📢 ${esc(c.adReferral.headline||'Anuncio')}</div>` : ''}
 ${c.siteProperty ? `<div class="conv-item-site-prop" style="font-size:11px;color:#0a6e4a;margin-top:2px;">🏠 ${esc(c.siteProperty)}</div>` : ''}
+${c.googleAdsInterest ? `<div class="conv-item-gads" style="font-size:11px;color:var(--src-google);margin-top:2px;">🔍 Google Ads</div>` : ''}
 <span class="conv-badge" style="background:${meta.color}">${esc(meta.abbr)}</span>
 </div>
 </div>`;
@@ -3677,6 +3682,11 @@ ${(!conv.adReferral && conv.siteProperty) ? `<div class="cchat-site-prop-box" st
 <div style="font-size:12px;color:#0a6e4a;">
 <div style="font-weight:600;margin-bottom:2px;">🏠 Interesado en una propiedad del sitio</div>
 <div>${esc(conv.siteProperty)}</div>
+</div>
+</div>` : ''}
+${(!conv.adReferral && !conv.siteProperty && conv.googleAdsInterest) ? `<div class="cchat-gads-box" style="padding:10px 16px;background:#fdf1e0;border-bottom:1px solid #f0d4a0;display:flex;gap:10px;align-items:flex-start;">
+<div style="font-size:12px;color:var(--src-google);">
+<div style="font-weight:600;margin-bottom:2px;">🔍 Llegó mencionando un anuncio de Google</div>
 </div>
 </div>` : ''}
 <div class="cchat-warn" id="cchat-warn" style="display:none;"></div>
@@ -8242,6 +8252,8 @@ function registrarDesdeConversacion(key){
     notes = parts.join('\n');
   } else if(conv.siteProperty){
     source = 'Página Web';
+  } else if(conv.googleAdsInterest){
+    source = 'Google Ads';
   }
   openModal('prospect', { phone:last10, source, notes, prop: conv.siteProperty || '' });
 }
