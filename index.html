@@ -3439,6 +3439,7 @@ function renderMobileConvBody(list){
         <div class="mwa-name">${esc(c.name)}</div>
         <div class="mwa-preview">${esc(c.lastBody||'Sin mensajes')}</div>
         ${c.adReferral ? `<div class="mwa-ad" style="font-size:11px;color:#8a5a00;margin-top:2px;">📢 ${esc(c.adReferral.headline||'Anuncio')}</div>` : ''}
+        ${c.siteProperty ? `<div class="mwa-site-prop" style="font-size:11px;color:#0a6e4a;margin-top:2px;">🏠 ${esc(c.siteProperty)}</div>` : ''}
         <span class="mwa-origin-badge" style="background:${meta.color}">${esc(meta.abbr)}</span>
       </div>
       <div class="mwa-right">
@@ -3485,18 +3486,19 @@ return (m.dir==='outbound' ? 'Tú: ' : '') + t;
 async function loadConversationsBoardData(){
 const [{data: staffRows}, {data: waRows}] = await Promise.all([
 supabase.from('crm_users').select('phone'),
-supabase.from('crm_wa_messages').select('phone, direction, body, message_type, created_at, prospect_id, ad_referral').order('created_at',{ascending:false}).limit(1500)
+supabase.from('crm_wa_messages').select('phone, direction, body, message_type, created_at, prospect_id, ad_referral, site_property_interest').order('created_at',{ascending:false}).limit(1500)
 ]);
 const staffLast10 = (staffRows||[]).map(u => (u.phone||'').replace(/\D/g,'').slice(-10)).filter(Boolean);
 const byPhone = {};
 (waRows||[]).forEach(m=>{
 const last10 = (m.phone||'').replace(/\D/g,'').slice(-10);
 if (!last10) return;
-if (!byPhone[last10]) byPhone[last10] = {phoneRaw:m.phone, lastAny:null, lastInboundAt:null, matchedProspect:false, adReferral:null};
+if (!byPhone[last10]) byPhone[last10] = {phoneRaw:m.phone, lastAny:null, lastInboundAt:null, matchedProspect:false, adReferral:null, siteProperty:null};
 const rec = byPhone[last10];
 if (!rec.lastAny) rec.lastAny = {dir:m.direction, body:m.body, type:m.message_type, at:m.created_at};
 if (m.direction==='inbound' && !rec.lastInboundAt) rec.lastInboundAt = m.created_at;
 if (m.ad_referral && !rec.adReferral) rec.adReferral = m.ad_referral;
+if (m.site_property_interest && !rec.siteProperty) rec.siteProperty = m.site_property_interest;
 });
 const visible = getVisibleProspects().filter(p=>p.phase!=='Perdido');
 const list = [];
@@ -3511,7 +3513,8 @@ lastDir: rec && rec.lastAny ? rec.lastAny.dir : null,
 lastBody: rec && rec.lastAny ? _convMsgPreview(rec.lastAny) : '',
 lastAt: rec && rec.lastAny ? rec.lastAny.at : null,
 lastInboundAt: rec ? rec.lastInboundAt : null,
-adReferral: rec ? rec.adReferral : null
+adReferral: rec ? rec.adReferral : null,
+siteProperty: rec ? rec.siteProperty : null
 });
 });
 Object.keys(byPhone).forEach(last10=>{
@@ -3527,7 +3530,8 @@ lastDir: rec.lastAny ? rec.lastAny.dir : null,
 lastBody: rec.lastAny ? _convMsgPreview(rec.lastAny) : '',
 lastAt: rec.lastAny ? rec.lastAny.at : null,
 lastInboundAt: rec.lastInboundAt,
-adReferral: rec.adReferral
+adReferral: rec.adReferral,
+siteProperty: rec.siteProperty
 });
 });
 list.sort((a,b)=>{
@@ -3611,6 +3615,7 @@ return `<div class="conv-item ${__convActiveKey===c.key?'active':''}" onclick="s
 <div class="conv-item-top"><span class="conv-item-name">${esc(c.name)}</span><span class="conv-item-time">${time.text}</span></div>
 <div class="conv-item-preview">${esc(c.lastBody||'Sin mensajes')}</div>
 ${c.adReferral ? `<div class="conv-item-ad" style="font-size:11px;color:#8a5a00;margin-top:2px;">📢 ${esc(c.adReferral.headline||'Anuncio')}</div>` : ''}
+${c.siteProperty ? `<div class="conv-item-site-prop" style="font-size:11px;color:#0a6e4a;margin-top:2px;">🏠 ${esc(c.siteProperty)}</div>` : ''}
 <span class="conv-badge" style="background:${meta.color}">${esc(meta.abbr)}</span>
 </div>
 </div>`;
@@ -3666,6 +3671,12 @@ ${(conv.adReferral.thumbnail_url||conv.adReferral.image_url) ? `<img src="${esc(
 <div style="font-weight:600;margin-bottom:2px;">📢 Llegó desde un anuncio${(conv.adReferral.source_url||'').toLowerCase().includes('instagram') ? ' (Instagram)' : ' (Facebook)'}</div>
 ${conv.adReferral.headline ? `<div>${esc(conv.adReferral.headline)}</div>` : ''}
 ${conv.adReferral.body ? `<div style="opacity:.85;">${esc(conv.adReferral.body)}</div>` : ''}
+</div>
+</div>` : ''}
+${(!conv.adReferral && conv.siteProperty) ? `<div class="cchat-site-prop-box" style="padding:10px 16px;background:#e8f7f0;border-bottom:1px solid #b8e6d1;display:flex;gap:10px;align-items:flex-start;">
+<div style="font-size:12px;color:#0a6e4a;">
+<div style="font-weight:600;margin-bottom:2px;">🏠 Interesado en una propiedad del sitio</div>
+<div>${esc(conv.siteProperty)}</div>
 </div>
 </div>` : ''}
 <div class="cchat-warn" id="cchat-warn" style="display:none;"></div>
@@ -8184,6 +8195,13 @@ function openModal(type, prefill){
       if(prefill.name)document.getElementById('p-name').value=prefill.name;
       if(prefill.source){document.getElementById('p-source').value=prefill.source;toggleReferredByField(prefill.source);}
       if(prefill.notes)document.getElementById('p-notes').value=prefill.notes;
+      if(prefill.prop){
+        const propSelect=document.getElementById('p-prop');
+        const propOpts=Array.from(propSelect.options);
+        const propMatch=propOpts.find(o=>o.value===prefill.prop);
+        if(propMatch){propSelect.value=prefill.prop;autofillPropValue(prefill.prop);}
+        else{propSelect.value='Otra';autofillPropValue('Otra');const otraEl=document.getElementById('p-prop-otra');if(otraEl)otraEl.value=prefill.prop;}
+      }
     }
   }
   if(type==='user'){
@@ -8203,6 +8221,10 @@ function closeModal(type){const m=document.getElementById('modal-'+type); if(m) 
 // desde el 26-ago-2026), se prellenan Origen y Notas con los datos del
 // anuncio (título, texto, link) para no perder esa pista — agregado
 // 26-ago-2026 a pedido de Robert (leads sin origen/propiedad claros).
+// Desde el 9-sep-2026: si no hay anuncio pero sí se detectó una propiedad
+// de interés desde el sitio (crm_wa_messages.site_property_interest, ver
+// extractPropertyName() en whatsapp-webhook), se prellena Origen="Página
+// Web" y el campo Propiedad con esa propiedad.
 function registrarDesdeConversacion(key){
   const list = window.__convList || [];
   const conv = list.find(c=>c.key===key);
@@ -8218,8 +8240,10 @@ function registrarDesdeConversacion(key){
     if(ref.body) parts.push(ref.body);
     if(ref.source_url) parts.push(ref.source_url);
     notes = parts.join('\n');
+  } else if(conv.siteProperty){
+    source = 'Página Web';
   }
-  openModal('prospect', { phone:last10, source, notes });
+  openModal('prospect', { phone:last10, source, notes, prop: conv.siteProperty || '' });
 }
 
 // Muestra/oculta el campo "Referido por" según el Origen del Lead elegido.
