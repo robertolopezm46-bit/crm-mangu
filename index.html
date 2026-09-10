@@ -2460,6 +2460,10 @@
         <div id="cp-prop-precio" style="font-size:13px;color:var(--text-muted);"></div>
       </div>
     </div>
+    <div id="cp-sugeridos-box" style="display:none;margin-bottom:14px;">
+      <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);margin-bottom:6px;letter-spacing:.3px;">🔁 PROSPECTOS SUGERIDOS — presupuesto similar, sin movimiento reciente</div>
+      <div id="cp-sugeridos-list" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;"></div>
+    </div>
     <div class="wa-select"><label>Enviar a</label><select id="compartir-prop-prospect" onchange="updateCompartirPropPreview()"><option value="">Seleccionar...</option></select></div>
     <div style="background:#E8F5E9;padding:16px;border-radius:12px;margin-top:10px;">
       <div class="wa-bubble" id="cp-preview-bubble">← Selecciona un prospecto para ver la vista previa</div>
@@ -4233,7 +4237,54 @@ function openCompartirPropModal(propId){
   updateProspectSelects();
   document.getElementById('compartir-prop-prospect').value = '';
   updateCompartirPropPreview();
+  renderCompartirSugeridos(p);
   document.getElementById('modal-compartir-prop').classList.add('open');
+}
+
+// Reactivación por coincidencia (10-sep-2026): al compartir una propiedad,
+// sugiere prospectos "fríos" (fase Perdido, o sin movimiento en su fase por
+// más de 15 días) cuyo presupuesto registrado (p.value) esté dentro de un
+// ±20% del precio de esta propiedad. No se envía nada automático — solo se
+// sugiere, el asesor decide y confirma el envío igual que un envío manual,
+// reutilizando la plantilla ya aprobada mangu_compartir_propiedad.
+function getSugeridosParaPropiedad(p){
+  if(!p || !p.precio) return [];
+  const MARGEN = 0.20, DIAS_INACTIVO = 15;
+  const min = p.precio * (1 - MARGEN), max = p.precio * (1 + MARGEN);
+  return getVisibleProspects().filter(pr=>{
+    if((( pr.phone||'').replace(/\D/g,'')).length < 10) return false;
+    if(!pr.value || pr.value <= 0) return false;
+    if(pr.value < min || pr.value > max) return false;
+    const frio = pr.phase === 'Perdido' || (pr.phase !== 'Cierre' && daysInPhase(pr) > DIAS_INACTIVO);
+    return frio;
+  }).sort((a,b)=>Math.abs(a.value - p.precio) - Math.abs(b.value - p.precio)).slice(0,8);
+}
+
+function renderCompartirSugeridos(p){
+  const box = document.getElementById('cp-sugeridos-box');
+  const list = document.getElementById('cp-sugeridos-list');
+  const sugeridos = getSugeridosParaPropiedad(p);
+  if(!sugeridos.length){ box.style.display='none'; list.innerHTML=''; return; }
+  box.style.display='';
+  list.innerHTML = sugeridos.map(pr=>{
+    const dias = daysInPhase(pr);
+    const color = PHASE_COLORS[pr.phase] || PHASE_COLORS['Perdido'];
+    const estadoTxt = pr.phase==='Perdido' ? 'Perdido' : (pr.phase+' — '+dias+'d sin mover');
+    return `<div onclick="usarSugerido('${escJs(String(pr.id))}')" style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;">
+      <div style="min-width:0;">
+        <div style="font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(pr.name)}</div>
+        <div style="font-size:11px;color:${color};">${esc(estadoTxt)} · presupuesto ${fmtPrecio(pr.value)}</div>
+      </div>
+      <span style="font-size:11px;font-weight:700;color:var(--gold-dark);white-space:nowrap;">Sugerir →</span>
+    </div>`;
+  }).join('');
+}
+
+function usarSugerido(prospectId){
+  const sel = document.getElementById('compartir-prop-prospect');
+  sel.value = prospectId;
+  updateCompartirPropPreview();
+  sel.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
 function closeCompartirPropModal(){
