@@ -775,6 +775,7 @@
     }
     .mcit-name { font-weight: 700; font-size: 14px; color: #F3F4F6; }
     .mcit-prop { font-size: 12px; color: #8888A5; margin-top: 2px; }
+    .mcit-cancelada { opacity: .55; }
     .mcit-empty {
       text-align: center; color: #6B7280; padding: 32px 12px;
       font-size: 13px;
@@ -3916,6 +3917,14 @@ function _asistenciaBadgeHtml(c){
   if (c.asistencia_status === 'no_asistira') return '<span class="badge" style="background:#FEE2E2;color:#991B1B;margin-left:6px;">✕ No asistirá</span>';
   return '';
 }
+// Badge "Cancelada" para una cita que el cliente canceló con anticipación
+// (crm_citas.cancelada, ver cancelarCita()). Distinto de asistencia_status
+// (esa es la respuesta del cliente al recordatorio de 3h; esta es una
+// cancelación manual hecha por el equipo antes de que llegue ese recordatorio).
+function _canceladaBadgeHtml(c){
+  if (c.cancelada) return '<span class="badge" style="background:#FEE2E2;color:#991B1B;margin-left:6px;">✕ Cancelada</span>';
+  return '';
+}
 function renderMobileCitas(){
   const el = document.getElementById('mob-citas-view');
   if (!el) return;
@@ -3954,6 +3963,7 @@ function renderMobileCitas(){
   const todayISO = _fmtDayISO(today);
   const nowTimeStr = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
   const upcomingCitas = citasUnicas.filter(c => {
+    if (c.cancelada) return false;
     if (c.date < todayISO) return false;
     if (c.date === todayISO && c.time && c.time < nowTimeStr) return false;
     if (visiblePids && !visiblePids.has(c.prospect_id) && !visiblePids.has(String(c.prospect_id))) return false;
@@ -3970,20 +3980,25 @@ function renderMobileCitas(){
         </div>
       <div class="mcit-name">${esc(p ? p.name : 'Prospecto')}</div>
       <div class="mcit-prop">${esc((c.prop||'').split('—')[0].trim())}</div>
+      <div style="margin-top:8px;"><button type="button" class="btn-sm btn-del" onclick="cancelarCita('${c.id}')">Cancelar cita</button></div>
     </div>`;
   }).join('') : '<div class="mcit-empty">No hay próximas citas</div>';
 
   const listHtml = dayCitas.length ? dayCitas.map(c=>{
     const p = pMap[String(c.prospect_id)];
     const tipo = _tipoCita(c);
-    return `<div class="mcit-item">
+    // Solo se puede cancelar una cita que sigue en el futuro y que no está
+    // ya cancelada (dayCitas muestra el día completo, incluye historial).
+    const esFutura = c.date > todayISO || (c.date === todayISO && (!c.time || c.time >= nowTimeStr));
+    return `<div class="mcit-item${c.cancelada?' mcit-cancelada':''}">
       <div class="mcit-item-head">
         <span class="mcit-dot ${tipo}"></span>
         <span class="mcit-time">${c.time||''}</span>
-        <span class="mcit-type">${tipoLabel[tipo]}</span>${_asistenciaBadgeHtml(c)}
+        <span class="mcit-type">${tipoLabel[tipo]}</span>${_asistenciaBadgeHtml(c)}${_canceladaBadgeHtml(c)}
         </div>
       <div class="mcit-name">${esc(p ? p.name : 'Prospecto')}</div>
       <div class="mcit-prop">${esc((c.prop||'').split('—')[0].trim())}</div>
+      ${(!c.cancelada && esFutura) ? `<div style="margin-top:8px;"><button type="button" class="btn-sm btn-del" onclick="cancelarCita('${c.id}')">Cancelar cita</button></div>` : ''}
     </div>`;
   }).join('') : '<div class="mcit-empty">Sin citas para este día</div>';
 
@@ -8148,6 +8163,37 @@ async function agendarCita(){
   renderCitasHoyBanner();
   if (window.innerWidth<=768) renderMobileCitas();
 }
+// Cancela una cita agendada (crm_citas.cancelada=true). Pedido de Robert
+// (11-sep-2026): cuando el cliente cancela con anticipación, esto detiene
+// el recordatorio automático de 3h antes (visitas-recordatorios lo ignora,
+// ver filtro .eq('cancelada',false) en esa Edge Function) y el ciclo de
+// check-in post-visita (visita-checkin, mismo filtro). Reagendar sigue
+// siendo manual: se crea una cita nueva con "Agendar Cita" para la fecha
+// nueva - esta función no edita/mueve la cita existente, solo la marca
+// como cancelada y la saca de "Próximas Citas".
+// Mismo permiso que agendar/reagendar (puedeAgendarCita): Alfredo mientras
+// el prospecto está en Registro/Perdido, Fabiola o Alfredo en
+// Visita/Proceso/Cierre, Roberto siempre.
+async function cancelarCita(id){
+  const c = DB.citas.find(x=>String(x.id)===String(id));
+  if(!c){showToast('Cita no encontrada','error');return;}
+  const p = DB.prospects.find(pr=>String(pr.id)===String(c.prospect_id));
+  if(!puedeAgendarCita(p)){
+    const fase = p?.phase;
+    const quien = (fase==='Visita'||fase==='Proceso'||fase==='Cierre') ? 'Fabiola' : 'Alfredo';
+    showToast(`Solo ${quien} (o Roberto) puede cancelar esta cita`,'error');
+    return;
+  }
+  if(!(await showConfirm('¿Cancelar esta cita? Se detiene el recordatorio automático de WhatsApp de 3h antes. Para reagendar, crea una cita nueva con "Agendar Cita".'))) return;
+  setSyncBadge(true);
+  const{error} = await supabase.from('crm_citas').update({cancelada:true,cancelada_at:new Date().toISOString()}).eq('id',id);
+  setSyncBadge(false);
+  if(error){showToast('Error al cancelar: '+error.message,'error');return;}
+  showToast('Cita cancelada','info');
+  await loadCitas();renderCalendar();
+  renderCitasHoyBanner();
+  if (window.innerWidth<=768) renderMobileCitas();
+}
 function sendCitaWA(){
   const pid=document.getElementById('cita-prospect').value;
   const date=document.getElementById('cita-date').value;
@@ -8168,7 +8214,7 @@ function renderCalendar(){
   const days=new Date(year,month+1,0).getDate();
   const today=new Date();
   const visiblePids=isAdmin()?null:new Set(getVisibleProspects().map(p=>p.id));
-  const citaDates=DB.citas.filter(c=>!visiblePids||visiblePids.has(c.prospect_id)||visiblePids.has(String(c.prospect_id))).map(c=>c.date);
+  const citaDates=DB.citas.filter(c=>!c.cancelada&&(!visiblePids||visiblePids.has(c.prospect_id)||visiblePids.has(String(c.prospect_id)))).map(c=>c.date);
   let html=['Dom','Lun','Mar','Mi\u00e9','Jue','Vie','S\u00e1b'].map(d=>`<div class="cal-day-name">${d}</div>`).join('');
   for(let i=0;i<first;i++)html+=`<div class="cal-day empty">\u00b7</div>`;
   for(let d=1;d<=days;d++){
@@ -8184,6 +8230,8 @@ function renderCalendar(){
   // Deduplicar por id antes de filtrar
   const citasUnicas = [...new Map(DB.citas.map(c => [c.id, c])).values()];
   const upcoming = citasUnicas.filter(c => {
+    // Cita cancelada por el cliente (cancelarCita()) - ya no cuenta como próxima
+    if (c.cancelada) return false;
     // Ocultar citas pasadas (fecha anterior a hoy, u hoy con hora ya pasada)
     if (c.date < todayStr) return false;
     if (c.date === todayStr && c.time && c.time < nowTimeStr) return false;
@@ -8195,7 +8243,8 @@ function renderCalendar(){
   document.getElementById('upcoming-citas').innerHTML=upcoming.length?upcoming.map(c=>`
     <div class="cita-item">
       <div class="cita-time">${c.time}</div>
-      <div class="cita-info"><h4>${pMap[String(c.prospect_id)]||'Prospecto'}${_asistenciaBadgeHtml(c)}</h4><p>${c.date} · ${c.prop.split('—')[0]}</p><p>${c.seller}</p></div>
+      <div class="cita-info" style="flex:1;"><h4>${pMap[String(c.prospect_id)]||'Prospecto'}${_asistenciaBadgeHtml(c)}</h4><p>${c.date} · ${c.prop.split('—')[0]}</p><p>${c.seller}</p></div>
+      <button type="button" class="btn-sm btn-del" style="align-self:center;white-space:nowrap;" onclick="cancelarCita('${c.id}')">Cancelar</button>
       </div>`).join(''):'<div class="empty-state" style="padding:20px;">Sin citas próximas</div>';
 }
 function changeMonth(d){calDate.setMonth(calDate.getMonth()+d);renderCalendar();}
