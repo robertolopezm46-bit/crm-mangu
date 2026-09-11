@@ -2815,7 +2815,7 @@ function lastNoteActivity(p){
 }
 let _kanbanView = 'kanban';
 let _mobilePhase = 'Registro';
-function setMobilePhase(f){ _mobilePhase = f; renderKanban(); }
+function setMobilePhase(f){ _mobilePhase = f; try { localStorage.setItem('mangu_last_kanban_phase', f); } catch(e) {} renderKanban(); }
 function updateMobileNav(id){
   // Mapeo: sección visible → botón de la nav móvil que debe quedar activo
   const map = { kanban:'pipeline', pipeline:'tabla', whatsapp:'whatsapp', citas:'citas', dashboard:'dashboard' };
@@ -3106,6 +3106,7 @@ async function openWaChatModal(phone, displayName, prospectId){
   __waChatPhone = waLast10(phone);
   __waChatToDigits = waDigits(phone);
   __waChatProspectId = prospectId || null;
+  try { localStorage.setItem('mangu_last_wa_modal', JSON.stringify({phone:phone, displayName:displayName, prospectId:prospectId||null})); } catch(e) {}
 if(__waChatProspectId){ const __pSeen=(DB.prospects||[]).find(function(x){return String(x.id)===String(__waChatProspectId);}); if(__pSeen){ markWaSeen(__pSeen); if(isSectionActive('kanban')) renderKanban(); } }
   document.getElementById('wachat-title').textContent = displayName;
   document.getElementById('wachat-sub').textContent = '+' + __waChatToDigits;
@@ -3124,6 +3125,7 @@ function closeWaChatModal(){
   __waChatPhone = null;
   __waChatToDigits = '';
   __waChatProspectId = null;
+  try { localStorage.removeItem('mangu_last_wa_modal'); } catch(e) {}
   clearWaChatAttach();
 }
 
@@ -3646,6 +3648,7 @@ __convActiveKey = key;
 const list = window.__convList || [];
 const conv = list.find(c=>c.key===key);
 if (!conv) return;
+try { localStorage.setItem('mangu_last_wa_conv_key', key); } catch(e) {}
 renderConvList(list);
 renderConvChatPanel(conv);
 if (conv.kind==='prospect') {
@@ -4783,17 +4786,57 @@ loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban();
   renderEquipo();
   renderCitasHoyBanner();
   updateMobileFab();
-  // En móvil, arrancar mostrando la última sección visitada (o Kanban si no hay ninguna guardada) — evita que "Actualizar"/recargar la página mande siempre a Kanban
-  if (window.innerWidth <= 768) {
-    let lastSection = 'kanban';
+  // Al arrancar (login o recarga completa vía "Actualizar"), volver a la última sección visitada
+  // (en escritorio y en móvil) y, dentro de ella, al mismo sub-estado: fase de Kanban en móvil,
+  // conversación de WhatsApp abierta en el panel de escritorio, y posición de scroll — en vez de
+  // mandar siempre a Pipeline/Kanban por default.
+  let lastSection = (window.innerWidth <= 768) ? 'kanban' : 'pipeline';
+  try {
+    const saved = localStorage.getItem('mangu_last_section');
+    if (saved && document.getElementById('section-'+saved)) lastSection = saved;
+  } catch(e) {}
+  showSection(lastSection);
+  if (lastSection === 'kanban' && window.innerWidth <= 768) {
     try {
-      const saved = localStorage.getItem('mangu_last_section');
-      if (saved && document.getElementById('section-'+saved)) lastSection = saved;
+      const savedPhase = localStorage.getItem('mangu_last_kanban_phase');
+      if (savedPhase && ALL_PHASES.includes(savedPhase)) setMobilePhase(savedPhase);
     } catch(e) {}
-    showSection(lastSection);
   }
+  if (lastSection === 'whatsapp' && window.innerWidth > 768) {
+    try {
+      const savedKey = localStorage.getItem('mangu_last_wa_conv_key');
+      if (savedKey) {
+        const list = await loadConversationsBoardData();
+        if (list.find(c=>c.key===savedKey)) selectConversation(savedKey);
+      }
+    } catch(e) {}
+  }
+  // El chat rápido de WhatsApp (modal flotante que puede abrirse sobre cualquier sección, p.ej.
+  // desde una tarjeta de Kanban) es independiente de la sección — se restaura si seguía abierto.
+  try {
+    const savedModal = localStorage.getItem('mangu_last_wa_modal');
+    if (savedModal) {
+      const m = JSON.parse(savedModal);
+      if (m && m.phone) await openWaChatModal(m.phone, m.displayName, m.prospectId);
+    }
+  } catch(e) {}
+  try {
+    const savedY = parseInt(localStorage.getItem('mangu_scroll_'+lastSection) || '0', 10);
+    if (savedY > 0) setTimeout(function(){ window.scrollTo(0, savedY); }, 400);
+  } catch(e) {}
   hideLoading();
 }
+// Recuerda la posición de scroll por sección, para restaurarla al recargar (botón "Actualizar")
+let __scrollSaveTimer = null;
+window.addEventListener('scroll', function(){
+  clearTimeout(__scrollSaveTimer);
+  __scrollSaveTimer = setTimeout(function(){
+    try {
+      const sec = localStorage.getItem('mangu_last_section') || 'pipeline';
+      localStorage.setItem('mangu_scroll_'+sec, String(window.scrollY));
+    } catch(e) {}
+  }, 200);
+}, {passive:true});
 
 // Banner de citas del día (visible en el Kanban al iniciar)
 function renderCitasHoyBanner(){
