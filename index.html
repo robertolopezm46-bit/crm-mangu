@@ -4846,14 +4846,22 @@ function renderCitasHoyBanner(){
   if(!el)return;
   const t=new Date();
   const hoy=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  const mananaD=new Date(t.getFullYear(),t.getMonth(),t.getDate()+1);
+  const manana=mananaD.getFullYear()+'-'+String(mananaD.getMonth()+1).padStart(2,'0')+'-'+String(mananaD.getDate()).padStart(2,'0');
+  const nowTimeStr=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
   const visiblePids=isAdmin()?null:new Set(getVisibleProspects().map(p=>String(p.id)));
   const citasUnicas=[...new Map(DB.citas.map(c=>[c.id,c])).values()];
-  const deHoy=citasUnicas.filter(c=>c.date===hoy&&(!visiblePids||visiblePids.has(String(c.prospect_id)))).sort((a,b)=>a.time>b.time?1:-1);
-  if(!deHoy.length){el.style.display='none';return;}
+  const pendientes=citasUnicas
+    .filter(c=>!c.cancelada&&(!visiblePids||visiblePids.has(String(c.prospect_id)))&&(c.date>hoy||(c.date===hoy&&(!c.time||c.time>=nowTimeStr))))
+    .sort((a,b)=>(a.date+a.time)>(b.date+b.time)?1:-1);
+  if(!pendientes.length){el.style.display='none';return;}
+  const proxDate=pendientes[0].date;
+  const deProxDia=pendientes.filter(c=>c.date===proxDate);
   const pMap=Object.fromEntries(DB.prospects.map(p=>[String(p.id),p.name]));
+  const etiquetaDia=proxDate===hoy?'hoy':(proxDate===manana?'mañana':'el '+fmtDate(proxDate));
   el.innerHTML=`<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius-lg);padding:14px 18px;">
-    <p style="font-size:13px;font-weight:700;color:#92400E;margin-bottom:6px;">📅 ${deHoy.length===1?'Tienes 1 cita hoy':'Tienes '+deHoy.length+' citas hoy'}</p>
-    ${deHoy.map(c=>`<p style="font-size:12px;color:#78350F;margin-top:2px;"><strong>${c.time}</strong> · ${pMap[String(c.prospect_id)]||'Prospecto'} · ${(c.prop||'').split('—')[0]} · ${c.seller||''}</p>`).join('')}
+    <p style="font-size:13px;font-weight:700;color:#92400E;margin-bottom:6px;">📅 ${deProxDia.length===1?'Tienes 1 cita '+etiquetaDia:'Tienes '+deProxDia.length+' citas '+etiquetaDia}</p>
+    ${deProxDia.map(c=>`<p style="font-size:12px;color:#78350F;margin-top:2px;"><strong>${c.time}</strong> · ${pMap[String(c.prospect_id)]||'Prospecto'} · ${(c.prop||'').split('—')[0]} · ${c.seller||''}</p>`).join('')}
   </div>`;
   el.style.display='';
 }
