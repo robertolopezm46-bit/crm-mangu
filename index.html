@@ -3924,7 +3924,7 @@ function _asistenciaBadgeHtml(c){
 }
 // Badge "Cancelada" para una cita que el cliente canceló con anticipación
 // (crm_citas.cancelada, ver cancelarCita()). Distinto de asistencia_status
-// (esa es la respuesta del cliente al recordatorio de 3h; esta es una
+// (esa es la respuesta del cliente al recordatorio de 1h antes; esta es una
 // cancelación manual hecha por el equipo antes de que llegue ese recordatorio).
 function _canceladaBadgeHtml(c){
   if (c.cancelada) return '<span class="badge" style="background:#FEE2E2;color:#991B1B;margin-left:6px;">✕ Cancelada</span>';
@@ -8305,7 +8305,7 @@ function cancelarEdicionCita(){
 }
 // Cancela una cita agendada (crm_citas.cancelada=true). Pedido de Robert
 // (11-sep-2026): cuando el cliente cancela con anticipación, esto detiene
-// el recordatorio automático de 3h antes (visitas-recordatorios lo ignora,
+// el recordatorio automático de 1h antes (visitas-recordatorios lo ignora,
 // ver filtro .eq('cancelada',false) en esa Edge Function) y el ciclo de
 // check-in post-visita (visita-checkin, mismo filtro). Reagendar sigue
 // siendo manual: se crea una cita nueva con "Agendar Cita" para la fecha
@@ -8324,7 +8324,7 @@ async function cancelarCita(id){
     showToast(`Solo ${quien} (o Roberto) puede cancelar esta cita`,'error');
     return;
   }
-  if(!(await showConfirm('¿Cancelar esta cita? Se detiene el recordatorio automático de WhatsApp de 3h antes. Para reagendar, crea una cita nueva con "Agendar Cita".'))) return;
+  if(!(await showConfirm('¿Cancelar esta cita? Se detiene el recordatorio automático de WhatsApp de 1h antes. Para reagendar, crea una cita nueva con "Agendar Cita".'))) return;
   setSyncBadge(true);
   const{error} = await supabase.from('crm_citas').update({cancelada:true,cancelada_at:new Date().toISOString()}).eq('id',id);
   setSyncBadge(false);
