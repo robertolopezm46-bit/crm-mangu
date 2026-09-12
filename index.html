@@ -1502,9 +1502,10 @@
           </div>
           <div class="citas-agendar-col">
             <div class="card">
-              <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;"><h3>Agendar Cita</h3><button type="button" id="mob-agendar-close" onclick="closeMobileAgendarCita()" style="display:none;background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--text-muted);">✕</button></div>
+              <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;"><h3 id="cita-form-title">Agendar Cita</h3><button type="button" id="mob-agendar-close" onclick="closeMobileAgendarCita()" style="display:none;background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--text-muted);">✕</button></div>
               <div style="padding:20px;">
                 <div class="form-full">
+                  <input type="hidden" id="cita-edit-id" value="">
                   <div class="form-group"><label>Prospecto</label><select id="cita-prospect"><option value="">Seleccionar prospecto...</option></select></div>
                   <div class="form-row">
                     <div class="form-group"><label>Fecha</label><input type="date" id="cita-date"></div>
@@ -1516,9 +1517,10 @@
                   <div class="form-group"><label>Vendedor asignado</label><select id="cita-vendedor" onchange="toggleCitaVendedorOtro()"><option value="Fabiola Palafox">Fabiola Palafox</option><option value="__otro__">Otro...</option></select><input type="text" id="cita-vendedor-otro" placeholder="Nombre del vendedor" style="display:none;margin-top:6px;width:100%;box-sizing:border-box;"></div>
                   <div class="form-group"><label>Notas</label><textarea id="cita-notes" rows="3" placeholder="Observaciones, requerimientos especiales..."></textarea></div>
                   <div style="display:flex;gap:10px;">
-                    <button class="btn-primary" onclick="agendarCita()" style="flex:1;">Agendar Cita</button>
+                    <button class="btn-primary" id="cita-submit-btn" onclick="agendarCita()" style="flex:1;">Agendar Cita</button>
                     <button class="btn-secondary" onclick="sendCitaWA()">Confirmar por WhatsApp</button>
                   </div>
+                  <button type="button" id="cita-cancel-edit-btn" onclick="cancelarEdicionCita()" style="display:none;margin-top:8px;width:100%;background:none;border:none;color:var(--text-muted);text-decoration:underline;cursor:pointer;font-size:13px;">Cancelar edición</button>
                 </div>
               </div>
             </div>
@@ -3983,7 +3985,7 @@ function renderMobileCitas(){
         </div>
       <div class="mcit-name">${esc(p ? p.name : 'Prospecto')}</div>
       <div class="mcit-prop">${esc((c.prop||'').split('—')[0].trim())}</div>
-      <div style="margin-top:8px;"><button type="button" class="btn-sm btn-del" onclick="cancelarCita('${c.id}')">Cancelar cita</button></div>
+      <div style="margin-top:8px;display:flex;gap:8px;"><button type="button" class="btn-sm btn-edit" onclick="editarCita('${c.id}')">Editar</button><button type="button" class="btn-sm btn-del" onclick="cancelarCita('${c.id}')">Cancelar cita</button></div>
     </div>`;
   }).join('') : '<div class="mcit-empty">No hay próximas citas</div>';
 
@@ -4001,7 +4003,7 @@ function renderMobileCitas(){
         </div>
       <div class="mcit-name">${esc(p ? p.name : 'Prospecto')}</div>
       <div class="mcit-prop">${esc((c.prop||'').split('—')[0].trim())}</div>
-      ${(!c.cancelada && esFutura) ? `<div style="margin-top:8px;"><button type="button" class="btn-sm btn-del" onclick="cancelarCita('${c.id}')">Cancelar cita</button></div>` : ''}
+      ${(!c.cancelada && esFutura) ? `<div style="margin-top:8px;display:flex;gap:8px;"><button type="button" class="btn-sm btn-edit" onclick="editarCita('${c.id}')">Editar</button><button type="button" class="btn-sm btn-del" onclick="cancelarCita('${c.id}')">Cancelar cita</button></div>` : ''}
     </div>`;
   }).join('') : '<div class="mcit-empty">Sin citas para este día</div>';
 
@@ -8163,6 +8165,43 @@ async function agendarCita(){
     return;
   }
   setSyncBadge(true);
+
+  const editId = document.getElementById('cita-edit-id').value;
+  if(editId){
+    // Editar cita existente (pedido de Robert, 12-sep-2026): el cliente
+    // cambió la fecha/hora y en vez de cancelar + crear una cita nueva, se
+    // actualiza la misma cita in place. Reiniciamos las banderas de
+    // recordatorio/asistencia/check-in - si no, quedarían marcadas como ya
+    // enviadas con la fecha vieja y el ciclo automático (visitas-
+    // recordatorios, visita-checkin) nunca volvería a dispararse para la
+    // fecha nueva.
+    const { error: errEdit } = await supabase.from('crm_citas').update({
+      prospect_id: pid, date, time, prop, seller,
+      notes: document.getElementById('cita-notes').value,
+      recordatorio_1d_enviado: false,
+      recordatorio_horas_enviado: false,
+      confirmacion_enviada: false,
+      asistencia_status: null,
+      asistencia_respondido_at: null,
+      checkin_status: null,
+      checkin_intentos_sin_respuesta: 0,
+      checkin_ultimo_envio_at: null,
+      checkin_completado_at: null,
+      checkin_escalado_at: null
+    }).eq('id', editId);
+    if(errEdit){setSyncBadge(false);showToast('Error al guardar cambios: '+errEdit.message,'error');return;}
+    showToast('Cita actualizada','success');
+    cancelarEdicionCita();
+    // Vuelve a mandar la confirmación por WhatsApp con la fecha/hora nueva
+    // (mismo mecanismo que enviarParaCita usa al agendar una cita nueva).
+    supabase.functions.invoke('visitas-recordatorios',{body:{cita_id:editId}}).catch(()=>{});
+    setSyncBadge(false);
+    await loadCitas();renderCalendar();
+    renderCitasHoyBanner();
+    if (window.innerWidth<=768) renderMobileCitas();
+    return;
+  }
+
   const{data:nuevaCita,error} = await supabase.from('crm_citas').insert({prospect_id:pid,date,time,prop,seller,notes:document.getElementById('cita-notes').value}).select().single();
   if(error){setSyncBadge(false);showToast('Error al guardar cita: '+error.message,'error');return;}
 
@@ -8205,6 +8244,64 @@ async function agendarCita(){
   await loadCitas();renderCalendar();
   renderCitasHoyBanner();
   if (window.innerWidth<=768) renderMobileCitas();
+}
+// Abre el formulario "Agendar Cita" (el mismo panel, en modo edición) para
+// cambiar la fecha/hora/propiedad/vendedor de una cita ya existente sin
+// cancelarla y crear una duplicada. Pedido de Robert (12-sep-2026): el
+// cliente está cambiando la fecha de la cita. Al guardar (agendarCita(),
+// ver rama "editId" arriba), se hace UPDATE sobre la misma fila y se
+// reinician las banderas de recordatorio/check-in.
+// Mismo permiso que agendar/cancelar (puedeAgendarCita).
+function editarCita(id){
+  const c = DB.citas.find(x=>String(x.id)===String(id));
+  if(!c){showToast('Cita no encontrada','error');return;}
+  const p = DB.prospects.find(pr=>String(pr.id)===String(c.prospect_id));
+  if(!puedeAgendarCita(p)){
+    const fase = p?.phase;
+    const quien = (fase==='Visita'||fase==='Proceso'||fase==='Cierre') ? 'Fabiola' : 'Alfredo';
+    showToast(`Solo ${quien} (o Roberto) puede editar esta cita`,'error');
+    return;
+  }
+  const isMobile = window.innerWidth<=768;
+  if(isMobile) openMobileAgendarCita();
+  populateSelects();
+  populateCitaPropSelect();
+  document.getElementById('cita-edit-id').value = c.id;
+  document.getElementById('cita-prospect').value = String(c.prospect_id);
+  document.getElementById('cita-date').value = c.date;
+  document.getElementById('cita-time').value = c.time || '10:00';
+  const selVendedor = document.getElementById('cita-vendedor');
+  const vendedorOtro = document.getElementById('cita-vendedor-otro');
+  const opt = Array.from(selVendedor.options).find(o=>o.value===c.seller);
+  if(opt){ selVendedor.value = c.seller; vendedorOtro.value=''; }
+  else { selVendedor.value = '__otro__'; vendedorOtro.value = c.seller||''; }
+  toggleCitaVendedorOtro();
+  const selProp = document.getElementById('cita-prop');
+  if(Array.from(selProp.options).some(o=>o.value===c.prop)) selProp.value = c.prop;
+  document.getElementById('cita-notes').value = c.notes || '';
+  document.getElementById('cita-form-title').textContent = 'Editar Cita';
+  document.getElementById('cita-submit-btn').textContent = 'Guardar Cambios';
+  document.getElementById('cita-cancel-edit-btn').style.display = '';
+  if(!isMobile){
+    document.getElementById('cita-prospect').closest('.card')?.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+}
+// Sale del modo edición y limpia el formulario "Agendar Cita" sin guardar
+// cambios (botón "Cancelar edición", visible solo mientras se edita).
+function cancelarEdicionCita(){
+  document.getElementById('cita-edit-id').value = '';
+  document.getElementById('cita-prospect').value = '';
+  document.getElementById('cita-date').value = '';
+  document.getElementById('cita-time').value = '10:00';
+  document.getElementById('cita-prop').value = '';
+  document.getElementById('cita-vendedor').value = 'Fabiola Palafox';
+  document.getElementById('cita-vendedor-otro').value = '';
+  toggleCitaVendedorOtro();
+  document.getElementById('cita-notes').value = '';
+  document.getElementById('cita-form-title').textContent = 'Agendar Cita';
+  document.getElementById('cita-submit-btn').textContent = 'Agendar Cita';
+  document.getElementById('cita-cancel-edit-btn').style.display = 'none';
+  closeMobileAgendarCita();
 }
 // Cancela una cita agendada (crm_citas.cancelada=true). Pedido de Robert
 // (11-sep-2026): cuando el cliente cancela con anticipación, esto detiene
@@ -8287,7 +8384,10 @@ function renderCalendar(){
     <div class="cita-item">
       <div class="cita-time">${c.time}</div>
       <div class="cita-info" style="flex:1;"><h4>${pMap[String(c.prospect_id)]||'Prospecto'}${_asistenciaBadgeHtml(c)}</h4><p>${c.date} · ${c.prop.split('—')[0]}</p><p>${c.seller}</p></div>
-      <button type="button" class="btn-sm btn-del" style="align-self:center;white-space:nowrap;" onclick="cancelarCita('${c.id}')">Cancelar</button>
+      <div style="display:flex;gap:6px;align-self:center;">
+      <button type="button" class="btn-sm btn-edit" style="white-space:nowrap;" onclick="editarCita('${c.id}')">Editar</button>
+      <button type="button" class="btn-sm btn-del" style="white-space:nowrap;" onclick="cancelarCita('${c.id}')">Cancelar</button>
+      </div>
       </div>`).join(''):'<div class="empty-state" style="padding:20px;">Sin citas próximas</div>';
 }
 function changeMonth(d){calDate.setMonth(calDate.getMonth()+d);renderCalendar();}
