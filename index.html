@@ -229,14 +229,16 @@
   .kcard-activity{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin-bottom:10px;}
   .kcard-avatar{width:18px;height:18px;border-radius:50%;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .kcard-activity b{color:var(--text);font-weight:600;}.kcard-badges{position:absolute;top:12px;right:14px;display:flex;gap:6px;}.kcard-badge{background:var(--gold);color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;line-height:1.4;white-space:nowrap;}.kcard-badge.wa{background:#16A34A;}.kcard-pills{display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-bottom:10px;}.kcard-pill{display:inline-flex;align-items:center;gap:6px;background:#FBF3DE;color:var(--gold-dark);font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;}.kcard-pill b{color:var(--gold-dark);}.kcard-pill .muted{color:var(--text-muted);font-weight:500;}.kcard-pill.wa{background:#E9F9EF;color:#16A34A;}.kcard-pill.wa b{color:#16A34A;}button.kcard-pill{border:none;font-family:inherit;cursor:pointer;text-align:left;}button.kcard-pill:hover{filter:brightness(.97);}
-  .kanban-card .card-actions{display:flex;flex-direction:column;gap:8px;margin-top:0;}
-  .kbtn{width:100%;border:none;border-radius:10px;padding:11px 12px;font-size:13.5px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;}
-  .kbtn svg{width:16px;height:16px;flex-shrink:0;}
+  .kcard-dias{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin:0 0 10px;}
+  .kanban-card .card-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:0;}
+  .kbtn{flex:1 1 auto;min-width:0;border:none;border-radius:10px;padding:9px 6px;font-size:12px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-sizing:border-box;white-space:nowrap;}
+  .kbtn svg{width:14px;height:14px;flex-shrink:0;}
   .kbtn-wa{background:#25D366;color:#fff;}
-  .kbtn-phase-wrap{position:relative;width:100%;}
-  .kbtn-phase-wrap .phase-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted);pointer-events:none;}
-  .kbtn-phase-wrap .chevron{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-muted);pointer-events:none;}
-  .kbtn-phase{width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:11px 34px 11px 38px;font-size:13.5px;font-weight:700;font-family:'Inter',sans-serif;text-align:left;-webkit-appearance:none;appearance:none;cursor:pointer;box-sizing:border-box;}
+  .kbtn-notes{background:var(--surface);color:var(--text);border:1px solid var(--border);}
+  .kbtn-phase-wrap{position:relative;flex:1 1 auto;min-width:0;}
+  .kbtn-phase-wrap .phase-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-muted);pointer-events:none;}
+  .kbtn-phase-wrap .chevron{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:12px;height:12px;color:var(--text-muted);pointer-events:none;}
+  .kbtn-phase{width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:9px 24px 9px 28px;font-size:12px;font-weight:700;font-family:'Inter',sans-serif;text-align:left;-webkit-appearance:none;appearance:none;cursor:pointer;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .kbtn-notes-float{position:relative;flex:none;width:28px;height:28px;background:transparent;border:none;color:#9CA3AF;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;}
   .kbtn-notes-float svg{width:18px;height:18px;}
   .kbadge{position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;border-radius:50%;background:#C7C9D4;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px;box-shadow:0 0 0 2px var(--white);}
@@ -588,9 +590,8 @@
       background: #fff; border-radius: 12px;
       padding: 14px; margin-bottom: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-      color: #1F2937; border-left: none !important;
+      color: #1F2937; border-left: none;
     }
-    #section-kanban .kanban-card.kcard-unread { border-left: 4px solid var(--gold) !important; }
     #section-kanban .kanban-card h4 { color: #111827; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
     #section-kanban .kanban-card p { color: #6B7280; font-size: 12px; }
     #section-kanban .kanban-card .price { color: #059669; font-size: 13px; font-weight: 700; }
@@ -2752,6 +2753,9 @@ function daysInPhase(p){
   return Math.max(0, Math.floor((Date.now() - new Date(ref).getTime()) / 86400000));
 }
 function daysBarColor(d){return d<=2?'#4ADE80':d<=6?'#FACC15':'#F87171';}
+function faseUrgenciaColor(d){return d<=7?'#16A34A':d<=15?'#C9A84C':'#DC2626';}
+function diasPillBg(d){return d<=7?'#DCFCE7':d<=15?'#FBF3DE':'#FEE2E2';}
+function diasPillFg(d){return d<=7?'#15803D':d<=15?'#9A7A2E':'#B91C1C';}
 function fmtAgo(ts){
   if(!ts) return null;
   const min = Math.floor((Date.now() - new Date(ts).getTime())/60000);
@@ -7596,7 +7600,7 @@ function renderKanban(){
 const wa=waUnreadInfo(p);
       const cardUnread=ni.unread||wa.unread;
       return `
-      <div class="kanban-card${urgente?' urgente':''}${cardUnread?' kcard-unread':''}" draggable="true" ondragstart="onDragStart(event,'${p.id}')" ondragend="onDragEnd(event)" id="kcard-${p.id}">
+      <div class="kanban-card" draggable="true" ondragstart="onDragStart(event,'${p.id}')" ondragend="onDragEnd(event)" id="kcard-${p.id}"${phase!=='Perdido'?` style="border-left:4px solid ${faseUrgenciaColor(dias)};"`:''}>
    
         ${(ni.unread||wa.unread)?`<div class="kcard-badges">${ni.unread?`<span class="kcard-badge">📝 ${ni.newCount}</span>`:''}${wa.unread?`<span class="kcard-badge wa">💬</span>`:''}</div>`:''}     <h4 onclick="${phase==='Registro'?`editProspect('${p.id}')`:`openNotaRapida('${p.id}')`}" title="${phase==='Registro'?'Editar prospecto':'Ver notas'}">${esc(p.name)}</h4>
         <div class="kcard-info-row">
@@ -7606,11 +7610,18 @@ const wa=waUnreadInfo(p);
           </div>
         </div>
         <div class="kcard-divider"></div>
+        ${phase!=='Perdido'?`<div class="kcard-dias" style="background:${diasPillBg(dias)};color:${diasPillFg(dias)};">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
+          ${dias} día${dias===1?'':'s'} en esta fase
+        </div>`:''}
         ${((ni.unread&&act)||wa.unread)?`<div class="kcard-pills">${(ni.unread&&act)?`<button type="button" class="kcard-pill" onclick="openNotaRapida('${p.id}')" title="Ver nota">📝 <b>${esc(act.author)}</b> dejó una nota${act.ago?' · '+act.ago:''}${ni.newCount>1?` <span class="muted">· +${ni.newCount-1} antes</span>`:''} →</button>`:''}${wa.unread?`<span class="kcard-pill wa">💬 Mensaje nuevo de WhatsApp${wa.ago?' · '+wa.ago:''}</span>`:''}</div>`:''}
         <div class="card-actions">
-          ${hasModule('whatsapp')&&phase!=='Cierre'?`<button class="kbtn kbtn-wa" onclick="quickWAProspect('${p.id}')" title="WhatsApp API">
+          <button type="button" class="kbtn kbtn-notes" onclick="openNotaRapida('${p.id}')" title="Ver notas">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+            Notas</button>
+          ${hasModule('whatsapp')&&phase!=='Cierre'?`<button class="kbtn kbtn-wa" onclick="quickWAProspect('${p.id}')" title="WhatsApp">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.28-1.38a9.9 9.9 0 0 0 4.76 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2z"/></svg>
-            WhatsApp API</button>`:''}
+            WhatsApp</button>`:''}
           ${phase==='Cierre'?(lp&&lp.estatus==='vendida'?`<span class="kbtn kbtn-finalizado" title="Finalizado" style="opacity:.7;cursor:default;">✅ Finalizado</span>`:`<button class="kbtn kbtn-finalizar" onclick="finalizarProspecto('${p.id}')" title="Finalizar cierre">✅ Finalizar</button>`):''}
           <div class="kbtn-phase-wrap">
             <svg class="phase-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
