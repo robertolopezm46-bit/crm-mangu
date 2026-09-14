@@ -7581,14 +7581,11 @@ function renderKanban(){
 
   ALL_PHASES.forEach(phase=>{
     let inPhase = visible.filter(p => p.phase === phase);
-    const allData = (phase === 'Perdido') ? inPhase.filter(p => (p.created_at || '').substring(0, 7) === currentMonth) : inPhase;
+    const allData = inPhase;
 
-    const LIMIT = 5;
-    const data = allData.slice(0, LIMIT);
-    const remaining = Math.max(0, allData.length - LIMIT);
+    const data = allData;
 
-    // Total real (incluyendo meses anteriores) para el contador
-    const totalAll = (phase === 'Perdido') ? allData.length : inPhase.length;
+    const totalAll = inPhase.length;
     const cnt = document.getElementById('cnt-'+phase);
     if (cnt) cnt.textContent = totalAll;
     const cards=data.map(p=>{
@@ -7633,11 +7630,7 @@ const wa=waUnreadInfo(p);
           </div>
         </div>
       </div>`;}).join('');
-    let verMas='';
-    const oldMonths2 = inPhase.length - allData.length;
-    const totalRemaining = remaining + oldMonths2;
-    if(!data.length && totalRemaining===0) verMas='<div class="kanban-empty">Sin prospectos en esta fase</div>';
-    if(totalRemaining>0) verMas='<div style="text-align:center;padding:10px 0;"><button onclick="showAllKanban(\'' + phase + '\')" style="background:none;border:1px dashed #E2DDD4;border-radius:8px;padding:7px 16px;font-size:12px;color:#6B7280;cursor:pointer;font-family:Inter,sans-serif;width:100%;">📂 Ver ' + totalRemaining + ' prospecto(s) más</button></div>';
+    const verMas = data.length ? '' : '<div class="kanban-empty">Sin prospectos en esta fase</div>';
     const cardsEl = document.getElementById('cards-'+phase);
     if (cardsEl) cardsEl.innerHTML=cards+verMas;
     const colEl = document.getElementById('col-'+phase);
