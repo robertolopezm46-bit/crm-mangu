@@ -3687,20 +3687,20 @@ ${conv.kind==='unreg' ? `<div class="cchat-register-bar" style="padding:8px 16px
 ${conv.adReferral ? `<div class="cchat-ad-box" style="padding:10px 16px;background:#f4f0ff;border-bottom:1px solid #ded4ff;display:flex;gap:10px;align-items:flex-start;">
 ${(conv.adReferral.thumbnail_url||conv.adReferral.image_url) ? `<img src="${esc(conv.adReferral.thumbnail_url||conv.adReferral.image_url)}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;">` : ''}
 <div style="font-size:12px;color:#4a3b8a;">
-<div style="font-weight:600;margin-bottom:2px;">📢 Llegó desde un anuncio${(conv.adReferral.source_url||'').toLowerCase().includes('instagram') ? ' (Instagram)' : ' (Facebook)'}</div>
+<div style="font-weight:600;margin-bottom:4px;"><span class="conv-badge" style="background:#4338CA;margin-right:6px;margin-top:0;">META ADS</span>📢 Llegó desde un anuncio${(conv.adReferral.source_url||'').toLowerCase().includes('instagram') ? ' (Instagram)' : ' (Facebook)'}</div>
 ${conv.adReferral.headline ? `<div>${esc(conv.adReferral.headline)}</div>` : ''}
 ${conv.adReferral.body ? `<div style="opacity:.85;">${esc(conv.adReferral.body)}</div>` : ''}
 </div>
 </div>` : ''}
 ${(!conv.adReferral && conv.siteProperty) ? `<div class="cchat-site-prop-box" style="padding:10px 16px;background:#e8f7f0;border-bottom:1px solid #b8e6d1;display:flex;gap:10px;align-items:flex-start;">
 <div style="font-size:12px;color:#0a6e4a;">
-<div style="font-weight:600;margin-bottom:2px;">🏠 Interesado en una propiedad del sitio</div>
+<div style="font-weight:600;margin-bottom:4px;"><span class="conv-badge" style="background:#0a6e4a;margin-right:6px;margin-top:0;">SITIO WEB</span>🏠 Interesado en una propiedad del sitio</div>
 <div>${esc(conv.siteProperty)}</div>
 </div>
 </div>` : ''}
 ${(!conv.adReferral && !conv.siteProperty && conv.googleAdsInterest) ? `<div class="cchat-gads-box" style="padding:10px 16px;background:#fdf1e0;border-bottom:1px solid #f0d4a0;display:flex;gap:10px;align-items:flex-start;">
 <div style="font-size:12px;color:var(--src-google);">
-<div style="font-weight:600;margin-bottom:2px;">🔍 Llegó mencionando un anuncio de Google</div>
+<div style="font-weight:600;margin-bottom:4px;"><span class="conv-badge" style="background:var(--src-google);margin-right:6px;margin-top:0;">GOOGLE ADS</span>🔍 Llegó mencionando un anuncio de Google</div>
 </div>
 </div>` : ''}
 <div class="cchat-warn" id="cchat-warn" style="display:none;"></div>
