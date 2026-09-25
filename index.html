@@ -4731,9 +4731,10 @@ async function checkExistingSession(){
 // ══════════════════════════════════════════
 //  REALTIME SUBSCRIPTION
 // ══════════════════════════════════════════
-function subscribeRealtime() {
-  window._realtimeSub = supabase.channel('crm-changes')
-    .on('postgres_changes',{event:'*',schema:'public',table:'crm_prospects'},()=>{loadProspects().then(()=>{
+// Recarga prospectos y refresca las vistas que los muestran. La usa el
+// canal Realtime y tambien el "resync" al regresar a la app (25-sep-2026).
+function refreshProspectsUI() {
+  return loadProspects().then(()=>{
       if(isSectionActive('pipeline'))renderPipeline();
       if(isSectionActive('kanban'))renderKanban();
 loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban(); });
@@ -4743,31 +4744,96 @@ loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban();
       if(isSectionActive('whatsapp')) renderMobileWhatsAppList();
       renderConvBoard();
       updateProspectSelects();
-    });})
-    .on('postgres_changes',{event:'*',schema:'public',table:'crm_citas'},()=>{loadCitas().then(()=>{
+    }).catch(e=>console.warn('refreshProspectsUI',e));
+}
+
+function refreshCitasUI() {
+  return loadCitas().then(()=>{
       if(isSectionActive('citas'))renderCalendar();
       if(window.innerWidth<=768 && isSectionActive('citas')) renderMobileCitas();
-    });})
+    }).catch(e=>console.warn('refreshCitasUI',e));
+}
+
+// Reconexion automatica del Realtime (25-sep-2026). Si el canal se cae
+// (error, timeout o cierre), se vuelve a suscribir a los 5 s y se recargan
+// los datos para no perder lo que llego mientras estuvo desconectado.
+// Solo reacciona a eventos del canal VIGENTE (window._realtimeSub), asi el
+// cierre de un canal viejo al reemplazarlo no provoca un ciclo.
+var __rtReconnectTimer = null;
+function scheduleRealtimeReconnect() {
+  if (!DB || !DB.currentUser) return;
+  if (__rtReconnectTimer) return;
+  __rtReconnectTimer = setTimeout(function(){
+    __rtReconnectTimer = null;
+    if (!DB || !DB.currentUser) return;
+    if (document.visibilityState !== 'visible') return; // lo retoma resyncOnResume
+    subscribeRealtime();
+    refreshProspectsUI();
+    refreshCitasUI();
+  }, 5000);
+}
+
+async function subscribeRealtime() {
+  const oldMain = window._realtimeSub, oldWa = window._realtimeWaSub;
+  window._realtimeSub = null; window._realtimeWaSub = null;
+  try { if (oldMain) await supabase.removeChannel(oldMain); } catch(e) {}
+  try { if (oldWa) await supabase.removeChannel(oldWa); } catch(e) {}
+  if (!DB || !DB.currentUser) return;
+
+  const main = supabase.channel('crm-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'crm_prospects'},()=>{ refreshProspectsUI(); })
+    .on('postgres_changes',{event:'*',schema:'public',table:'crm_citas'},()=>{ refreshCitasUI(); })
     .on('postgres_changes',{event:'*',schema:'public',table:'crm_users'},()=>{loadUsers().then(()=>{if(isSectionActive('equipo'))renderEquipo();populateSelects();});})
     .on('postgres_changes',{event:'*',schema:'public',table:'crm_contratos'},()=>{loadContratos();})
-    .on('postgres_changes',{event:'*',schema:'public',table:'web_propiedades'},()=>{loadWebProps();})
-    .subscribe(status=>{ setConnStatus(status==='SUBSCRIBED'); });
+    .on('postgres_changes',{event:'*',schema:'public',table:'web_propiedades'},()=>{loadWebProps();});
+  window._realtimeSub = main;
+  main.subscribe(status=>{
+    if (window._realtimeSub !== main) return;
+    setConnStatus(status==='SUBSCRIBED');
+    if (status==='CHANNEL_ERROR' || status==='TIMED_OUT' || status==='CLOSED') scheduleRealtimeReconnect();
+  });
 
   // Canal dedicado para mensajes de WhatsApp entrantes. Se maneja en un
   // channel() separado (en vez de agregarlo al canal 'crm-changes' de
   // arriba) porque, en pruebas, el binding de crm_wa_messages no llegaba
   // a dispararse cuando compartía canal con las otras 5 tablas — un
   // canal dedicado con un solo binding sí entrega el evento de forma
-  // confiable.
-  window._realtimeWaSub = supabase.channel('crm-wa-changes')
+  // confiable. (25-sep-2026: la causa era que crm_contratos y
+  // web_propiedades no estaban en la publicacion supabase_realtime; ya se
+  // agregaron.)
+  const wa = supabase.channel('crm-wa-changes')
     .on('postgres_changes',{event:'*',schema:'public',table:'crm_wa_messages'},payload=>{
       const msg=payload.new;
       if(msg && msg.direction==='inbound') handleInboundWA(msg);
       if(msg) refreshOpenWaChatIfMatches(msg);
       if(msg) refreshConvBoardIfNeeded(msg);
-    })
-    .subscribe();
+    });
+  window._realtimeWaSub = wa;
+  wa.subscribe(status=>{
+    if (window._realtimeWaSub !== wa) return;
+    if (status==='CHANNEL_ERROR' || status==='TIMED_OUT' || status==='CLOSED') scheduleRealtimeReconnect();
+  });
 }
+
+// Al regresar a la app (desbloquear el celular, tocar una notificacion,
+// volver a la pestana) o al recuperar internet: recarga prospectos y citas
+// y, si el canal Realtime no esta conectado, lo vuelve a abrir. Asi ya no
+// hace falta presionar "Actualizar" para ver un lead nuevo (25-sep-2026).
+var __lastResync = 0;
+function resyncOnResume() {
+  if (!DB || !DB.currentUser) return;
+  if (document.visibilityState !== 'visible') return;
+  var now = Date.now();
+  if (now - __lastResync < 3000) return;
+  __lastResync = now;
+  refreshProspectsUI();
+  refreshCitasUI();
+  var m = window._realtimeSub, w = window._realtimeWaSub;
+  if (!m || m.state !== 'joined' || !w || w.state !== 'joined') subscribeRealtime();
+}
+document.addEventListener('visibilitychange', resyncOnResume);
+window.addEventListener('pageshow', resyncOnResume);
+window.addEventListener('online', resyncOnResume);
 
 // ══════════════════════════════════════════
 //  NOTIFICACIÓN DE WHATSAPP ENTRANTE (mensajes recibidos vía Meta)
