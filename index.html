@@ -479,6 +479,9 @@
     #conv-board .wa-ticks{color:#8a8a8a;margin-left:4px;font-size:11px;letter-spacing:-1px;}
     #conv-board .wa-ticks.read{color:#53bdeb;}
     #conv-board .cchat-warn{padding:8px 16px;background:#fff6e0;color:#8a6100;font-size:12px;border-bottom:1px solid #f0e2b8;flex-shrink:0;}
+    .react-btn{display:inline-block;margin:6px 0 2px;padding:6px 12px;border:none;border-radius:8px;background:#1F7A4D;color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}
+    .react-btn:disabled{opacity:.6;cursor:default;}
+    .react-hint{font-size:11px;opacity:.85;margin-top:2px;}
     #conv-board .cchat-footer{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;}
     #conv-board .cchat-footer textarea{flex:1;min-width:0;border:1px solid var(--border);border-radius:20px;padding:10px 14px;font-size:13.5px;resize:none;max-height:90px;font-family:inherit;}
     #conv-board .cchat-footer button{background:var(--gold);color:#fff;border:none;border-radius:50%;width:38px;height:38px;flex-shrink:0;cursor:pointer;font-size:15px;}
@@ -3206,7 +3209,7 @@ async function loadAndRenderWaChat(){
   const __wasNearBottom = __distFromBottom < 80;
   const { data, error } = await supabase
     .from('crm_wa_messages')
-    .select('id, direction, message_type, body, status, created_at, sent_by, error_detail, media_url')
+    .select('id, direction, message_type, body, status, created_at, sent_by, error_detail, media_url, template_name')
     .like('phone', '%' + __waChatPhone + '%')
     .order('created_at', { ascending: true })
     .limit(200);
@@ -3248,19 +3251,7 @@ async function loadAndRenderWaChat(){
   if (__wasNearBottom) { body.scrollTop = body.scrollHeight; }
   else { body.scrollTop = Math.max(0, body.scrollHeight - body.clientHeight - __distFromBottom); }
 
-  const warn = document.getElementById('wachat-warn');
-  const lastInbound = data.slice().reverse().find(function(m){ return m.direction === 'inbound'; });
-  if (lastInbound) {
-    const hrs = (Date.now() - new Date(lastInbound.created_at).getTime()) / 3600000;
-    if (hrs > 24) {
-      warn.style.display = 'block';
-      warn.textContent = 'Han pasado mas de 24h desde su ultimo mensaje. WhatsApp puede rechazar el texto libre: si falla, usa una Plantilla o contesta desde WhatsApp directamente.';
-    } else {
-      warn.style.display = 'none';
-    }
-  } else {
-    warn.style.display = 'none';
-  }
+  renderReactivacionWarn(document.getElementById('wachat-warn'), data, 'm');
 }
 
 async function handleWaChatAttach(input){
@@ -3603,7 +3594,59 @@ function califRow(p){
 const b=califBadge(p), pe=califPendiente(p);
 return (b||pe)?`<div class="calif-row">${b}${pe}</div>`:'';
 }
+// ── Reactivación (punto 3, 3-oct-2026) ──
+// Plantilla aprobada en Meta: "Hola 👋 ¿Continúas buscando casa nueva en Pachuca?" [Sí] [No].
+// La respuesta la procesa el webhook (Sí -> 🟢 Listo + aviso a Alfredo; No -> 🔴 Fuera).
+const REACTIVACION_TEMPLATE = 'mangu_reactivacion_corta';
+function convParaReactivar(c){
+if(!c||c.kind!=='prospect') return false;
+const k=califKey(c);
+if(k!=='caliente'&&k!=='tibio') return false;
+return !c.lastInboundAt || (Date.now()-new Date(c.lastInboundAt).getTime())>24*3600000;
+}
+function renderReactivacionWarn(warn, data, where){
+if(!warn) return;
+const lastInbound = data.slice().reverse().find(function(m){ return m.direction === 'inbound'; });
+const lastInboundMs = lastInbound ? new Date(lastInbound.created_at).getTime() : 0;
+const fuera = !lastInbound || (Date.now() - lastInboundMs) > 24*3600000;
+if (!fuera || !data.length) { warn.style.display = 'none'; warn.innerHTML = ''; return; }
+const yaEnviada = data.slice().reverse().find(function(m){ return m.template_name === REACTIVACION_TEMPLATE && m.status !== 'failed' && new Date(m.created_at).getTime() > lastInboundMs; });
+const base = lastInbound ? 'Han pasado más de 24h desde su último mensaje: WhatsApp no deja enviarle texto libre.' : 'El cliente no ha escrito: WhatsApp no deja enviarle texto libre.';
+warn.style.display = 'block';
+if (yaEnviada) {
+const f = new Date(yaEnviada.created_at).toLocaleString('es-MX',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+warn.innerHTML = esc(base) + '<br><b>📩 Mensaje de reactivación enviado el ' + esc(f) + '</b> · Cuando conteste se reabre la ventana de 24h.';
+return;
+}
+warn.innerHTML = esc(base) + ' <button type="button" class="react-btn" onclick="sendReactivacionTemplate(\'' + where + '\', this)">📩 Enviar mensaje de reactivación</button><div class="react-hint">Le llega: “Hola 👋 ¿Continúas buscando casa nueva en Pachuca?” con botones Sí / No.</div>';
+}
+async function sendReactivacionTemplate(where, btn){
+const to = where === 'm' ? __waChatToDigits : __convChatDigits;
+const pid = where === 'm' ? __waChatProspectId : __convChatProspectId;
+if (!to) return;
+if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+try {
+const sessionRes = await supabase.auth.getSession();
+const session = sessionRes && sessionRes.data && sessionRes.data.session;
+if (!session || !session.access_token) throw new Error('Sesión no válida. Vuelve a iniciar sesión.');
+const resp = await fetch(WA_EDGE_FUNCTION_URL, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+body: JSON.stringify({ to: to, prospect_id: pid, kind: 'template', template_name: REACTIVACION_TEMPLATE, template_lang: 'es_MX', params: [] })
+});
+const json = await resp.json().catch(function(){ return {}; });
+if (!(resp.ok && json.ok)) throw new Error(json.error || (json.metaError && json.metaError.message) || 'error desconocido');
+showToast('Mensaje de reactivación enviado ✓', 'success');
+} catch(e) {
+showToast('No se pudo enviar: ' + e.message, 'error');
+if (btn) { btn.disabled = false; btn.textContent = '📩 Enviar mensaje de reactivación'; }
+return;
+}
+if (where === 'm') { await loadAndRenderWaChat(); }
+else { await loadAndRenderConvChat(); if (typeof renderConvBoard === 'function') renderConvBoard(); }
+}
 function convMatchesFilter(c,key){
+if(key==='calif_reactivar') return convParaReactivar(c);
 if(key==='calif_caliente') return califKey(c)==='caliente';
 if(key==='calif_pendiente') return !!c.atencion_pendiente_desde;
 return convOriginMeta(c).key===key;
@@ -3611,9 +3654,11 @@ return convOriginMeta(c).key===key;
 function califFilterChips(list,active,chipCls,fnName){
 const nPend=list.filter(c=>c.atencion_pendiente_desde).length;
 const nCal=list.filter(c=>califKey(c)==='caliente').length;
+const nReact=list.filter(convParaReactivar).length;
 const out=[];
 if(nPend) out.push(`<button type="button" class="${chipCls} ${active==='calif_pendiente'?'active':''}" onclick="${fnName}('calif_pendiente')" style="${active==='calif_pendiente'?'':'border-color:#1D4ED8;color:#1D4ED8;'}">🔵 Sin respuesta <span class="cnt">${nPend}</span></button>`);
 if(nCal) out.push(`<button type="button" class="${chipCls} ${active==='calif_caliente'?'active':''}" onclick="${fnName}('calif_caliente')">🟢 Listos <span class="cnt">${nCal}</span></button>`);
+if(nReact) out.push(`<button type="button" class="${chipCls} ${active==='calif_reactivar'?'active':''}" onclick="${fnName}('calif_reactivar')" title="Leads Listos o Pendientes que llevan más de 24h sin escribir">📩 Para reactivar <span class="cnt">${nReact}</span></button>`);
 return out;
 }
 function califBoxHTML(p){
@@ -3945,7 +3990,7 @@ const __distFromBottom = body.scrollHeight - body.scrollTop - body.clientHeight;
 const __wasNearBottom = __distFromBottom < 80;
 const { data, error } = await supabase
 .from('crm_wa_messages')
-.select('id, direction, message_type, body, status, created_at, sent_by, error_detail, media_url')
+.select('id, direction, message_type, body, status, created_at, sent_by, error_detail, media_url, template_name')
 .like('phone', '%' + __convChatPhone + '%')
 .order('created_at', { ascending: true })
 .limit(200);
@@ -3986,19 +4031,7 @@ return '<div class="cchat-msg ' + (isOut ? 'out' : 'in') + (failed ? ' failed' :
 }
 if (__wasNearBottom) { body.scrollTop = body.scrollHeight; }
 else { body.scrollTop = Math.max(0, body.scrollHeight - body.clientHeight - __distFromBottom); }
-const warn = document.getElementById('cchat-warn');
-const lastInbound = data.slice().reverse().find(function(m){ return m.direction === 'inbound'; });
-if (lastInbound) {
-const hrs = (Date.now() - new Date(lastInbound.created_at).getTime()) / 3600000;
-if (hrs > 24) {
-warn.style.display = 'block';
-warn.textContent = 'Han pasado más de 24h desde su último mensaje. WhatsApp puede rechazar el texto libre: si falla, usa una Plantilla o contesta desde WhatsApp directamente.';
-} else {
-warn.style.display = 'none';
-}
-} else {
-warn.style.display = 'none';
-}
+renderReactivacionWarn(document.getElementById('cchat-warn'), data, 'd');
 }
 async function sendConvChatMessage(){
 if (__convChatPendingFile) { await sendConvChatMedia(); return; }
