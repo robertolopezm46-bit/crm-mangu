@@ -222,7 +222,7 @@
   .kcard-divider{height:1px;background:var(--border);margin:12px 0 8px;}
   .kcard-activity{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin-bottom:10px;}
   .kcard-avatar{width:18px;height:18px;border-radius:50%;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .kcard-activity b{color:var(--text);font-weight:600;}.kcard-badges{position:absolute;top:12px;right:14px;display:flex;gap:6px;}.kcard-badge{background:var(--gold);color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;line-height:1.4;white-space:nowrap;}.kcard-badge.wa{background:#16A34A;}.kcard-pills{display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-bottom:10px;}.kcard-pill{display:inline-flex;align-items:center;gap:6px;background:#FBF3DE;color:var(--gold-dark);font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;}.kcard-pill b{color:var(--gold-dark);}.kcard-pill .muted{color:var(--text-muted);font-weight:500;}.kcard-pill.wa{background:#E9F9EF;color:#16A34A;}.kcard-pill.wa b{color:#16A34A;}button.kcard-pill{border:none;font-family:inherit;cursor:pointer;text-align:left;}button.kcard-pill:hover{filter:brightness(.97);}
+  .kcard-activity b{color:var(--text);font-weight:600;}.kcard-badges{position:absolute;top:12px;right:14px;display:flex;gap:6px;}.kcard-badge{background:var(--gold);color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;line-height:1.4;white-space:nowrap;}.kcard-badge.wa{background:#16A34A;}.calif-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 4px;}.calif-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;line-height:1.5;white-space:nowrap;}.calif-badge.caliente{background:#DCFCE7;color:#15803D;}.calif-badge.tibio{background:#FEF3C7;color:#A16207;}.calif-badge.frio{background:#FEE2E2;color:#B91C1C;}.calif-badge.calificando{background:#F1F5F9;color:#475569;}.calif-pend{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:#1D4ED8;color:#fff;line-height:1.5;white-space:nowrap;}.calif-resumen{font-size:11.5px;color:var(--text-muted);}.calif-box{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;background:var(--surface);font-size:12.5px;}.calif-box .calif-box-title{font-weight:700;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}.calif-box dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0;}.calif-box dt{color:var(--text-muted);}.calif-box dd{margin:0;font-weight:600;color:var(--text);}.kcard-pills{display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-bottom:10px;}.kcard-pill{display:inline-flex;align-items:center;gap:6px;background:#FBF3DE;color:var(--gold-dark);font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;}.kcard-pill b{color:var(--gold-dark);}.kcard-pill .muted{color:var(--text-muted);font-weight:500;}.kcard-pill.wa{background:#E9F9EF;color:#16A34A;}.kcard-pill.wa b{color:#16A34A;}button.kcard-pill{border:none;font-family:inherit;cursor:pointer;text-align:left;}button.kcard-pill:hover{filter:brightness(.97);}
   .kcard-dias{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin:0 0 10px;}
   .kanban-card .card-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:0;}
   .kbtn{flex:1 1 auto;min-width:0;border:none;border-radius:10px;padding:9px 6px;font-size:12px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-sizing:border-box;white-space:nowrap;}
@@ -2579,6 +2579,7 @@
           </select>
         </div>
         <div class="form-group" id="p-referred-group" style="display:none;"><label>Referido por</label><input type="text" id="p-referred-by" placeholder="Nombre de quien refiere"></div>
+        <div id="p-calif-box" class="calif-box" style="display:none;"></div>
         <div class="form-group" id="p-notes-group"><label>Notas</label><textarea id="p-notes" rows="2" placeholder="Observaciones..." style="resize:vertical;"></textarea></div>
       </div>
       <input type="hidden" id="p-edit-id" value="">
@@ -3468,6 +3469,7 @@ function renderMobileConvBody(list){
     counts[m.key].n++;
   });
   const chips = [`<button type="button" class="mwa-chip ${__mConvFilter==='all'?'active':''}" onclick="setMobileConvFilter('all')">Todos <span class="cnt">${list.length}</span></button>`];
+  chips.push(...califFilterChips(list,__mConvFilter,'mwa-chip','setMobileConvFilter'));
   Object.values(counts).sort((a,b)=>b.n-a.n).forEach(({meta,n})=>{
     chips.push(`<button type="button" class="mwa-chip ${__mConvFilter===meta.key?'active':''}" onclick="setMobileConvFilter('${meta.key}')"><span class="dot" style="background:${meta.color}"></span>${esc(meta.label)} <span class="cnt">${n}</span></button>`);
   });
@@ -3475,13 +3477,14 @@ function renderMobileConvBody(list){
 
   const __mq = __mConvSearchQuery;
   const __mqDigits = __mq.replace(/\D/g,'');
-  let filtered = (__mConvFilter==='all' ? list : list.filter(c=>convOriginMeta(c).key===__mConvFilter)).filter(c=>{
+  let filtered = (__mConvFilter==='all' ? list : list.filter(c=>convMatchesFilter(c,__mConvFilter))).filter(c=>{
     if (!__mq) return true;
     const nameMatch = (c.name||'').toLowerCase().includes(__mq);
     const phoneMatch = __mqDigits && (c.phone||'').replace(/\D/g,'').includes(__mqDigits);
     return nameMatch || phoneMatch;
   });
   const __mOldestFirst = __mConvFilter === 'unreg';
+  if (__mConvFilter === 'calif_pendiente') filtered = filtered.slice().sort((a,b)=>new Date(a.atencion_pendiente_desde)-new Date(b.atencion_pendiente_desde));
   if (__mOldestFirst) {
     filtered = filtered.slice().sort((a,b)=>{
       const ta = a.lastAt ? new Date(a.lastAt).getTime() : 0;
@@ -3506,6 +3509,7 @@ function renderMobileConvBody(list){
       <div class="mwa-body">
         <div class="mwa-name">${esc(c.name)}</div>
         <div class="mwa-preview">${esc(c.lastBody||'Sin mensajes')}</div>
+        ${califRow(c)}
         ${c.adReferral ? `<div class="mwa-ad" style="font-size:11px;color:#8a5a00;margin-top:2px;"><span class="mangu-attr-badge" style="background:#4338CA;">META ADS</span>📢 ${esc(c.adReferral.headline||'Anuncio')}</div>` : ''}
         ${c.siteProperty ? `<div class="mwa-site-prop" style="font-size:11px;color:#0a6e4a;margin-top:2px;"><span class="mangu-attr-badge" style="background:#0a6e4a;">SITIO WEB</span>🏠 ${esc(c.siteProperty)}</div>` : ''}
         ${c.googleAdsInterest ? `<div class="mwa-gads" style="font-size:11px;color:var(--src-google);margin-top:2px;"><span class="mangu-attr-badge" style="background:var(--src-google);">GOOGLE ADS</span>🔍 Google Ads</div>` : ''}
@@ -3541,6 +3545,86 @@ const CONV_ORIGINS = {
 'Facebook ADS': {key:'fb', color:'var(--src-fb)', abbr:'FB'},
 'Otro': {key:'otro', color:'var(--src-otro)', abbr:'Otro'}
 };
+// ══════════════════════════════════════════
+// CALIFICACIÓN AUTOMÁTICA DEL BOT (3-oct-2026)
+// El webhook de WhatsApp hace 3 preguntas a cada lead nuevo y llena
+// crm_prospects.calificacion (caliente/tibio/frio) + respuestas. Aquí solo
+// se muestran como semáforo (Robert): caliente = 🟢 Listo, tibio = 🟡 Pendiente,
+// frio = 🔴 Fuera; "🔘 Calificando" mientras el bot espera respuesta (primeras
+// 24 h; después se muestra como Fuera porque no contestar = frío), y "🔵 Sin respuesta" en
+// leads calientes que esperan a alguien del equipo (minutos en horario
+// laboral L-S 9:00-19:00, mismo cálculo que la Edge Function
+// atencion-pendiente-sla). Ver claude/calificacion-leads-bot-whatsapp-3-oct-2026.md
+// ══════════════════════════════════════════
+const CALIF_META={caliente:{cls:'caliente',label:'🟢 Listo'},tibio:{cls:'tibio',label:'🟡 Pendiente'},frio:{cls:'frio',label:'🔴 Fuera'}};
+function califFields(p){return {calificacion:p.calificacion||null,calif_estado:p.calif_estado||null,calif_compra:p.calif_compra||null,calif_pago:p.calif_pago||null,calif_plazo:p.calif_plazo||null,compra_estimada_hasta:p.compra_estimada_hasta||null,atencion_pendiente_desde:p.atencion_pendiente_desde||null,created_at:p.created_at||null};}
+function califKey(p){
+if(!p) return null;
+if(p.calificacion&&CALIF_META[p.calificacion]) return p.calificacion;
+if(['q1','q2','q3'].includes(p.calif_estado)){
+const edad=p.created_at?Date.now()-new Date(p.created_at).getTime():0;
+return edad>24*3600000?'frio':'calificando';
+}
+return null;
+}
+function califResumen(p){
+if(!p) return '';
+const a=[];
+if(p.calif_compra) a.push(p.calif_compra==='si'?'Sí compra':'No compra');
+if(p.calif_pago) a.push(p.calif_pago);
+if(p.calif_plazo) a.push(p.calif_plazo);
+if(p.calif_estado==='texto_libre') a.push('Escribió en vez de contestar');
+if(['q1','q2','q3'].includes(p.calif_estado)&&!p.calificacion) a.push('No terminó las preguntas');
+return a.join(' · ');
+}
+function califBadge(p){
+const k=califKey(p);
+if(!k) return '';
+if(k==='calificando') return '<span class="calif-badge calificando" title="El bot le está haciendo las preguntas">🔘 Calificando</span>';
+const m=CALIF_META[k]; const r=califResumen(p);
+return `<span class="calif-badge ${m.cls}"${r?` title="${esc(r)}"`:''}>${m.label}</span>`;
+}
+function califMinHabiles(desdeMs,hastaMs){
+const OFF=6*3600e3; const end=hastaMs-OFF; let cur=desdeMs-OFF; let total=0;
+while(cur<end){
+const dt=new Date(cur); const d0=Date.UTC(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate());
+if(dt.getUTCDay()!==0){ const s=Math.max(cur,d0+9*3600e3), e=Math.min(end,d0+19*3600e3); if(e>s) total+=e-s; }
+cur=d0+24*3600e3;
+}
+return total/60000;
+}
+function califPendiente(p){
+if(!p||!p.atencion_pendiente_desde) return '';
+const min=Math.floor(califMinHabiles(new Date(p.atencion_pendiente_desde).getTime(),Date.now()));
+const txt=min<60?`${min} min`:`${Math.floor(min/60)} h ${min%60} min`;
+return `<span class="calif-pend" title="Lead caliente esperando respuesta del equipo (tiempo en horario laboral L-S 9:00-19:00)">🔵 Sin respuesta · ${txt}</span>`;
+}
+function califRow(p){
+const b=califBadge(p), pe=califPendiente(p);
+return (b||pe)?`<div class="calif-row">${b}${pe}</div>`:'';
+}
+function convMatchesFilter(c,key){
+if(key==='calif_caliente') return califKey(c)==='caliente';
+if(key==='calif_pendiente') return !!c.atencion_pendiente_desde;
+return convOriginMeta(c).key===key;
+}
+function califFilterChips(list,active,chipCls,fnName){
+const nPend=list.filter(c=>c.atencion_pendiente_desde).length;
+const nCal=list.filter(c=>califKey(c)==='caliente').length;
+const out=[];
+if(nPend) out.push(`<button type="button" class="${chipCls} ${active==='calif_pendiente'?'active':''}" onclick="${fnName}('calif_pendiente')" style="${active==='calif_pendiente'?'':'border-color:#1D4ED8;color:#1D4ED8;'}">🔵 Sin respuesta <span class="cnt">${nPend}</span></button>`);
+if(nCal) out.push(`<button type="button" class="${chipCls} ${active==='calif_caliente'?'active':''}" onclick="${fnName}('calif_caliente')">🟢 Listos <span class="cnt">${nCal}</span></button>`);
+return out;
+}
+function califBoxHTML(p){
+const k=califKey(p);
+if(!k&&!p.atencion_pendiente_desde) return '';
+const fila=(t,v)=>v?`<dt>${t}</dt><dd>${esc(v)}</dd>`:'';
+const compra=p.calif_compra?(p.calif_compra==='si'?'Sí':'No'):'';
+const hasta=p.compra_estimada_hasta?new Date(p.compra_estimada_hasta+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}):'';
+return `<div class="calif-box-title">Calificación del bot ${califBadge(p)} ${califPendiente(p)}</div>
+<dl>${fila('¿Compra casa nueva en Pachuca?',compra)}${fila('Forma de compra',p.calif_pago)}${fila('Plan de compra',p.calif_plazo)}${fila('Compra estimada antes de',hasta)}${p.calif_estado==='texto_libre'?fila('Nota','Escribió en vez de contestar las preguntas'):''}${(['q1','q2','q3'].includes(p.calif_estado)&&!p.calificacion)?fila('Estado','No ha terminado las preguntas'):''}</dl>`;
+}
 function convOriginMeta(conv){
 if (conv.kind === 'unreg') return {key:'unreg', color:'var(--src-unreg)', abbr:'Nuevo', label:'Sin registrar'};
 const o = CONV_ORIGINS[conv.source];
@@ -3578,7 +3662,7 @@ const rec = byPhone[last10];
 if (rec) rec.matchedProspect = true;
 list.push({
 key:'p_'+p.id, kind:'prospect', id:p.id, phone:p.phone, name:p.name,
-source:p.source||'', phase:p.phase,
+source:p.source||'', phase:p.phase, ...califFields(p),
 lastDir: rec && rec.lastAny ? rec.lastAny.dir : null,
 lastBody: rec && rec.lastAny ? _convMsgPreview(rec.lastAny) : '',
 lastAt: rec && rec.lastAny ? rec.lastAny.at : null,
@@ -3645,6 +3729,7 @@ if (!counts[m.key]) counts[m.key] = {meta:m, n:0};
 counts[m.key].n++;
 });
 const chips = [`<button type="button" class="conv-chip ${__convFilter==='all'?'active':''}" onclick="setConvFilter('all')">Todos <span class="cnt">${list.length}</span></button>`];
+chips.push(...califFilterChips(list,__convFilter,'conv-chip','setConvFilter'));
 Object.values(counts).sort((a,b)=>b.n-a.n).forEach(({meta,n})=>{
 chips.push(`<button type="button" class="conv-chip ${__convFilter===meta.key?'active':''}" onclick="setConvFilter('${meta.key}')"><span class="dot" style="background:${meta.color}"></span>${esc(meta.label)} <span class="cnt">${n}</span></button>`);
 });
@@ -3661,13 +3746,14 @@ const el = document.getElementById('conv-list');
 if (!el) return;
 const __cq = __convSearchQuery;
 const __cqDigits = __cq.replace(/\D/g,'');
-let filtered = (__convFilter==='all' ? list : list.filter(c=>convOriginMeta(c).key===__convFilter)).filter(c=>{
+let filtered = (__convFilter==='all' ? list : list.filter(c=>convMatchesFilter(c,__convFilter))).filter(c=>{
 if (!__cq) return true;
 const nameMatch = (c.name||'').toLowerCase().includes(__cq);
 const phoneMatch = __cqDigits && (c.phone||'').replace(/\D/g,'').includes(__cqDigits);
 return nameMatch || phoneMatch;
 });
 const __oldestFirst = __convFilter === 'unreg';
+if (__convFilter === 'calif_pendiente') filtered = filtered.slice().sort((a,b)=>new Date(a.atencion_pendiente_desde)-new Date(b.atencion_pendiente_desde));
 if (__oldestFirst) {
 filtered = filtered.slice().sort((a,b)=>{
 const ta = a.lastAt ? new Date(a.lastAt).getTime() : 0;
@@ -3686,6 +3772,7 @@ return `<div class="conv-item ${__convActiveKey===c.key?'active':''}" onclick="s
 <div class="conv-item-body">
 <div class="conv-item-top"><span class="conv-item-name">${esc(c.name)}</span><span class="conv-item-time">${time.text}</span></div>
 <div class="conv-item-preview">${esc(c.lastBody||'Sin mensajes')}</div>
+${califRow(c)}
 ${c.adReferral ? `<div class="conv-item-ad" style="font-size:11px;color:#8a5a00;margin-top:2px;">📢 ${esc(c.adReferral.headline||'Anuncio')}</div>` : ''}
 ${c.siteProperty ? `<div class="conv-item-site-prop" style="font-size:11px;color:#0a6e4a;margin-top:2px;">🏠 ${esc(c.siteProperty)}</div>` : ''}
 ${c.googleAdsInterest ? `<div class="conv-item-gads" style="font-size:11px;color:var(--src-google);margin-top:2px;">🔍 Google Ads</div>` : ''}
@@ -3733,6 +3820,7 @@ panel.innerHTML = `
 <div>
 <div class="cchat-header-name">${esc(conv.name)}</div>
 <div class="cchat-header-sub">+${esc(__convChatDigits)} <span class="conv-badge" style="background:${meta.color};">${esc(meta.label)}</span></div>
+${(califKey(conv)||conv.atencion_pendiente_desde)?`<div class="calif-row">${califBadge(conv)}${califPendiente(conv)}${califResumen(conv)?`<span class="calif-resumen">${esc(califResumen(conv))}</span>`:''}</div>`:''}
 </div>
 </div>
 ${conv.kind==='unreg' ? `<div class="cchat-register-bar" style="padding:8px 16px;background:#fff8e6;border-bottom:1px solid #f0d68a;display:flex;align-items:center;justify-content:space-between;gap:8px;">
@@ -4892,7 +4980,7 @@ async function loadUsers() {
 }
 async function loadProspects() {
   // notes se excluye del listado (puede crecer mucho); se consulta bajo demanda al editar/exportar/cambiar fase
-  let q=supabase.from('crm_prospects').select('id,name,phone,email,prop,value,phase,seller,seller_id,source,created_at,vendido,vendido_at').order('created_at',{ascending:false});
+  let q=supabase.from('crm_prospects').select('id,name,phone,email,prop,value,phase,seller,seller_id,source,created_at,vendido,vendido_at,calificacion,calif_estado,calif_compra,calif_pago,calif_plazo,compra_estimada_hasta,atencion_pendiente_desde').order('created_at',{ascending:false});
   if(!puedeVerTodosProspectos()) { if(DB.currentUser.id) q=q.eq('seller_id',DB.currentUser.id); else q=q.eq('seller',DB.currentUser.name); }
   const{data,error}=await q;
   if(!error) DB.prospects=(data||[]).map(p=>({...p,phase:normalizePhase(p.phase)}));
@@ -7726,6 +7814,7 @@ const wa=waUnreadInfo(p);
           <div>
             <p>${esc(p.prop||'\u2014')}</p>
             ${p.source?sourceBadge(p.source):''}
+            ${califRow(p)}
           </div>
         </div>
         <div class="kcard-divider"></div>
@@ -8550,6 +8639,7 @@ function openModal(type, prefill){
     document.getElementById('p-value').value='';
     document.getElementById('p-date').value=new Date().toISOString().split('T')[0];
     document.getElementById('p-edit-id').value='';
+    { const _cb=document.getElementById('p-calif-box'); if(_cb){ _cb.style.display='none'; _cb.innerHTML=''; } }
     { const otraEl=document.getElementById('p-prop-otra'); if(otraEl){otraEl.style.display='none';otraEl.value='';} }
     document.getElementById('p-phase').value='Registro';
     document.getElementById('p-source').value='';
@@ -8779,6 +8869,7 @@ async function editProspect(id){
   document.getElementById('p-phase').value=p.phase;
   document.getElementById('p-date').value=(p.created_at||'').split('T')[0];
   document.getElementById('p-source').value=p.source||'';
+  { const _cb=document.getElementById('p-calif-box'); if(_cb){ const h=califBoxHTML(p); _cb.innerHTML=h; _cb.style.display=h?'':'none'; } }
   // Notas: consulta bajo demanda (siempre frescas desde la BD)
   document.getElementById('p-notes').value='';
   const{data:nd}=await supabase.from('crm_prospects').select('notes').eq('id',id).single();
