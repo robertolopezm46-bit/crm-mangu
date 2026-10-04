@@ -1055,6 +1055,9 @@
       <div class="nav-item" id="nav-auditoria" onclick="showSection('auditoria')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Auditoria
       </div>
+      <div class="nav-item" id="nav-calidad" onclick="showSection('calidad')" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Calidad por fuente
+      </div>
       <div class="nav-item" id="nav-presupuesto" onclick="showSection('presupuesto')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Presupuesto
       </div>
@@ -2054,6 +2057,69 @@
             </div>
           </div>
 
+        </div>
+      </div>
+
+      <!-- CALIDAD POR FUENTE (4-oct-2026, Paso 3 de mejoras): solo Admin -->
+      <div id="section-calidad" class="section">
+        <div style="max-width:1100px;margin:0 auto;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+            <div>
+              <h2 style="font-size:22px;font-weight:700;color:var(--navy);">📊 Calidad por fuente</h2>
+              <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">Cuántos leads trae cada canal y cuántos resultan buenos (semáforo del bot), visitan y compran.</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select id="cal-month" onchange="renderCalidad()" style="padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;font-family:'Inter',sans-serif;outline:none;"></select>
+              <button class="btn-sm" onclick="loadCalidad()" style="padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:12px;cursor:pointer;">Actualizar</button>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Leads</div><div class="kpi-sub" id="cal-kpi-periodo">&mdash;</div></div><div class="kpi-value" id="cal-kpi-leads">&mdash;</div></div>
+            <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">🟢 Listos</div><div class="kpi-sub" id="cal-kpi-listo-pct">&mdash;</div></div><div class="kpi-value" id="cal-kpi-listo">&mdash;</div></div>
+            <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">🔴 Fuera</div><div class="kpi-sub" id="cal-kpi-fuera-pct">&mdash;</div></div><div class="kpi-value" id="cal-kpi-fuera">&mdash;</div></div>
+            <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Llegaron a visita</div><div class="kpi-sub" id="cal-kpi-visita-pct">&mdash;</div></div><div class="kpi-value" id="cal-kpi-visita">&mdash;</div></div>
+            <div class="kpi-card"><div class="kpi-info"><div class="kpi-label">Cierres</div><div class="kpi-sub">Marcados como vendidos</div></div><div class="kpi-value" id="cal-kpi-cierres">&mdash;</div></div>
+          </div>
+
+          <div class="card" style="margin-bottom:20px;">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+              <div style="font-size:14px;font-weight:700;color:var(--navy);">Por fuente</div>
+              <div style="font-size:11px;color:var(--text-muted);">Ordenado por número de leads</div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:760px;">
+                <thead><tr style="background:var(--bg,#F8FAFC);text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;">
+                  <th style="padding:10px 14px;">Fuente</th>
+                  <th style="padding:10px 10px;text-align:right;">Leads</th>
+                  <th style="padding:10px 10px;text-align:right;">🟢 Listo</th>
+                  <th style="padding:10px 10px;text-align:right;">🟡 Pendiente</th>
+                  <th style="padding:10px 10px;text-align:right;">🔴 Fuera</th>
+                  <th style="padding:10px 10px;text-align:right;">Sin calificar</th>
+                  <th style="padding:10px 10px;text-align:right;">% Listo</th>
+                  <th style="padding:10px 10px;text-align:right;">Visita</th>
+                  <th style="padding:10px 14px;text-align:right;">Cierres</th>
+                </tr></thead>
+                <tbody id="cal-tbody"><tr><td colspan="9" class="empty-state">Cargando…</td></tr></tbody>
+              </table>
+            </div>
+            <div style="padding:10px 18px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border);line-height:1.5;">
+              El semáforo del bot existe desde el 3-oct-2026: los leads anteriores aparecen como <b>Sin calificar</b>. "Visita" cuenta a quien llegó a la fase Visita o posterior, tuvo una cita agendada o se marcó vendido.
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--border);">
+              <div style="font-size:14px;font-weight:700;color:var(--navy);">Histórico mensual</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Leads por mes y, entre paréntesis, cuántos fueron 🟢 Listo · últimos 6 meses</div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:640px;">
+                <thead id="cal-hist-head"></thead>
+                <tbody id="cal-hist-body"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -4664,6 +4730,10 @@ function applyUserModules(user) {
   const navAuditoria = document.getElementById('nav-auditoria');
   if (navAuditoria) navAuditoria.style.display = 'none';
 
+  // Calidad por fuente (4-oct-2026): solo Admin
+  const navCalidad = document.getElementById('nav-calidad');
+  if (navCalidad) navCalidad.style.display = isAdmin() ? '' : 'none';
+
   // Equipo: solo Admin
   const navEquipo = document.getElementById('nav-equipo');
   if (navEquipo) navEquipo.style.display = isAdmin() ? '' : 'none';
@@ -5118,7 +5188,7 @@ function renderCitasHoyBanner(){
 // Cargar credenciales guardadas al abrir el login
 
 
-const sectionTitles={dashboard:'Dashboard de Marketing',pipeline:'Pipeline de Prospectos',kanban:'Tablero Kanban',vendidos:'Vendidos',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades'};
+const sectionTitles={dashboard:'Dashboard de Marketing',pipeline:'Pipeline de Prospectos',kanban:'Tablero Kanban',vendidos:'Vendidos',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades',calidad:'Calidad por fuente'};
 function showWaTab(tab){
   const sec = document.getElementById('section-whatsapp');
   if(!sec) return;
@@ -5159,6 +5229,7 @@ function showSection(id){
   if(id==='whatsapp'){ renderMobileWhatsAppList(); showWaBadge(false); renderConvBoard(); }
   if(id==='equipo')renderEquipo();
   if(id==='auditoria'){ initAuditoriaMonthFilter(); loadAuditoria(); }
+  if(id==='calidad') loadCalidad();
   if(id==='mensajes') initChat();
   if(id==='rentabilidad') { showRentTab('supuestos'); setTimeout(calcRent, 100); }
   if(id==='sitioweb') loadWebProps();
@@ -7072,6 +7143,184 @@ function renderEmbudoConversion(rows){
       <td style="text-align:center;font-weight:700;color:${pctCierre>=20?'var(--success)':'var(--text)'};">${pctCierre}%</td>
     </tr>`;
   }).join('');
+}
+
+// ══════════════════════════════════════════
+// CALIDAD POR FUENTE (4-oct-2026, Paso 3 de mejoras del sitio/campañas)
+// Reporte mensual solo para Admin: por cada origen (crm_prospects.source)
+// cuántos leads llegaron, cómo los clasificó el bot (🟢/🟡/🔴, ver
+// califKey), cuántos llegaron a visita y cuántos se vendieron. Consulta
+// directa a Supabase (no depende de lo que el Kanban tenga cargado).
+// "Visita" = fase Visita/Proceso/Cierre, visita_at, vendido, una cita en
+// crm_citas o un paso a Perdido desde Visita/Proceso/Cierre (crm_auditoria).
+// ══════════════════════════════════════════
+let _calidadData = [];
+const CAL_MESES = 12;
+
+function calMesKey(iso) {
+  const d = new Date(iso);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function calMesLabel(key, corto) {
+  const [y, m] = key.split('-').map(Number);
+  const txt = new Date(y, m - 1, 1).toLocaleString('es-MX', corto ? { month: 'short', year: '2-digit' } : { month: 'long', year: 'numeric' });
+  return txt.replace(/^\w/, c => c.toUpperCase());
+}
+function calFuente(src) {
+  const s = String(src || '').trim();
+  return s || 'Sin origen';
+}
+
+function initCalidadMonths() {
+  const sel = document.getElementById('cal-month');
+  if (!sel || sel.options.length) return;
+  const now = new Date();
+  for (let i = 0; i < CAL_MESES; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = calMesLabel(key) + (i === 0 ? ' (en curso)' : '');
+    sel.appendChild(opt);
+  }
+  const optAll = document.createElement('option');
+  optAll.value = 'ultimos3';
+  optAll.textContent = 'Últimos 3 meses';
+  sel.appendChild(optAll);
+}
+
+async function loadCalidad() {
+  if (!isAdmin()) return;
+  initCalidadMonths();
+  const tb = document.getElementById('cal-tbody');
+  if (tb) tb.innerHTML = '<tr><td colspan="9" class="empty-state">Cargando…</td></tr>';
+  const now = new Date();
+  const desde = new Date(now.getFullYear(), now.getMonth() - (CAL_MESES - 1), 1);
+  try {
+    const [pr, au, ci] = await Promise.all([
+      supabase.from('crm_prospects')
+        .select('id,source,created_at,calificacion,calif_estado,phase,vendido,visita_at')
+        .gte('created_at', desde.toISOString()),
+      supabase.from('crm_auditoria').select('prospect_id,fase_anterior').in('fase_anterior', ['Visita', 'Proceso', 'Cierre']),
+      supabase.from('crm_citas').select('prospect_id')
+    ]);
+    if (pr.error) throw pr.error;
+    const visitaIds = new Set();
+    (au.data || []).forEach(r => { if (r.prospect_id) visitaIds.add(String(r.prospect_id)); });
+    (ci.data || []).forEach(r => { if (r.prospect_id) visitaIds.add(String(r.prospect_id)); });
+    _calidadData = (pr.data || []).map(p => {
+      const fase = normalizePhase(p.phase);
+      const k = califKey(p);
+      return {
+        mes: calMesKey(p.created_at),
+        fuente: calFuente(p.source),
+        calif: (k === 'caliente' || k === 'tibio' || k === 'frio') ? k : 'sin',
+        visita: !!(p.vendido || p.visita_at || ['Visita', 'Proceso', 'Cierre'].includes(fase) || visitaIds.has(String(p.id))),
+        cierre: !!p.vendido
+      };
+    });
+    renderCalidad();
+  } catch (e) {
+    console.log('Calidad por fuente error:', e && e.message);
+    if (tb) tb.innerHTML = '<tr><td colspan="9" class="empty-state">No se pudo cargar el reporte. Intenta de nuevo.</td></tr>';
+  }
+}
+
+function calAgrupar(rows) {
+  const by = {};
+  rows.forEach(r => {
+    const g = by[r.fuente] || (by[r.fuente] = { fuente: r.fuente, leads: 0, caliente: 0, tibio: 0, frio: 0, sin: 0, visita: 0, cierre: 0 });
+    g.leads++;
+    g[r.calif]++;
+    if (r.visita) g.visita++;
+    if (r.cierre) g.cierre++;
+  });
+  return Object.values(by).sort((a, b) => b.leads - a.leads || a.fuente.localeCompare(b.fuente));
+}
+
+function calPct(n, d) { return d ? Math.round(n * 100 / d) + '%' : '—'; }
+
+function renderCalidad() {
+  const sel = document.getElementById('cal-month');
+  if (!sel) return;
+  const val = sel.value;
+  let meses;
+  if (val === 'ultimos3') {
+    const now = new Date();
+    meses = [0, 1, 2].map(i => { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); });
+  } else {
+    meses = [val];
+  }
+  const rows = _calidadData.filter(r => meses.includes(r.mes));
+  const grupos = calAgrupar(rows);
+  const tot = grupos.reduce((t, g) => { ['leads', 'caliente', 'tibio', 'frio', 'sin', 'visita', 'cierre'].forEach(k => t[k] += g[k]); return t; },
+    { leads: 0, caliente: 0, tibio: 0, frio: 0, sin: 0, visita: 0, cierre: 0 });
+  const calificados = tot.caliente + tot.tibio + tot.frio;
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('cal-kpi-periodo', sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '');
+  set('cal-kpi-leads', tot.leads);
+  set('cal-kpi-listo', tot.caliente);
+  set('cal-kpi-listo-pct', calificados ? calPct(tot.caliente, calificados) + ' de los calificados' : 'Sin calificaciones aún');
+  set('cal-kpi-fuera', tot.frio);
+  set('cal-kpi-fuera-pct', calificados ? calPct(tot.frio, calificados) + ' de los calificados' : '—');
+  set('cal-kpi-visita', tot.visita);
+  set('cal-kpi-visita-pct', tot.leads ? calPct(tot.visita, tot.leads) + ' de los leads' : '—');
+  set('cal-kpi-cierres', tot.cierre);
+
+  const tb = document.getElementById('cal-tbody');
+  if (tb) {
+    if (!grupos.length) {
+      tb.innerHTML = '<tr><td colspan="9" class="empty-state">Sin leads en este periodo</td></tr>';
+    } else {
+      const td = 'padding:10px 10px;text-align:right;';
+      const fila = (g, total) => {
+        const cal = g.caliente + g.tibio + g.frio;
+        const pctListo = cal ? Math.round(g.caliente * 100 / cal) : null;
+        const color = pctListo === null ? 'var(--text-muted)' : pctListo >= 40 ? '#15803D' : pctListo >= 20 ? '#B45309' : '#B91C1C';
+        const o = CONV_ORIGINS[g.fuente];
+        const punto = total ? '' : `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${o ? o.color : 'var(--src-unreg)'};margin-right:8px;"></span>`;
+        const st = total ? 'font-weight:700;background:var(--bg,#F8FAFC);' : '';
+        return `<tr style="border-top:1px solid var(--border);${st}">
+          <td style="padding:10px 14px;font-weight:600;">${punto}${esc(g.fuente)}</td>
+          <td style="${td}font-weight:700;">${g.leads}</td>
+          <td style="${td}">${g.caliente || '·'}</td>
+          <td style="${td}">${g.tibio || '·'}</td>
+          <td style="${td}">${g.frio || '·'}</td>
+          <td style="${td}color:var(--text-muted);">${g.sin || '·'}</td>
+          <td style="${td}font-weight:700;color:${color};">${pctListo === null ? '—' : pctListo + '%'}</td>
+          <td style="${td}">${g.visita || '·'}</td>
+          <td style="padding:10px 14px;text-align:right;">${g.cierre || '·'}</td>
+        </tr>`;
+      };
+      tb.innerHTML = grupos.map(g => fila(g, false)).join('') + fila(Object.assign({ fuente: 'Total' }, tot), true);
+    }
+  }
+  renderCalidadHistorico();
+}
+
+function renderCalidadHistorico() {
+  const head = document.getElementById('cal-hist-head');
+  const body = document.getElementById('cal-hist-body');
+  if (!head || !body) return;
+  const now = new Date();
+  const meses = [];
+  for (let i = 5; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); meses.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')); }
+  const rows = _calidadData.filter(r => meses.includes(r.mes));
+  const fuentes = calAgrupar(rows).map(g => g.fuente);
+  head.innerHTML = '<tr style="background:var(--bg,#F8FAFC);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;"><th style="padding:10px 14px;text-align:left;">Fuente</th>'
+    + meses.map(m => `<th style="padding:10px 10px;text-align:right;">${calMesLabel(m, true)}</th>`).join('') + '</tr>';
+  if (!fuentes.length) { body.innerHTML = `<tr><td colspan="${meses.length + 1}" class="empty-state">Sin datos</td></tr>`; return; }
+  const celda = (lista) => {
+    const n = lista.length;
+    if (!n) return '<span style="color:var(--text-muted);">·</span>';
+    const v = lista.filter(r => r.calif === 'caliente').length;
+    return `<b>${n}</b>${v ? ` <span style="color:#15803D;font-size:12px;">(🟢${v})</span>` : ''}`;
+  };
+  body.innerHTML = fuentes.map(f => `<tr style="border-top:1px solid var(--border);"><td style="padding:10px 14px;font-weight:600;">${esc(f)}</td>`
+    + meses.map(m => `<td style="padding:10px 10px;text-align:right;">${celda(rows.filter(r => r.fuente === f && r.mes === m))}</td>`).join('') + '</tr>').join('')
+    + '<tr style="border-top:1px solid var(--border);font-weight:700;background:var(--bg,#F8FAFC);"><td style="padding:10px 14px;">Total</td>'
+    + meses.map(m => `<td style="padding:10px 10px;text-align:right;">${celda(rows.filter(r => r.mes === m))}</td>`).join('') + '</tr>';
 }
 
 async function loadAuditoria() {
