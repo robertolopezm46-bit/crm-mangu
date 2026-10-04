@@ -9481,7 +9481,7 @@ function renderWebProps(){
         </div>
         <div style="font-size:17px;font-weight:700;color:var(--navy);margin-bottom:4px;">${fmtPrecio(p.precio)}</div>
         ${(p.ubicacion||p.direccion)?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;"><span style="color:#DC2626;">📍</span> ${esc(p.ubicacion||p.direccion)}</div>`:''}
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">${p.recamaras||0} rec · ${p.banos||0} baños · ${p.m2_construccion||0} m²</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">${p.recamaras||0} rec · ${p.banos||0} baños · ${p.m2_construccion||0} m²<span title="Visitas a la ficha en mangu.mx (una por visitante por sesión, desde el 4-oct-2026)"> · 👁 ${(p.vistas||0).toLocaleString('es-MX')} vista${(p.vistas||0)===1?'':'s'}</span></div>
         ${p.planta_baja?`<div style="font-size:10.5px;color:#15803D;margin-bottom:8px;font-weight:700;">♿ Apta para personas de la tercera edad o con discapacidad</div>`:''}
         ${(p.amenidades&&p.amenidades.length)?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;">${p.amenidades.map(a=>`<span style="background:#F0FDF4;color:#15803D;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">${esc(a)}</span>`).join('')}</div>`:''}
         ${(p.accesorios&&p.accesorios.length)?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;">${p.accesorios.map(a=>`<span style="background:#EFF6FF;color:#1D4ED8;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">${esc(a)}</span>`).join('')}</div>`:''}
