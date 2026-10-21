@@ -8184,7 +8184,8 @@ async function commitNotaRapida(pendiente){
       notifyFaseChange({prospectName:p.name,oldPhase:p.phase,newPhase:p.phase,comment:'Nuevo comentario: '+texto,sellerName:autor,assignedTo:p.seller||'',notifyTo:NOTIFY_MATRIX[p.phase]});
     }
     const notaCorta=texto.length>150?texto.slice(0,150)+'…':texto;
-    notaWANotifyRecipients(p).forEach(u=>{ if(u.phone) sendWATemplateStaff(u.phone,'mangu_nueva_nota',[p.name,autor,notaCorta],p.id); });
+    // 21-oct-2026: Roberto recibe la nota como notificación del CRM (push), ya no por WhatsApp.
+    notaWANotifyRecipients(p).forEach(u=>{ if(u.phone && (u.username||'').toLowerCase()!=='roberto') sendWATemplateStaff(u.phone,'mangu_nueva_nota',[p.name,autor,notaCorta],p.id); });
     sendCrmPush(notaWANotifyRecipients(p).map(u=>u.username), `📝 Nota: ${p.name}`, notaCorta, '/');
   }
 }
@@ -8502,6 +8503,9 @@ async function sendCrmPush(usernames, title, body, url){
   async function notifyStaffWATemplate(usernames, templateName, params, prospectId){
   const _actor=(DB.currentUser?.username||'').toLowerCase();
   for(const uname of usernames){ if((uname||'').toLowerCase()===_actor) continue;
+  // 21-oct-2026 (pedido de Robert): a Roberto solo le llega WhatsApp cuando entra un lead nuevo
+  // (mangu_alerta_prospecto). Cambios de fase y demás los ve en el CRM.
+  if((uname||'').toLowerCase()==='roberto' && templateName!=='mangu_alerta_prospecto') continue;
   const u=(DB.users||[]).find(x=>(x.username||'').toLowerCase()===uname);
   if(u?.phone) sendWATemplateStaff(u.phone, templateName, params, prospectId);
   }
