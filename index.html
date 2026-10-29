@@ -304,7 +304,7 @@
   .form-group label{font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;}
   .form-group input,.form-group select,.form-group textarea{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:'Inter',sans-serif;outline:none;}
   .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--gold);}
-  .form-group.invalid input,.form-group.invalid textarea{border-color:var(--danger);box-shadow:0 0 0 3px rgba(220,38,38,0.12);}
+  .form-group.invalid input,.form-group.invalid textarea,.form-group.invalid select{border-color:var(--danger);box-shadow:0 0 0 3px rgba(220,38,38,0.12);}
   #fg-fotos.invalid #wp-fotos-input{outline:1.5px solid var(--danger);border-radius:6px;}
   .link-result{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;font-size:12px;color:var(--info);word-break:break-all;margin-top:12px;display:none;}
   .copy-btn{background:var(--navy);color:var(--white);border:none;padding:8px 16px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-family:'Inter',sans-serif;margin-top:8px;}
@@ -2403,10 +2403,41 @@
 
     <div class="form-full">
       <!-- 1. Identificación -->
-      <div class="form-group" id="fg-titulo"><label>Título</label><input type="text" id="wp-titulo" placeholder="EJ. CASA CASTAÑO 101" style="text-transform:uppercase;" oninput="clearFieldError('fg-titulo');scheduleDraftSave()"></div>
+      <div class="form-group" id="fg-titulo"><label>Título</label><input type="text" id="wp-titulo" placeholder="EJ. CASA CASTAÑO 101" style="text-transform:uppercase;" oninput="clearFieldError('fg-titulo');syncSlugDesdeTitulo();scheduleDraftSave()"></div>
 
       <!-- 2. Dirección -->
       <div class="form-group" id="fg-direccion"><label>Dirección</label><input type="text" id="wp-direccion-full" placeholder="Calle, fraccionamiento y municipio" oninput="scheduleDraftSave()"></div>
+
+      <!-- 2b. Fraccionamiento y municipio (29-oct-2026): el sitio agrupa la preventa
+           y filtra por zona con estos dos campos; se eligen de una lista para que
+           el mismo fraccionamiento no quede escrito de dos formas. -->
+      <div class="form-row">
+        <div class="form-group" id="fg-fracc"><label>Fraccionamiento</label><input type="text" id="wp-fracc" list="wp-fracc-list" placeholder="Elige o escribe uno nuevo" autocomplete="off" oninput="clearFieldError('fg-fracc');scheduleDraftSave()"><datalist id="wp-fracc-list"></datalist></div>
+        <div class="form-group" id="fg-municipio"><label>Municipio</label>
+          <select id="wp-municipio" onchange="clearFieldError('fg-municipio');scheduleDraftSave()">
+            <option value="">Seleccionar...</option>
+            <option>Pachuca de Soto</option>
+            <option>Mineral de la Reforma</option>
+            <option>San Agustín Tlaxiaca</option>
+            <option>Zapotlán de Juárez</option>
+            <option>Zempoala</option>
+            <option>Epazoyucan</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 2c. URL en mangu.mx (29-oct-2026). Se genera del título al dar de alta y
+           después queda FIJA: así los links compartidos y los anuncios no se rompen
+           si se corrige el título. Si se cambia a mano, la URL anterior sigue
+           llevando a la casa (se guarda en slugs_anteriores). -->
+      <div class="form-group" id="fg-slug"><label>Link en mangu.mx</label>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:13px;color:var(--text-muted);white-space:nowrap;">mangu.mx/</span>
+          <input type="text" id="wp-slug" style="flex:1;min-width:0;" placeholder="se-genera-del-titulo" oninput="this.dataset.manual='1';this.value=slugify(this.value.replace(/\s/g,'-'))||this.value.toLowerCase();clearFieldError('fg-slug')" readonly>
+          <button type="button" id="wp-slug-edit" onclick="desbloquearSlug()" style="padding:7px 10px;font-size:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;white-space:nowrap;">Cambiar</button>
+        </div>
+        <div id="wp-slug-help" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;"></div>
+      </div>
 
       <!-- 3. Precio y estatus -->
       <div class="form-row">
@@ -2514,7 +2545,7 @@
       <span id="wp-autosave-label" style="font-size:11px;color:var(--text-muted);"></span>
       <div style="display:flex;gap:10px;">
         <button class="btn-cancel" onclick="closeModal('propiedad')">Cancelar</button>
-        <button class="btn-secondary" id="save-draft-btn" onclick="savePropiedad('guardar')">Guardar</button>
+        <button class="btn-secondary" id="save-draft-btn" onclick="savePropiedad('guardar')">Guardar borrador</button>
         <button class="btn-primary" id="save-prop-btn" onclick="savePropiedad('publicar')">Publicar</button>
       </div>
     </div>
@@ -9254,22 +9285,29 @@ function updateWpSelectCountUI(){
 async function deleteWebProp(id){
   const p=webPropsDB.find(x=>String(x.id)===String(id));
   if(!p)return;
-  if(!(await showConfirm('¿Eliminar la propiedad "'+(p.titulo||'')+'"? Esta acción no se puede deshacer.')))return;
+  if(p.activa){showToast('Primero dale "Dar de baja" para quitarla del sitio.','error');return;}
+  if(!(await showConfirm('¿Eliminar para siempre "'+(p.titulo||'')+'"?\n\nSe borran la casa, sus fotos y su video. Esta acción no se puede deshacer. Si solo quieres que no se vea, usa "Dar de baja".')))return;
   setSyncBadge(true);
   const{error}=await supabase.from('web_propiedades').delete().eq('id',id);
   setSyncBadge(false);
   if(error){showToast('Error al eliminar: '+error.message,'error');return;}
+  borrarArchivosProp([...(p.fotos||[]), p.video_url].filter(Boolean), p.id);
   await loadWebProps();
   showToast('Propiedad eliminada','info');
 }
 async function deleteSelectedWebProps(){
   const ids=Array.from(_wpSelectedIds);
   if(!ids.length){showToast('Selecciona al menos una propiedad','error');return;}
-  if(!(await showConfirm('¿Eliminar '+ids.length+' propiedad(es) seleccionada(s)? Esta acción no se puede deshacer.')))return;
+  const sel=webPropsDB.filter(x=>ids.includes(String(x.id)));
+  const publicadas=sel.filter(x=>x.activa);
+  if(publicadas.length){showToast('Hay '+publicadas.length+' casa(s) publicada(s) en la selección. Dales "Dar de baja" antes de eliminarlas.','error',6000);return;}
+  if(!(await showConfirm('¿Eliminar para siempre '+ids.length+' casa(s) con sus fotos y videos? Esta acción no se puede deshacer.')))return;
   setSyncBadge(true);
   const{error}=await supabase.from('web_propiedades').delete().in('id',ids);
   setSyncBadge(false);
   if(error){showToast('Error al eliminar: '+error.message,'error');return;}
+  const archivos=[];sel.forEach(x=>{(x.fotos||[]).forEach(u=>archivos.push(u));if(x.video_url)archivos.push(x.video_url);});
+  borrarArchivosProp(archivos,sel.map(x=>x.id));
   _wpSelectedIds.clear();
   await loadWebProps();
   toggleWpSelectMode(); // sale del modo selección y vuelve a renderizar
@@ -9494,8 +9532,12 @@ function renderWebProps(){
           <button onclick="openPropModal('${escJs(p.id)}')" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;">Editar</button>
           <button onclick="openCompartirPropModal('${escJs(p.id)}')" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--success);background:var(--surface);color:var(--success);border-radius:6px;cursor:pointer;">📲 Compartir</button>
           ${p.estatus!=='vendida'?`<button onclick="marcarVendidaProp('${escJs(p.id)}')" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;">Vendida ✓</button>`:''}
-          <button onclick="toggleActivaProp('${escJs(p.id)}')" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;">${p.activa?'Ocultar':'Publicar'}</button>
-          <button onclick="deleteWebProp('${escJs(p.id)}')" style="padding:6px 10px;font-size:12px;border:1px solid var(--danger);background:var(--surface);color:var(--danger);border-radius:6px;cursor:pointer;">Eliminar</button>
+          <button onclick="toggleActivaProp('${escJs(p.id)}')" title="${p.activa?'Quita la casa de mangu.mx (no se borra nada; puedes volver a publicarla)':'Vuelve a mostrar la casa en mangu.mx'}" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;">${p.activa?'Dar de baja':'Publicar'}</button>
+          ${p.activa?'':`<button onclick="deleteWebProp('${escJs(p.id)}')" title="Borra la casa y sus fotos para siempre" style="padding:6px 10px;font-size:12px;border:1px solid var(--danger);background:var(--surface);color:var(--danger);border-radius:6px;cursor:pointer;">Eliminar</button>`}
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;font-size:11.5px;color:var(--text-muted);">
+          ${p.activa&&p.slug?`<a href="https://mangu.mx/${encodeURIComponent(p.slug)}" target="_blank" rel="noopener" style="color:var(--navy);font-weight:600;">Ver en mangu.mx ↗</a><button onclick="copiarLinkProp('${escJs(p.slug)}')" style="border:0;background:none;color:var(--text-muted);cursor:pointer;font-size:11.5px;padding:0;text-decoration:underline;">Copiar link</button>`:`<span>No se ve en el sitio${p.estatus==='vendida'?'':' (oculta)'}</span>`}
+          ${(p.fraccionamiento&&p.municipio)?'':'<span style="color:#b45309;font-weight:600;" title="Edítala para elegir fraccionamiento y municipio: el sitio los usa para filtrar y agrupar">⚠ Falta zona</span>'}
         </div>
       </div>
     </div>`;
@@ -9514,6 +9556,13 @@ function openPropModal(id){
   document.getElementById('wp-estatus').value = p?.estatus || 'disponible';
   document.getElementById('wp-tipo').value = p?.tipo || 'casa';
   document.getElementById('wp-direccion-full').value = p?.direccion || p?.ubicacion || '';
+  llenarListaFraccs();
+  document.getElementById('wp-fracc').value = p?.fraccionamiento || '';
+  document.getElementById('wp-municipio').value = p?.municipio || '';
+  prepararSlug(p);
+  prepararBotonesProp(p);
+  _propFotosOriginales = p?.fotos ? [...p.fotos] : [];
+  _propVideoOriginal = p?.video_url || '';
   document.getElementById('wp-recamaras').value = p?.recamaras ?? 0;
   document.getElementById('wp-banos').value = p?.banos ?? 0;
   document.getElementById('wp-estacionamientos').value = p?.estacionamientos ?? 0;
@@ -9684,7 +9733,7 @@ async function handlePropFotos(input){
 // ---- Validación del formulario ----
 function markFieldError(fgId){ document.getElementById(fgId)?.classList.add('invalid'); }
 function clearFieldError(fgId){ document.getElementById(fgId)?.classList.remove('invalid'); }
-function clearAllFieldErrors(){ ['fg-titulo','fg-direccion','fg-precio','fg-fotos'].forEach(clearFieldError); }
+function clearAllFieldErrors(){ ['fg-titulo','fg-direccion','fg-precio','fg-fotos','fg-fracc','fg-municipio','fg-slug'].forEach(clearFieldError); }
 
 function validatePropForm(strict){
   const errors = [];
@@ -9693,9 +9742,18 @@ function validatePropForm(strict){
   const precio = parseFloat((document.getElementById('wp-precio').value||'').replace(/[^0-9.]/g,'')) || 0;
 
   if (!titulo) { markFieldError('fg-titulo'); errors.push('Falta el título'); }
+  const slugV = document.getElementById('wp-slug').value.trim();
+  if (!slugV) { markFieldError('fg-slug'); errors.push('Falta el link en mangu.mx'); }
+  else if ((document.getElementById('wp-edit-id').value || document.getElementById('wp-slug').dataset.manual) && slugOcupado(slugV, document.getElementById('wp-edit-id').value || null)) { markFieldError('fg-slug'); errors.push('Ese link ya lo usa otra casa'); }
   if (strict) {
+    // Lo mínimo para que la ficha en mangu.mx se vea completa (29-oct-2026).
     if (!precio) { markFieldError('fg-precio'); errors.push('Falta un precio válido'); }
     if (!_propFotos.length) { markFieldError('fg-fotos'); errors.push('Sube al menos 1 foto'); }
+    if (!document.getElementById('wp-fracc').value.trim()) { markFieldError('fg-fracc'); errors.push('Elige el fraccionamiento'); }
+    if (!document.getElementById('wp-municipio').value) { markFieldError('fg-municipio'); errors.push('Elige el municipio'); }
+    if (!(parseInt(document.getElementById('wp-recamaras').value) > 0)) errors.push('Faltan las recámaras');
+    if (!(parseFloat(document.getElementById('wp-banos').value) > 0)) errors.push('Faltan los baños');
+    if (!(parseFloat(document.getElementById('wp-m2c').value) > 0)) errors.push('Faltan los m² de construcción');
   }
   const summary = document.getElementById('wp-validation-summary');
   if (errors.length) {
@@ -9797,6 +9855,8 @@ function collectPropFormData(){
   return {
     titulo: document.getElementById('wp-titulo').value,
     direccion: document.getElementById('wp-direccion-full').value,
+    fracc: document.getElementById('wp-fracc').value,
+    municipio: document.getElementById('wp-municipio').value,
     precio: document.getElementById('wp-precio').value,
     estatus: document.getElementById('wp-estatus').value,
     recamaras: document.getElementById('wp-recamaras').value,
@@ -9840,7 +9900,10 @@ function restoreDraftProp(){
   if (!draft) return;
   document.getElementById('wp-titulo').value = draft.titulo || '';
   document.getElementById('wp-direccion-full').value = draft.direccion || '';
+  document.getElementById('wp-fracc').value = draft.fracc || '';
+  document.getElementById('wp-municipio').value = draft.municipio || '';
   document.getElementById('wp-precio').value = draft.precio || '';
+  syncSlugDesdeTitulo();
   document.getElementById('wp-estatus').value = draft.estatus || 'disponible';
   document.getElementById('wp-recamaras').value = draft.recamaras ?? 0;
   document.getElementById('wp-banos').value = draft.banos ?? 0;
@@ -9887,7 +9950,7 @@ function slugify(text){
 // avisa con un toast. La propiedad ya existente NUNCA se toca — solo la
 // nueva (o la que se está guardando) recibe el sufijo. 7-sep-2026.
 function slugUnico(base, idActual){
-  const ocupado = s => webPropsDB.some(x => x.slug === s && x.id !== idActual);
+  const ocupado = s => slugOcupado(s, idActual);
   if (!ocupado(base)) return base;
   let n = 2;
   let candidato = `${base}-${n}`;
@@ -9897,6 +9960,9 @@ function slugUnico(base, idActual){
 }
 
 async function savePropiedad(mode){
+  // 29-oct-2026: "publicar" = queda visible en mangu.mx; "guardar" = queda oculta
+  // (borrador). Al editar una casa ya publicada solo aparece "Guardar cambios",
+  // que la deja publicada (antes "Guardar" la ocultaba sin querer).
   const strict = mode === 'publicar';
   if (!validatePropForm(strict)) return;
 
@@ -9905,21 +9971,37 @@ async function savePropiedad(mode){
   const id = document.getElementById('wp-edit-id').value;
   const direccion = document.getElementById('wp-direccion-full').value.trim() || null;
   const existing = id ? webPropsDB.find(x=>x.id===id) : null;
-  const slug = slugUnico(slugify(titulo), id || null);
 
-  // Si se está "Guardando" (no publicando) una propiedad que ya estaba visible, confirmamos que se oculte
-  if (mode === 'guardar' && existing?.activa) {
-    if (!(await showConfirm('Esta propiedad ya está publicada. "Guardar" la ocultará del sitio web hasta que la publiques de nuevo. ¿Continuar?'))) return;
+  // El link solo cambia si alguien lo cambió a mano; el anterior se guarda para
+  // que mangu.mx/<link-viejo> siga llevando a la casa.
+  let slug = slugify(document.getElementById('wp-slug').value) || slugify(titulo);
+  let slugsAnteriores = existing?.slugs_anteriores ? [...existing.slugs_anteriores] : [];
+  if (existing && existing.slug && slug !== existing.slug) {
+    if (!(await showConfirm('Vas a cambiar el link de esta casa:\n\nmangu.mx/' + existing.slug + '  →  mangu.mx/' + slug + '\n\nEl link anterior seguirá funcionando y llevará a la nueva. ¿Continuar?'))) return;
+    if (!slugsAnteriores.includes(existing.slug)) slugsAnteriores.push(existing.slug);
+  }
+  slugsAnteriores = slugsAnteriores.filter(x => x && x !== slug);
+  if (!existing) slug = slugUnico(slug, null);
+
+  // Avisos que no bloquean (la ficha se ve mejor con ellos)
+  if (strict) {
+    const avisos = [];
+    if (_propFotos.length < 5) avisos.push('tiene solo ' + _propFotos.length + ' foto(s); con 8 o más la ficha luce mucho mejor');
+    if (!document.getElementById('wp-descripcion').value.trim()) avisos.push('no tiene descripción');
+    if (avisos.length && !(await showConfirm('La casa ' + avisos.join(' y ') + '. ¿Publicar de todos modos?'))) return;
   }
 
   const row = {
     titulo,
     slug,
+    slugs_anteriores: slugsAnteriores,
     precio,
     estatus: document.getElementById('wp-estatus').value,
     tipo: 'casa', // Solo vendemos casas
     ubicacion: direccion,
     direccion: direccion,
+    fraccionamiento: document.getElementById('wp-fracc').value.trim() || null,
+    municipio: document.getElementById('wp-municipio').value || null,
     recamaras: parseInt(document.getElementById('wp-recamaras').value) || 0,
     banos: parseFloat(document.getElementById('wp-banos').value) || 0,
     estacionamientos: parseInt(document.getElementById('wp-estacionamientos').value) || 0,
@@ -9937,28 +10019,100 @@ async function savePropiedad(mode){
   };
   const btn = document.getElementById('save-prop-btn');
   const btnDraft = document.getElementById('save-draft-btn');
-  const label = mode === 'publicar' ? 'Publicando...' : 'Guardando...';
+  const textos = [btn.textContent, btnDraft.textContent];
   btn.disabled = true; btnDraft.disabled = true;
-  const originalText = mode === 'publicar' ? btn.textContent : btnDraft.textContent;
-  (mode === 'publicar' ? btn : btnDraft).textContent = label;
+  (mode === 'publicar' ? btn : btnDraft).textContent = mode === 'publicar' ? 'Publicando...' : 'Guardando...';
 
   let error;
   if (id) ({ error } = await supabase.from('web_propiedades').update(row).eq('id', id));
   else ({ error } = await supabase.from('web_propiedades').insert(row));
 
   btn.disabled = false; btnDraft.disabled = false;
-  btn.textContent = 'Publicar'; btnDraft.textContent = 'Guardar';
+  btn.textContent = textos[0]; btnDraft.textContent = textos[1];
 
-  if (error) { showToast('Error al guardar: ' + error.message, 'error'); return; }
+  if (error) {
+    const dup = /slug/.test(error.message || '') && /duplicate|unique/i.test(error.message || '');
+    showToast(dup ? 'Ese link ya lo usa otra casa. Cámbialo y vuelve a guardar.' : 'Error al guardar: ' + error.message, 'error');
+    return;
+  }
+  // Fotos o video que se quitaron en esta edición: se borran del almacenamiento
+  // (si ninguna otra casa los usa) para no acumular archivos huérfanos.
+  const quitados = _propFotosOriginales.filter(u => !_propFotos.includes(u));
+  if (_propVideoOriginal && _propVideoOriginal !== _propVideo) quitados.push(_propVideoOriginal);
+  borrarArchivosProp(quitados, id || null);
   clearDraftProp();
   closeModal('propiedad');
   loadWebProps();
-  showToast(mode === 'publicar' ? 'Propiedad publicada' : 'Guardada como borrador', 'success');
+  showToast(mode === 'publicar' ? (existing?.activa ? 'Cambios guardados · ya se ven en mangu.mx' : 'Publicada en mangu.mx/' + slug) : 'Guardada sin publicar', 'success');
+}
+
+// ── Ayudantes del flujo de alta/edición/baja (29-oct-2026) ──
+let _propFotosOriginales = [];
+let _propVideoOriginal = '';
+function slugOcupado(s, idActual){
+  return webPropsDB.some(x => x.id !== idActual && (x.slug === s || (x.slugs_anteriores || []).includes(s)));
+}
+function prepararSlug(p){
+  const inp = document.getElementById('wp-slug');
+  const btn = document.getElementById('wp-slug-edit');
+  const help = document.getElementById('wp-slug-help');
+  delete inp.dataset.manual;
+  if (p) {
+    inp.value = p.slug || slugify(p.titulo);
+    inp.readOnly = true; btn.style.display = '';
+    help.textContent = p.activa ? 'Este link ya está publicado. Corregir el título no lo cambia.' : 'Corregir el título no cambia el link.';
+  } else {
+    inp.value = '';
+    inp.readOnly = true; btn.style.display = '';
+    help.textContent = 'Se arma solo con el título. Puedes cambiarlo antes de publicar.';
+  }
+}
+function syncSlugDesdeTitulo(){
+  if (document.getElementById('wp-edit-id').value) return; // casa existente: el link no se mueve
+  const inp = document.getElementById('wp-slug');
+  if (inp.dataset.manual) return;
+  inp.value = slugify(document.getElementById('wp-titulo').value);
+}
+function desbloquearSlug(){
+  const inp = document.getElementById('wp-slug');
+  inp.readOnly = false; inp.focus(); inp.select();
+  document.getElementById('wp-slug-edit').style.display = 'none';
+  if (document.getElementById('wp-edit-id').value) document.getElementById('wp-slug-help').textContent = 'Si lo cambias, el link anterior seguirá llevando a esta casa.';
+}
+function prepararBotonesProp(p){
+  const pri = document.getElementById('save-prop-btn');
+  const sec = document.getElementById('save-draft-btn');
+  if (!p) { pri.textContent = 'Publicar'; sec.textContent = 'Guardar borrador'; sec.style.display = ''; }
+  else if (p.activa) { pri.textContent = 'Guardar cambios'; sec.style.display = 'none'; }
+  else { pri.textContent = 'Guardar y publicar'; sec.textContent = 'Guardar sin publicar'; sec.style.display = ''; }
+}
+function llenarListaFraccs(){
+  const dl = document.getElementById('wp-fracc-list');
+  if (!dl) return;
+  const nombres = [...new Set(webPropsDB.map(x => (x.fraccionamiento || '').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  dl.innerHTML = nombres.map(n => `<option value="${esc(n)}"></option>`).join('');
+}
+function copiarLinkProp(slug){
+  const url = 'https://mangu.mx/' + slug;
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+    .then(()=>showToast('Link copiado: ' + url, 'success'))
+    .catch(()=>showToast(url, 'info', 6000));
+}
+// Borra del bucket "propiedades" los archivos que ya no usa ninguna casa.
+async function borrarArchivosProp(urls, idsExcluir){
+  const fuera = new Set([].concat(idsExcluir || []).map(String));
+  const MARCA = '/storage/v1/object/public/propiedades/';
+  const enUso = new Set();
+  webPropsDB.forEach(x => { if (fuera.has(String(x.id))) return; (x.fotos || []).forEach(u => enUso.add(u)); if (x.video_url) enUso.add(x.video_url); });
+  const paths = (urls || []).filter(u => u && !enUso.has(u) && u.indexOf(MARCA) >= 0)
+    .map(u => decodeURIComponent(u.split(MARCA)[1].split('?')[0]));
+  if (!paths.length) return;
+  try { await supabase.storage.from('propiedades').remove(paths); } catch(e) { console.warn('No se pudieron borrar archivos', e); }
 }
 
 async function marcarVendidaProp(id){
-  if (!(await showConfirm('¿Marcar esta propiedad como vendida?'))) return;
-  const { error } = await supabase.from('web_propiedades').update({ estatus: 'vendida', destacada: false }).eq('id', id);
+  if (!(await showConfirm('¿Marcar esta casa como vendida?\n\nSaldrá de las casas disponibles y aparecerá en "Casas vendidas" de mangu.mx (en grises, sin precio en la tarjeta). Si no quieres que se vea, después usa "Dar de baja".'))) return;
+  const { error } = await supabase.from('web_propiedades').update({ estatus: 'vendida', destacada: false, es_nuevo: false }).eq('id', id);
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
   loadWebProps();
 }
@@ -9966,8 +10120,18 @@ async function marcarVendidaProp(id){
 async function toggleActivaProp(id){
   const p = webPropsDB.find(x=>x.id===id);
   if (!p) return;
+  if (p.activa) {
+    if (!(await showConfirm('¿Dar de baja "' + (p.titulo||'') + '" del sitio?\n\nDejará de verse en mangu.mx y su link (mangu.mx/' + p.slug + ') llevará a las casas disponibles. No se borra nada: puedes volver a publicarla cuando quieras.'))) return;
+  } else {
+    const faltan = [];
+    if (!p.fotos || !p.fotos.length) faltan.push('fotos');
+    if (!Number(p.precio)) faltan.push('precio');
+    if (!p.fraccionamiento || !p.municipio) faltan.push('fraccionamiento y municipio');
+    if (faltan.length) { showToast('Antes de publicarla, edítala y agrega: ' + faltan.join(', '), 'error', 6000); openPropModal(id); return; }
+  }
   const { error } = await supabase.from('web_propiedades').update({ activa: !p.activa }).eq('id', id);
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  showToast(p.activa ? 'Dada de baja del sitio' : 'Publicada en mangu.mx/' + p.slug, 'success');
   loadWebProps();
 }
 
