@@ -4427,12 +4427,30 @@ function quickWAProspect(id){
   openWaChatModal(p.phone, p.name, p.id);
 }
 
+// 30-oct-2026: al Finalizar una venta se le manda al cliente la plantilla
+// aprobada mangu_felicitacion_cierre (nunca se había usado). Si falla, solo se
+// avisa; la venta ya quedó registrada.
+async function enviarFelicitacionCierre(p){
+  const tel=(p.phone||'').replace(/\D/g,'');
+  if(tel.length<10) return;
+  try{
+    const {data:{session}} = await supabase.auth.getSession();
+    if(!session?.access_token) return;
+    const nombre=(p.name||'').trim().split(/\s+/)[0]||'';
+    const resp=await fetch(WA_EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({to:tel,prospect_id:p.id,kind:'template',template_name:'mangu_felicitacion_cierre',template_lang:'es_MX',params:[nombre]})});
+    const j=await resp.json().catch(()=>({}));
+    if(resp.ok&&j.ok) showToast('🎉 Se envió la felicitación a '+(p.name||'el cliente')+' por WhatsApp','success');
+    else showToast('La venta quedó registrada, pero no se pudo enviar la felicitación por WhatsApp','info',5000);
+  }catch(e){ console.log('felicitación cierre:', e.message); }
+}
+
 async function finalizarProspecto(id){
   const p = DB.prospects.find(x => String(x.id) === String(id));
   if(!p) return;
   const lp = (typeof webPropsDB!=='undefined') ? webPropsDB.find(x=>x.titulo===p.prop) : null;
   const propTxt = lp ? lp.titulo : (p.prop || '—');
-  if(!(await showConfirm('Finalizar la venta de '+p.name+' ('+propTxt+').\n\nSe marcará la propiedad como vendida y el prospecto se moverá a Vendidos. ¿Continuar?'))) return;
+  if(!(await showConfirm('Finalizar la venta de '+p.name+' ('+propTxt+').\n\nSe marcará la propiedad como vendida, el prospecto se moverá a Vendidos y se le enviará una felicitación por WhatsApp. ¿Continuar?'))) return;
   if(lp){
     const { error } = await supabase.from('web_propiedades').update({ estatus: 'vendida', destacada: false }).eq('id', lp.id);
     if(error){ showToast('Error al marcar la propiedad como vendida: ' + error.message, 'error'); return; }
@@ -4447,6 +4465,7 @@ async function finalizarProspecto(id){
   p.vendido_at = vendidoAt;
   renderKanban();
   if(typeof renderVendidos === 'function') renderVendidos();
+  enviarFelicitacionCierre(p);
   // 30-oct-2026: completar el detalle de la venta (precio final, forma de pago, fechas)
   if(typeof openVentaModal === 'function' && canVentas()) openVentaModal(p.id, '¡Venta cerrada! 🎉 Completa el precio final, la forma de pago y las fechas.');
 }
@@ -4508,7 +4527,9 @@ Recuerda que *MANGU* siempre estar\u00e1 aqu\u00ed para lo que necesites. Bienve
 // ══════════════════════════════════════════════════════════════════════════
 const WA_META_TEMPLATE_MAP = {
   1: { name: 'mangu_bienvenida',          params: ['nombre'] },
-  2: { name: 'mangu_info_propiedad',      params: ['nombre','propiedad','precio'] },
+  // 30-oct-2026: mangu_info_propiedad nunca existió en Meta (fallaba); se usa
+  // mangu_compartir_propiedad (aprobada): nombre, casa y liga a su ficha en mangu.mx.
+  2: { name: 'mangu_compartir_propiedad', params: ['nombre','propiedad','link_propiedad'] },
   3: { name: 'mangu_seguimiento_visita',  params: ['nombre'] },
   4: { name: 'mangu_financiamiento',      params: ['nombre'] },
   5: { name: 'mangu_seguimiento_cierre',  params: ['nombre'] },
@@ -4542,6 +4563,11 @@ function buildWAParams(keys, p){
     if(k==='propiedad') return p.prop || 'la propiedad de tu interés';
     if(k==='precio') return '$'+((p.value||0).toLocaleString('es-MX'));
     if(k==='referido_por') return getReferredBy(p) || 'un contacto de confianza';
+    if(k==='link_propiedad'){
+      const t=String(p.prop||'').trim().toUpperCase();
+      const wp=(typeof webPropsDB!=='undefined'?webPropsDB:[]).find(x=>String(x.titulo||'').trim().toUpperCase()===t);
+      return wp ? (wp.slug ? 'https://mangu.mx/'+wp.slug : 'https://mangu.mx/?p='+wp.id) : 'https://mangu.mx';
+    }
     return '';
   });
 }
