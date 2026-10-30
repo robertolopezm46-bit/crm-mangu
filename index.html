@@ -280,6 +280,12 @@
   .vend-chip{display:inline-block;font-size:10.5px;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1px 8px;margin-top:4px;color:var(--text-muted);}
   .vend-chip.ok{background:#DCFCE7;border-color:#BBF7D0;color:#15803D;margin-top:0;}
   .vend-modal{width:620px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+  .vend-enc{padding:14px 16px;margin-bottom:16px;border-left:4px solid #15803D;}
+  .vend-enc-stats{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;margin:4px 0 6px;}
+  .vend-enc-stats b{color:var(--navy);}
+  .vend-enc-sub{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--text-muted);margin:10px 0 4px;}
+  .vend-enc-tes{font-size:12.5px;font-style:italic;padding:8px 0;border-top:1px solid var(--border);}
+  .vend-enc-tes span{display:block;font-style:normal;font-size:11px;color:var(--text-muted);margin-top:2px;}
   .vend-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;}
   .vend-grid .vend-full{grid-column:1/-1;}
   .vend-grid input:disabled{background:var(--surface);color:var(--text-muted);}
@@ -1454,6 +1460,7 @@
         <!-- 30-oct-2026: métricas de venta, "Registrar venta", detalle por venta y post-venta -->
         <div class="vend-kpis" id="vendidos-kpis"></div>
         <div id="vendidos-postventa"></div>
+        <div id="vendidos-encuestas"></div>
         <div class="card">
           <div class="card-header" style="flex-wrap:wrap;gap:12px;">
             <div id="vendidos-total" style="display:flex;align-items:center;gap:10px;font-weight:600;color:var(--text);"></div>
@@ -5207,7 +5214,7 @@ async function loadUsers() {
 }
 async function loadProspects() {
   // notes se excluye del listado (puede crecer mucho); se consulta bajo demanda al editar/exportar/cambiar fase
-  let q=supabase.from('crm_prospects').select('id,name,phone,email,prop,value,phase,seller,seller_id,source,created_at,phase_updated_at,last_wa_at,vendido,vendido_at,calificacion,calif_estado,calif_compra,calif_pago,calif_plazo,compra_estimada_hasta,atencion_pendiente_desde,proxima_accion,proxima_accion_fecha,proceso_etapa,precio_final,forma_pago,fecha_apartado,fecha_escrituracion,fecha_entrega,comision,postventa_resena_at,postventa_referidos_at,venta_registro_manual').order('created_at',{ascending:false});
+  let q=supabase.from('crm_prospects').select('id,name,phone,email,prop,value,phase,seller,seller_id,source,created_at,phase_updated_at,last_wa_at,vendido,vendido_at,calificacion,calif_estado,calif_compra,calif_pago,calif_plazo,compra_estimada_hasta,atencion_pendiente_desde,proxima_accion,proxima_accion_fecha,proceso_etapa,precio_final,forma_pago,fecha_apartado,fecha_escrituracion,fecha_entrega,comision,postventa_resena_at,postventa_referidos_at,venta_registro_manual,encuesta_estado,encuesta_enviada_at,encuesta_experiencia,encuesta_recomienda,encuesta_permiso_publicar,encuesta_testimonio').order('created_at',{ascending:false});
   if(!puedeVerTodosProspectos()) { if(DB.currentUser.id) q=q.eq('seller_id',DB.currentUser.id); else q=q.eq('seller',DB.currentUser.name); }
   const{data,error}=await q;
   if(!error) DB.prospects=(data||[]).map(p=>({...p,phase:normalizePhase(p.phase)}));
@@ -5741,6 +5748,7 @@ function renderVendidos(){
     kpi('Descuento promedio', descProm===null?'—':(descProm*100).toFixed(1)+'%', 'lista vs. final')+
     kpi('Días a cierre', cicloProm===null?'—':cicloProm, 'del primer contacto a la venta');
 
+  renderEncuestasResumen(todos);
   // Post-venta pendiente (de todas las ventas, no solo del año)
   const pv=todos.filter(postventaPendiente);
   const pvEl=document.getElementById('vendidos-postventa');
@@ -5758,10 +5766,10 @@ function renderVendidos(){
   }
 
   const thead=document.querySelector('#vendidos-table thead tr');
-  if(thead) thead.innerHTML='<th>Cliente</th><th>Propiedad</th><th style="text-align:right;">Precio</th><th>Pago</th><th>Origen</th>'+(admin?'<th>Asesor</th>':'')+'<th>Venta</th><th>Escritura · Entrega</th><th>Post-venta</th><th></th>';
+  if(thead) thead.innerHTML='<th>Cliente</th><th>Propiedad</th><th style="text-align:right;">Precio</th><th>Pago</th><th>Origen</th>'+(admin?'<th>Asesor</th>':'')+'<th>Venta</th><th>Escritura · Entrega</th><th>Encuesta</th><th>Post-venta</th><th></th>';
   const totalEl=document.getElementById('vendidos-total');
   if(totalEl) totalEl.textContent=data.length+' venta'+(data.length!==1?'s':'');
-  const cols=admin?10:9;
+  const cols=admin?11:10;
   if(!data.length){document.getElementById('vendidos-body').innerHTML='<tr><td colspan="'+cols+'" class="empty-state">Aún no hay ventas registradas en este periodo</td></tr>';return;}
   const td='padding:12px 14px;font-size:12.5px;';
   document.getElementById('vendidos-body').innerHTML=data.map(p=>{
@@ -5780,12 +5788,68 @@ function renderVendidos(){
       ${admin?`<td style="${td}color:var(--text-muted);">${esc(p.seller||'—')}</td>`:''}
       <td style="${td}white-space:nowrap;">${fmtDate(ventaFechaISO(p))}</td>
       <td style="${td}white-space:nowrap;font-size:11.5px;">${fechaEsc}<br>${fechaEnt}</td>
+      <td style="${td}white-space:nowrap;">${encuestaCelda(p)}</td>
       <td style="${td}white-space:nowrap;" title="Reseña · Referidos">${pvTxt}</td>
       <td style="${td}text-align:right;white-space:nowrap;">
         ${canVentas()?`<button class="action-btn" onclick="openVentaModal('${p.id}')">Detalles</button>`:''}
         <button class="action-btn" onclick="crearContratoDesde('${p.id}')">Contrato</button>
       </td></tr>`;
   }).join('');
+}
+
+// ── Encuesta post-entrega por WhatsApp (30-oct-2026) ──
+// La manda la Edge Function encuesta-entrega: sola, 3 a 10 días después de la
+// fecha de entrega, o al momento con el botón "Encuesta". Las preguntas 2 y 3
+// y la liga de reseñas se mandan solas conforme el cliente responde.
+const ENC_EXP_UI={excelente:{t:'Excelente',c:'#15803D',bg:'#DCFCE7',e:'😄'},buena:{t:'Buena',c:'#1D4ED8',bg:'#DBEAFE',e:'🙂'},mala:{t:'Mala',c:'#B91C1C',bg:'#FEE2E2',e:'😞'}};
+function encuestaCelda(p){
+  if(!p.encuesta_estado){
+    return canVentas()&&p.phone?`<button type="button" class="action-btn" onclick="enviarEncuestaEntrega('${p.id}')" title="Manda por WhatsApp la encuesta post-entrega">📋 Encuesta</button>`:'<span class="muted">—</span>';
+  }
+  if(p.encuesta_estado!=='completa'&&!p.encuesta_experiencia) return '<span class="vend-chip">⏳ Enviada</span>';
+  const x=ENC_EXP_UI[p.encuesta_experiencia];
+  const exp=x?`<span class="vend-chip" style="background:${x.bg};border-color:${x.bg};color:${x.c};margin-top:0;">${x.e} ${x.t}</span>`:'';
+  const rec=p.encuesta_recomienda===true?' <span title="Recomienda a MANGU">👍</span>':p.encuesta_recomienda===false?' <span title="No recomienda">👎</span>':'';
+  const tes=p.encuesta_testimonio?` <span title="${esc(p.encuesta_testimonio)}">💬</span>`:'';
+  const pend=p.encuesta_estado!=='completa'?' <span class="muted" title="Aún respondiendo">…</span>':'';
+  return exp+rec+tes+pend;
+}
+async function enviarEncuestaEntrega(id){
+  const p=DB.prospects.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  if(!(await showConfirm('¿Mandar la encuesta post-entrega por WhatsApp a '+p.name+'?\n\nRecibirá 3 preguntas con botones; al final, si le fue bien, se le manda la liga de reseñas de Google.'))) return;
+  setSyncBadge(true);
+  try{
+    const{data,error}=await supabase.functions.invoke('encuesta-entrega',{body:{prospect_id:p.id}});
+    if(error) throw error;
+    if(!data||!data.ok) throw new Error((data&&data.error)||'No se pudo enviar');
+    p.encuesta_estado='enviada'; p.encuesta_enviada_at=new Date().toISOString();
+    p.encuesta_experiencia=null; p.encuesta_recomienda=null; p.encuesta_permiso_publicar=null; p.encuesta_testimonio=null;
+    showToast('Encuesta enviada a '+p.name,'success');
+  }catch(e){
+    const m=String(e.message||e);
+    showToast(/template|plantilla|132001|does not exist/i.test(m)?'Meta aún no aprueba la plantilla de la encuesta. Intenta más tarde.':'No se pudo enviar la encuesta: '+m,'error',6000);
+  }
+  setSyncBadge(false);
+  renderVendidos();
+}
+function renderEncuestasResumen(todos){
+  const el=document.getElementById('vendidos-encuestas');
+  if(!el) return;
+  const resp=todos.filter(p=>p.encuesta_experiencia);
+  if(!resp.length){ el.innerHTML=''; return; }
+  const n=k=>resp.filter(p=>p.encuesta_experiencia===k).length;
+  const conRec=resp.filter(p=>p.encuesta_recomienda!==null&&p.encuesta_recomienda!==undefined);
+  const pctRec=conRec.length?Math.round(conRec.filter(p=>p.encuesta_recomienda).length*100/conRec.length):null;
+  const testimonios=resp.filter(p=>p.encuesta_testimonio&&(p.encuesta_permiso_publicar==='con_nombre'||p.encuesta_permiso_publicar==='sin_nombre'));
+  el.innerHTML=`<div class="card vend-enc">
+    <div class="vend-pv-head">📋 Opinión de clientes · ${resp.length} respuesta${resp.length!==1?'s':''}<span>Encuesta post-entrega por WhatsApp</span></div>
+    <div class="vend-enc-stats">
+      <span>😄 Excelente <b>${n('excelente')}</b></span><span>🙂 Buena <b>${n('buena')}</b></span><span>😞 Mala <b>${n('mala')}</b></span>
+      ${pctRec===null?'':`<span>👍 Recomiendan <b>${pctRec}%</b></span>`}
+    </div>
+    ${testimonios.length?`<div class="vend-enc-sub">Testimonios con permiso para publicar en el sitio y redes</div>`+testimonios.map(p=>`<div class="vend-enc-tes">“${esc(p.encuesta_testimonio)}”<span>— ${p.encuesta_permiso_publicar==='con_nombre'?esc(p.name):'Cliente MANGU'}${p.prop?' · '+esc(p.prop):''}</span></div>`).join(''):''}
+  </div>`;
 }
 
 // Post-venta: abre WhatsApp con el mensaje listo y marca que ya se pidió
