@@ -5693,7 +5693,7 @@ const ORIGENES_VENTA=['Referidos','Página Web','Facebook ADS','Instagram ADS','
 const POSTVENTA_DIAS=30;
 // Liga directa para dejar reseña en el perfil de Google de MANGU. Si está
 // vacía, el mensaje pide buscar "MANGU Bienes Raíces" en Google.
-const RESENA_GOOGLE_URL='';
+const RESENA_GOOGLE_URL='https://g.page/r/CV_QQU4ppcuHEBM/review'; // Perfil de Negocio verificado "Mangu Desarrollo Inmobiliario"
 function canVentas(){ const u=(DB.currentUser?.username||'').toLowerCase(); return isAdmin()||u==='roberto'||u==='fabiola'; }
 function ventaPrecio(p){ return Number(p.precio_final||p.value||0); }
 function ventaFechaISO(p){ return (p.vendido_at||'').split('T')[0]; }
@@ -5793,7 +5793,7 @@ async function pedirPostventa(id, tipo){
   const p=DB.prospects.find(x=>String(x.id)===String(id));
   if(!p) return;
   const nombre=(p.name||'').split(' ')[0];
-  const resena=RESENA_GOOGLE_URL?('Aquí la liga: '+RESENA_GOOGLE_URL):'Solo busca "MANGU Bienes Raíces" en Google y da clic en "Escribir una reseña".';
+  const resena=RESENA_GOOGLE_URL?('Aquí la liga: '+RESENA_GOOGLE_URL):'Solo busca "Mangu Desarrollo Inmobiliario" en Google y da clic en "Escribir una reseña".';
   const txt = tipo==='resena'
     ? `Hola ${nombre}, ¡esperamos que estés disfrutando mucho tu casa! 🏡 Nos ayudaría muchísimo si nos regalas una reseña en Google contando tu experiencia con MANGU. ${resena} ¡Muchas gracias!`
     : `Hola ${nombre}, ¡gracias de nuevo por confiar en MANGU! 🏡 Si conoces a alguien que esté buscando casa en Pachuca, con gusto le damos la misma atención que a ti. Puedes compartirle este número. ¡Te lo agradecemos mucho!`;
