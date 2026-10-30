@@ -265,6 +265,46 @@
   .wpf{font-size:11px;font-weight:600;border-radius:6px;padding:4px 8px;margin-bottom:10px;}
   .wpf.ok{background:#DCFCE7;color:#15803D;}
   .wpf.falta{background:#FEF3C7;color:#92400E;cursor:pointer;}
+  /* 30-oct-2026: Dashboard Hoy / Embudo y costos */
+  .hoy-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin:4px 0 16px;}
+  .hoy-head h3{margin:0;font-size:20px;color:var(--navy);}
+  .hoy-head p{margin:2px 0 0;font-size:12.5px;color:var(--text-muted);}
+  .hoy-kpis{display:flex;gap:8px;flex-wrap:wrap;}
+  .hoy-kpi{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:8px 14px;min-width:96px;}
+  .hoy-kpi b{display:block;font-size:22px;color:var(--navy);line-height:1.1;}
+  .hoy-kpi span{font-size:11px;color:var(--text-muted);}
+  .hoy-kpi.rojo b{color:#B91C1C;} .hoy-kpi.ambar b{color:#B45309;} .hoy-kpi.verde b{color:#15803D;}
+  .hoy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start;}
+  .hoy-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 12px 6px;}
+  .hoy-card.urgente{border-top:3px solid #DC2626;} .hoy-card.aviso{border-top:3px solid #D97706;}
+  .hoy-card-h{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:13px;color:var(--navy);margin-bottom:6px;}
+  .hoy-card-h b{background:var(--surface);border-radius:20px;padding:1px 9px;font-size:12px;}
+  .hoy-row{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;border-top:1px solid var(--border);padding:9px 2px;cursor:pointer;font-family:'Inter',sans-serif;}
+  .hoy-row:hover{background:var(--surface);}
+  .hoy-row-main{min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .hoy-row-main b{font-size:13px;color:var(--text);}
+  .hoy-row-sub{font-size:11.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;}
+  .hoy-resp{font-size:10.5px;color:var(--text-muted);font-weight:600;}
+  .hoy-tag{font-size:11px;font-weight:700;border-radius:20px;padding:2px 9px;background:var(--surface);color:var(--navy);white-space:nowrap;}
+  .hoy-tag.rojo{background:#FEE2E2;color:#B91C1C;} .hoy-tag.ambar{background:#FEF3C7;color:#92400E;} .hoy-tag.gris{color:var(--text-muted);}
+  .hoy-vacio{font-size:12px;color:var(--text-muted);padding:10px 2px 12px;border-top:1px solid var(--border);}
+  .hoy-mas{width:100%;background:none;border:none;border-top:1px solid var(--border);padding:9px;font-size:12px;color:var(--navy);font-weight:600;cursor:pointer;}
+  .emb-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .emb-sel{padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;background:var(--white);}
+  .emb-card{padding:16px;margin-bottom:16px;}
+  .emb-h{font-weight:700;font-size:13.5px;color:var(--navy);margin-bottom:10px;}
+  .emb-step{display:grid;grid-template-columns:150px 1fr 150px;align-items:center;gap:10px;padding:6px 0;}
+  .emb-step-l b{font-size:18px;color:var(--navy);margin-right:6px;} .emb-step-l span{font-size:12px;color:var(--text-muted);}
+  .emb-bar{height:14px;background:var(--surface);border-radius:7px;overflow:hidden;} .emb-bar div{height:100%;border-radius:7px;}
+  .emb-pct{font-size:11.5px;color:var(--text-muted);}
+  .emb-costos{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12.5px;}
+  .emb-tabla th,.emb-tabla td{padding:10px 12px;font-size:12.5px;} .emb-tabla .c{text-align:center;} .emb-tabla .r{text-align:right;}
+  .emb-tabla .muted,#dash-embudo-nuevo .muted{color:var(--text-muted);font-size:11px;}
+  .emb-alerta .vk-val{color:#B45309;font-size:18px;}
+  .emb-nota{font-size:11.5px;color:var(--text-muted);margin:10px 0 20px;}
+  @media (max-width:768px){ .emb-step{grid-template-columns:110px 1fr;} .emb-pct{grid-column:1/-1;} .hoy-grid{grid-template-columns:1fr;}
+    .hoy-head h3{color:#fff;} .hoy-head p{color:#B9B9CE;} .emb-top .section-heading{color:#fff;}
+    #dashmkt-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;} #dashmkt-tabs::-webkit-scrollbar{display:none;} #dashmkt-tabs .dash-tab-btn{flex:0 0 auto;white-space:nowrap;} }
   /* 30-oct-2026: Vendidos */
   .vend-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:16px;}
   .vend-kpi{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg,10px);padding:14px 16px;}
@@ -1242,7 +1282,10 @@
 
     <div class="page-content">
       <div id="section-dashboard" class="section">
-        <div class="kpi-grid-top">
+        <!-- 30-oct-2026: el Dashboard abre en "Hoy" (para cada quien) y "Embudo y costos"
+             (admin). Los KPIs de 30 días de marketing quedan dentro de las pestañas de
+             cada canal; esta franja se oculta. -->
+        <div class="kpi-grid-top" id="dashmkt-kpi-top" style="display:none;">
           <div class="kpi-top-card">
             <div class="kpi-top-label">Leads Totales</div>
             <div class="kpi-top-value" id="dashmkt-kpi-leads">&mdash;</div>
@@ -1265,14 +1308,16 @@
           </div>
         </div>
 
-        <div class="dash-tabs">
-          <button type="button" class="dash-tab-btn active" id="dashmkt-tab-btn-meta" onclick="showDashMktTab('meta')">Meta</button>
-          <button type="button" class="dash-tab-btn" id="dashmkt-tab-btn-landing" onclick="showDashMktTab('landing')">Landing Page</button>
-          <button type="button" class="dash-tab-btn" id="dashmkt-tab-btn-google" onclick="showDashMktTab('google')">Google Ads</button>
-          <button type="button" class="dash-tab-btn" id="dashmkt-tab-btn-embudo" onclick="showDashMktTab('embudo')">Embudo</button>
+        <div class="dash-tabs" id="dashmkt-tabs">
+          <button type="button" class="dash-tab-btn active" id="dashmkt-tab-btn-hoy" onclick="showDashMktTab('hoy')">☀️ Hoy</button>
+          <button type="button" class="dash-tab-btn dash-admin" id="dashmkt-tab-btn-embudo" onclick="showDashMktTab('embudo')">📈 Embudo y costos</button>
+          <button type="button" class="dash-tab-btn dash-admin" id="dashmkt-tab-btn-meta" onclick="showDashMktTab('meta')">Meta</button>
+          <button type="button" class="dash-tab-btn dash-admin" id="dashmkt-tab-btn-landing" onclick="showDashMktTab('landing')">Landing Page</button>
+          <button type="button" class="dash-tab-btn dash-admin" id="dashmkt-tab-btn-google" onclick="showDashMktTab('google')">Google Ads</button>
         </div>
+        <div id="dashmkt-panel-hoy"></div>
 
-        <div id="dashmkt-panel-meta">
+        <div id="dashmkt-panel-meta" style="display:none;">
           <div class="section-heading first">
             <svg viewBox="0 0 24 24"><path d="M3 21l1.65-3.8A9 9 0 1 1 7.2 19.35z"/></svg>
             WhatsApp (Meta Cloud API) &mdash; datos en vivo
@@ -1384,9 +1429,10 @@
         </div>
 
         <div id="dashmkt-panel-embudo" style="display:none;">
-          <div class="section-heading first">
+          <div id="dash-embudo-nuevo"></div>
+          <div class="section-heading">
             <svg viewBox="0 0 24 24"><path d="M3 4h18l-7 9v6l-4 2v-8z"/></svg>
-            Embudo de conversión por origen &mdash; datos del CRM
+            Histórico completo por origen (fase actual) &mdash; datos del CRM
           </div>
           <div class="card">
             <div class="card-body" style="padding:0;overflow-x:auto;">
@@ -3046,7 +3092,7 @@ function buildMobileDrawer(){
   // Items disponibles según rol
   const items = [];
   // Dashboard de Marketing: mismo acceso que en el sidebar de escritorio (solo Admin)
-  if (admin) items.push({id:'dashboard', label:'Dashboard', icon:'dashboard'});
+  items.push({id:'dashboard', label: admin ? 'Dashboard' : 'Hoy', icon:'dashboard'});
   // Todos ven Reportes (Auditoría) si son admin; Comercial/Atn ve resumen básico
   // Oculto temporalmente a pedido de Robert (6-sep-2026, no lo usa por ahora)
   // if (admin) items.push({id:'auditoria', label:'Reportes', icon:'chart'});
@@ -5090,6 +5136,7 @@ loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban();
         if(_enLista) renderMobileTabla();
       }
       if(isSectionActive('whatsapp')) renderMobileWhatsAppList();
+      if(isSectionActive('dashboard') && _dashTab==='hoy') renderHoy();
       renderConvBoard();
       updateProspectSelects();
     }).catch(e=>console.warn('refreshProspectsUI',e));
@@ -5346,7 +5393,7 @@ function renderCitasHoyBanner(){
 // Cargar credenciales guardadas al abrir el login
 
 
-const sectionTitles={dashboard:'Dashboard de Marketing',pipeline:'Pipeline',kanban:'Pipeline',vendidos:'Vendidos',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades',calidad:'Calidad por fuente'};
+const sectionTitles={dashboard:'Dashboard',pipeline:'Pipeline',kanban:'Pipeline',vendidos:'Vendidos',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades',calidad:'Calidad por fuente'};
 function showWaTab(tab){
   const sec = document.getElementById('section-whatsapp');
   if(!sec) return;
@@ -5382,7 +5429,7 @@ function showSection(id){
   document.getElementById('search-input').style.display='';
   document.getElementById('search-input').placeholder = (id==='kanban' && _kanbanView==='lista') ? 'Buscar prospecto...' : 'Buscar en todo el CRM...';
   hideGlobalSearch();
-  if(id==='dashboard'){loadDashboardMkt();}
+  if(id==='dashboard'){ prepararDashboard(); }
   if(id==='kanban'){_mobilePhase='Visita'; setKanbanView(_kanbanView);}
   if(id==='vendidos'){renderVendidos();}
   if(id==='citas'){renderCalendar(); if(window.innerWidth<=768) renderMobileCitas();}
@@ -7569,11 +7616,219 @@ async function loadDashboardMkt() {
   }
 }
 
+let _dashTab = 'hoy', _dashMktCargado = false;
 function showDashMktTab(tab) {
-  ['meta','landing','google','embudo'].forEach(t => {
-    document.getElementById('dashmkt-panel-'+t).style.display = (t===tab) ? '' : 'none';
-    document.getElementById('dashmkt-tab-btn-'+t).classList.toggle('active', t===tab);
+  if (tab !== 'hoy' && !isAdmin()) tab = 'hoy';
+  _dashTab = tab;
+  ['hoy','embudo','meta','landing','google'].forEach(t => {
+    const pnl = document.getElementById('dashmkt-panel-'+t); if (pnl) pnl.style.display = (t===tab) ? '' : 'none';
+    const b = document.getElementById('dashmkt-tab-btn-'+t); if (b) b.classList.toggle('active', t===tab);
   });
+  if (tab === 'hoy') renderHoy();
+  if (tab === 'embudo') renderEmbudoCostos();
+  if (['meta','landing','google'].includes(tab) && !_dashMktCargado) { _dashMktCargado = true; loadDashboardMkt(); }
+}
+// ══════════════════════════════════════════
+//  DASHBOARD · "HOY" y "EMBUDO Y COSTOS" (30-oct-2026)
+// ══════════════════════════════════════════
+// "Hoy": lo que cada quien tiene que hacer hoy. Alfredo ve leads esperando
+// respuesta y registros nuevos; Fabiola, citas y respuestas post-visita; ambos
+// sus próximas acciones vencidas y los prospectos sin próxima acción. Roberto
+// ve todo el equipo, con el nombre del responsable en cada renglón.
+function dashEsMio(p){
+  const me=DB.currentUser||{};
+  return (me.id && p.seller_id===me.id) || ((p.seller||'').toLowerCase()===(me.name||'').toLowerCase());
+}
+function dashResp(p){ return isAdmin() ? `<span class="hoy-resp">${esc(sellerFirstName(p))}</span>` : ''; }
+function dashHace(ts){
+  if(!ts) return '';
+  const min=Math.floor((Date.now()-new Date(ts).getTime())/60000);
+  if(min<60) return min+' min';
+  const h=Math.floor(min/60); if(h<24) return h+' h';
+  const d=Math.floor(h/24); return d+' día'+(d===1?'':'s');
+}
+function hoyBloque(icono, titulo, items, vacio, tono){
+  return `<div class="hoy-card ${tono||''}">
+    <div class="hoy-card-h"><span>${icono} ${titulo}</span><b>${items.length}</b></div>
+    ${items.length ? items.join('') : `<div class="hoy-vacio">${vacio}</div>`}
+  </div>`;
+}
+function renderHoy(){
+  const el=document.getElementById('dashmkt-panel-hoy');
+  if(!el) return;
+  const admin=isAdmin();
+  const u=(DB.currentUser?.username||'').toLowerCase();
+  const hoy=hoyISO();
+  const activos=getVisibleProspects().filter(p=>p.phase!=='Perdido');
+  const mios = admin ? activos : activos.filter(dashEsMio);
+  const verAtencion = admin || u==='alfredo';
+  const verCitas = true;
+  const verPostVisita = admin || u==='fabiola';
+
+  // 1) Leads esperando respuesta (bot / SLA)
+  const esperando = verAtencion ? activos.filter(p=>p.atencion_pendiente_desde).sort((a,b)=>new Date(a.atencion_pendiente_desde)-new Date(b.atencion_pendiente_desde)) : [];
+  // 2) Citas de hoy
+  const citasHoy = verCitas ? (DB.citas||[]).filter(c=>c.date===hoy && !c.cancelada).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))) : [];
+  // 3) Próximas acciones vencidas o para hoy
+  const acciones = mios.filter(p=>p.proxima_accion_fecha && p.proxima_accion_fecha<=hoy).sort((a,b)=>String(a.proxima_accion_fecha).localeCompare(String(b.proxima_accion_fecha)));
+  // 4) Sin próxima acción (se pueden perder)
+  const sinAccion = mios.filter(p=>!p.proxima_accion_fecha).sort((a,b)=>daysInPhase(b)-daysInPhase(a));
+  // 5) Nuevos de hoy
+  const nuevos = (admin||u==='alfredo') ? activos.filter(p=>(p.created_at||'').slice(0,10)===hoy) : [];
+  // 6) Respuestas post-visita (últimos 3 días)
+  const hace3=new Date(Date.now()-3*86400000).toISOString();
+  const pv = verPostVisita ? (DB.citas||[]).filter(c=>c.post_visita_respuesta && (c.post_visita_respondida_at||'')>=hace3) : [];
+  const PV_TXT={me_encanto:'😍 Le encantó',ver_otra:'🔄 Quiere ver otra',lo_pensara:'🤔 Lo va a pensar'};
+  const pros=id=>DB.prospects.find(x=>String(x.id)===String(id));
+
+  // Resumen arriba
+  const mesKey=hoy.slice(0,7);
+  const ventasMes=DB.prospects.filter(p=>p.vendido&&(p.vendido_at||'').slice(0,7)===mesKey).length;
+  const kp=(n,l,t)=>`<div class="hoy-kpi ${t||''}"><b>${n}</b><span>${l}</span></div>`;
+  const nombre=(DB.currentUser?.name||'').split(' ')[0];
+  const saludo=new Date().getHours()<12?'Buenos días':new Date().getHours()<19?'Buenas tardes':'Buenas noches';
+
+  const fila=(p,txt,sub,click)=>`<button type="button" class="hoy-row" onclick="${click}"><span class="hoy-row-main"><b>${esc(p?p.name:'—')}</b>${dashResp(p||{})}<span class="hoy-row-sub">${txt}</span></span>${sub?`<span class="hoy-row-side">${sub}</span>`:''}</button>`;
+
+  const bEsperando = esperando.map(p=>fila(p, esc(p.prop||'Sin propiedad'), `<span class="hoy-tag rojo">${dashHace(p.atencion_pendiente_desde)}</span>`, `openNotaRapida('${p.id}')`));
+  const bCitas = citasHoy.map(c=>{ const p=pros(c.prospect_id); return fila(p||{name:'Cita'}, esc(c.prop||''), `<span class="hoy-tag">${esc((c.time||'').slice(0,5))}</span>`, p?`openNotaRapida('${p.id}')`:`showSection('citas')`); });
+  const bAcciones = acciones.map(p=>fila(p, esc(p.proxima_accion||''), `<span class="hoy-tag ${p.proxima_accion_fecha<hoy?'rojo':'ambar'}">${p.proxima_accion_fecha<hoy?'Vencida · '+esc(fmtFechaCorta(p.proxima_accion_fecha)):'Hoy'}</span>`, `openProximaAccion('${p.id}')`));
+  const bSin = sinAccion.slice(0,8).map(p=>fila(p, `${esc(p.phase)} · ${daysInPhase(p)} días en la fase`, `<span class="hoy-tag gris">＋ Definir</span>`, `openProximaAccion('${p.id}')`));
+  if(sinAccion.length>8) bSin.push(`<button type="button" class="hoy-mas" onclick="showSection('kanban')">Ver los ${sinAccion.length} en el Pipeline →</button>`);
+  const bNuevos = nuevos.map(p=>fila(p, `${esc(p.source||'Sin origen')}${p.prop?' · '+esc(p.prop):''}`, '', `openNotaRapida('${p.id}')`));
+  const bPv = pv.map(c=>{ const p=pros(c.prospect_id); return fila(p||{name:'Cliente'}, `${PV_TXT[c.post_visita_respuesta]||''} · ${esc(c.prop||'')}`, '', p?`openNotaRapida('${p.id}')`:''); });
+
+  const bloques=[];
+  if(verAtencion) bloques.push(hoyBloque('🔥','Esperando respuesta',bEsperando,'Nadie esperando. ¡Bien!','urgente'));
+  bloques.push(hoyBloque('📌','Acciones vencidas y de hoy',bAcciones,'Sin pendientes para hoy.','urgente'));
+  bloques.push(hoyBloque('📅','Citas de hoy',bCitas,'No hay citas agendadas para hoy.'));
+  if(verPostVisita) bloques.push(hoyBloque('🏡','Respuestas después de la visita',bPv,'Sin respuestas nuevas.'));
+  if(admin||u==='alfredo') bloques.push(hoyBloque('🆕','Entraron hoy',bNuevos,'Aún no entra ningún lead hoy.'));
+  bloques.push(hoyBloque('⚠️','Sin próxima acción',bSin,'Todos tienen siguiente paso. 👌','aviso'));
+
+  el.innerHTML=`<div class="hoy-head">
+      <div><h3>${saludo}${nombre?', '+esc(nombre):''} 👋</h3><p>${(f=>f.charAt(0).toUpperCase()+f.slice(1))(new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'}))}${admin?' · vista de todo el equipo':''}</p></div>
+      <div class="hoy-kpis">
+        ${verAtencion?kp(esperando.length,'esperando respuesta',esperando.length?'rojo':''):''}
+        ${kp(acciones.length,'acciones para hoy',acciones.filter(p=>p.proxima_accion_fecha<hoy).length?'rojo':'')}
+        ${kp(citasHoy.length,'citas hoy')}
+        ${admin?kp(ventasMes,'ventas este mes','verde'):kp(sinAccion.length,'sin próxima acción',sinAccion.length?'ambar':'')}
+      </div>
+    </div>
+    <div class="hoy-grid">${bloques.join('')}</div>`;
+}
+
+// "Embudo y costos" (solo admin): de los leads que entraron en el periodo,
+// cuántos llegaron a visita, a proceso y a venta, por origen; y cuánto costó
+// cada etapa con la inversión real de Meta Ads + Google Ads del mismo periodo.
+let _embPeriodo='3m', _embCache={};
+function embRango(per){
+  const d=new Date(), pad=n=>String(n).padStart(2,'0'), iso=x=>x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate());
+  let desde;
+  if(per==='mes') desde=new Date(d.getFullYear(),d.getMonth(),1);
+  else if(per==='anio') desde=new Date(d.getFullYear(),0,1);
+  else desde=new Date(d.getFullYear(),d.getMonth()-2,1);
+  return { desde: iso(desde), hasta: iso(d) };
+}
+function embGrupo(src){
+  const s=String(src||'');
+  if(/facebook|instagram|meta/i.test(s)) return 'Meta Ads';
+  if(/google/i.test(s)) return 'Google Ads';
+  if(/p[aá]gina web|sitio|web/i.test(s)) return 'Página web';
+  if(/inmuebles24|propiedades\.com|portal/i.test(s)) return 'Portales';
+  if(/referid/i.test(s)) return 'Referidos';
+  return 'Otro / sin origen';
+}
+async function renderEmbudoCostos(){
+  const el=document.getElementById('dash-embudo-nuevo');
+  if(!el||!isAdmin()) return;
+  const {desde,hasta}=embRango(_embPeriodo);
+  const key=desde+'|'+hasta;
+  const selHTML=`<div class="emb-top"><div class="section-heading first" style="margin:0;"><svg viewBox="0 0 24 24"><path d="M3 4h18l-7 9v6l-4 2v-8z"/></svg>Embudo y costos</div>
+    <select onchange="_embPeriodo=this.value;renderEmbudoCostos()" class="emb-sel">
+      <option value="mes"${_embPeriodo==='mes'?' selected':''}>Este mes</option>
+      <option value="3m"${_embPeriodo==='3m'?' selected':''}>Últimos 3 meses</option>
+      <option value="anio"${_embPeriodo==='anio'?' selected':''}>Este año</option>
+    </select></div>`;
+  if(!_embCache[key]){
+    el.innerHTML=selHTML+'<div class="card" style="padding:28px;text-align:center;color:var(--text-muted);font-size:13px;">Calculando…</div>';
+    const desdeTs=desde+'T00:00:00';
+    const [pr,ve,au,ci,meta,goog]=await Promise.all([
+      supabase.from('crm_prospects').select('id,source,created_at,phase,vendido,visita_at').gte('created_at',desdeTs).eq('venta_registro_manual',false),
+      supabase.from('crm_prospects').select('id,source,vendido_at,precio_final,value,venta_registro_manual').eq('vendido',true).gte('vendido_at',desdeTs),
+      supabase.from('crm_auditoria').select('prospect_id,fase_anterior').in('fase_anterior',['Proceso','Cierre']),
+      supabase.from('crm_citas').select('prospect_id'),
+      supabase.functions.invoke('meta-ads-insights',{body:{desde,hasta}}).catch(e=>({error:e})),
+      supabase.functions.invoke('google-ads-report',{body:{desde,hasta}}).catch(e=>({error:e}))
+    ]);
+    _embCache[key]={pr:pr.data||[],ve:ve.data||[],au:au.data||[],ci:ci.data||[],
+      meta:(meta&&meta.data&&meta.data.ok)?meta.data:null, goog:(goog&&goog.data&&goog.data.ok)?goog.data:null};
+    if(embRango(_embPeriodo).desde!==desde) return; // cambió el periodo mientras cargaba
+  }
+  const D=_embCache[key];
+  const conCita=new Set(D.ci.map(r=>String(r.prospect_id)));
+  const enProceso=new Set(D.au.map(r=>String(r.prospect_id)));
+  const grupos={};
+  const G=g=>grupos[g]||(grupos[g]={leads:0,visita:0,proceso:0,venta:0,ventasPer:0});
+  let T={leads:0,visita:0,proceso:0,venta:0};
+  D.pr.forEach(p=>{
+    const g=G(embGrupo(p.source)), fase=normalizePhase(p.phase);
+    const vis=!!(p.vendido||p.visita_at||['Visita','Proceso','Cierre'].includes(fase)||conCita.has(String(p.id)));
+    const proc=!!(p.vendido||['Proceso','Cierre'].includes(fase)||enProceso.has(String(p.id)));
+    g.leads++; T.leads++;
+    if(vis){g.visita++;T.visita++;}
+    if(proc){g.proceso++;T.proceso++;}
+    if(p.vendido){g.venta++;T.venta++;}
+  });
+  D.ve.forEach(v=>{ G(embGrupo(v.source)).ventasPer++; });
+  const ventasPer=D.ve.length;
+  const montoPer=D.ve.reduce((t,v)=>t+Number(v.precio_final||v.value||0),0);
+  const spendMeta=D.meta?Number(D.meta.spend||0):null, spendGoog=D.goog?Number(D.goog.spend||0):null;
+  const spend=(spendMeta||0)+(spendGoog||0);
+  const ads=['Meta Ads','Google Ads'].map(k=>grupos[k]||{leads:0,visita:0,proceso:0,venta:0,ventasPer:0});
+  const adsLeads=ads[0].leads+ads[1].leads, adsVis=ads[0].visita+ads[1].visita, adsVentas=ads[0].ventasPer+ads[1].ventasPer;
+  const money=v=>v==null?'—':'$'+Math.round(v).toLocaleString('es-MX');
+  const per=(a,b)=>b?Math.round(a*100/b)+'%':'—';
+  const sinAds=(D.meta===null&&D.goog===null);
+
+  const etapa=(lbl,n,base,color)=>`<div class="emb-step"><div class="emb-step-l"><b>${n}</b><span>${lbl}</span></div><div class="emb-bar"><div style="width:${T.leads?Math.max(2,n*100/T.leads):0}%;background:${color};"></div></div><div class="emb-pct">${base==null?'':per(n,base)+' del paso anterior'}</div></div>`;
+  const tile=(lbl,val,sub,cls)=>`<div class="vend-kpi ${cls||''}"><div class="vk-label">${lbl}</div><div class="vk-val">${val}</div>${sub?`<div class="vk-sub">${sub}</div>`:''}</div>`;
+  const orden=['Meta Ads','Google Ads','Página web','Portales','Referidos','Otro / sin origen'];
+  const filas=orden.filter(k=>grupos[k]).map(k=>{
+    const g=grupos[k], inv=k==='Meta Ads'?spendMeta:k==='Google Ads'?spendGoog:null;
+    return `<tr><td><b>${k}</b></td><td class="c">${g.leads}</td><td class="c">${g.visita} <span class="muted">${per(g.visita,g.leads)}</span></td><td class="c">${g.proceso}</td><td class="c">${g.venta}</td>
+      <td class="r">${inv==null?'<span class="muted">—</span>':money(inv)}</td><td class="r">${inv!=null&&g.leads?money(inv/g.leads):'<span class="muted">—</span>'}</td><td class="r">${inv!=null&&g.visita?money(inv/g.visita):'<span class="muted">—</span>'}</td></tr>`;
+  }).join('');
+
+  el.innerHTML=selHTML+`
+    <div class="vend-kpis">
+      ${tile('Leads',T.leads,'entraron en el periodo')}
+      ${tile('Llegaron a visita',T.visita,per(T.visita,T.leads)+' de los leads')}
+      ${tile('Ventas cerradas',ventasPer,money(montoPer)+' vendidos')}
+      ${tile('Inversión en anuncios',sinAds?'—':money(spend),sinAds?'Sin conexión con Meta/Google':'Meta '+money(spendMeta)+' · Google '+money(spendGoog))}
+      ${tile('Costo por venta',sinAds?'—':(adsVentas?money(spend/adsVentas):'Sin ventas'),sinAds?'':(adsVentas?adsVentas+' venta(s) de anuncios':'de anuncios en el periodo'),adsVentas?'':'emb-alerta')}
+    </div>
+    <div class="card emb-card">
+      <div class="emb-h">De cada 100 leads, ¿cuántos avanzan?</div>
+      ${etapa('Leads',T.leads,null,'#94A3B8')}
+      ${etapa('Visita',T.visita,T.leads,PHASE_COLORS['Visita'])}
+      ${etapa('Proceso / apartado',T.proceso,T.visita,PHASE_COLORS['Proceso'])}
+      ${etapa('Venta',T.venta,T.proceso,PHASE_COLORS['Cierre'])}
+      ${sinAds?'':`<div class="emb-costos">Con anuncios: <b>${money(adsLeads?spend/adsLeads:null)}</b> por lead · <b>${money(adsVis?spend/adsVis:null)}</b> por visita · <b>${adsVentas?money(spend/adsVentas):'sin ventas aún'}</b> por venta</div>`}
+    </div>
+    <div class="card" style="overflow-x:auto;">
+      <table class="emb-tabla"><thead><tr><th>Origen</th><th class="c">Leads</th><th class="c">Visita</th><th class="c">Proceso</th><th class="c">Venta</th><th class="r">Inversión</th><th class="r">Costo / lead</th><th class="r">Costo / visita</th></tr></thead>
+      <tbody>${filas||'<tr><td colspan="8" class="empty-state">Sin leads en el periodo</td></tr>'}</tbody></table>
+    </div>
+    <p class="emb-nota">Embudo por cohorte: de los leads que <b>entraron</b> en el periodo, hasta dónde llegaron. "Ventas cerradas" cuenta las ventas con fecha en el periodo (incluye las registradas a mano). La inversión viene directo de Meta Ads y Google Ads para las mismas fechas.</p>`;
+}
+
+function prepararDashboard(){
+  const admin = isAdmin();
+  document.querySelectorAll('#dashmkt-tabs .dash-admin').forEach(b => b.style.display = admin ? '' : 'none');
+  const tabs = document.getElementById('dashmkt-tabs'); if (tabs) tabs.style.display = admin ? '' : 'none';
+  if (admin && !_dashMktCargado) { _dashMktCargado = true; loadDashboardMkt(); }
+  showDashMktTab(admin ? _dashTab : 'hoy');
 }
 // Agrupa los prospectos (source, phase) del embudo de conversión por origen.
 function renderEmbudoConversion(rows){
