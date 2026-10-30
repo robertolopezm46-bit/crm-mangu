@@ -256,6 +256,15 @@
   .pr-fecha{font-size:11px;color:var(--text-muted);}
   .pr-btns{display:flex;gap:4px;}
   .pr-reactivar{color:#15803D !important;font-weight:600;}
+  /* 30-oct-2026: Sitio Web — interés por propiedad y ficha completa */
+  .wpi{display:flex;align-items:center;flex-wrap:wrap;gap:4px;background:var(--surface);border-radius:8px;padding:6px 8px;margin-bottom:6px;font-size:11.5px;}
+  .wpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--text-muted);margin-right:4px;}
+  .wpi-paso b{color:var(--navy);}
+  .wpi-paso.cero{opacity:.45;}
+  .wpi-sep{color:var(--text-muted);opacity:.6;}
+  .wpf{font-size:11px;font-weight:600;border-radius:6px;padding:4px 8px;margin-bottom:10px;}
+  .wpf.ok{background:#DCFCE7;color:#15803D;}
+  .wpf.falta{background:#FEF3C7;color:#92400E;cursor:pointer;}
   /* 30-oct-2026: Vendidos */
   .vend-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:16px;}
   .vend-kpi{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg,10px);padding:14px 16px;}
@@ -2431,6 +2440,11 @@
               <option value="">Activas e inactivas</option>
               <option value="1">Solo publicadas</option>
               <option value="0">Solo ocultas</option>
+            </select>
+            <select id="wp-orden" onchange="renderWebProps()" title="Ordenar propiedades" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+              <option value="precio">Ordenar: precio</option>
+              <option value="interes">Ordenar: más interés (30 días)</option>
+              <option value="ficha">Ordenar: fichas incompletas primero</option>
             </select>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -9957,6 +9971,7 @@ async function loadWebProps(){
   if (error) { if(grid) grid.innerHTML = '<p style="color:var(--danger);font-size:13px;">Error al cargar: '+esc(error.message)+'</p>'; return; }
   webPropsDB = data || [];
   renderWebProps();
+  cargarInteresWeb().then(()=>{ if(isSectionActive('sitioweb')) renderWebProps(); });
   populatePropSelect();
   populateContratoPropSelect();
     populateCitaPropSelect();
@@ -10027,6 +10042,63 @@ function filterWebPropsByEstatus(estatusVal){
   if (_wpFilterEstatus.has(estatusVal)) _wpFilterEstatus.delete(estatusVal); else _wpFilterEstatus.add(estatusVal);
   renderWebProps();
 }
+// ── 30-oct-2026: interés por propiedad (últimos 30 días) y "ficha completa" ──
+// Embudo por casa: visitantes únicos de su ficha en mangu.mx → clics a WhatsApp
+// desde la ficha → prospectos registrados con esa propiedad → citas agendadas.
+// Las vistas cuentan visitantes únicos por día, sin robots, desde el 30-oct-2026
+// (función incrementar_vista + tabla web_vistas_unicas).
+const INTERES_DIAS = 30;
+let _wpInteres = {};
+async function cargarInteresWeb(){
+  const desde = new Date(Date.now() - INTERES_DIAS*86400000);
+  const desdeISO = desde.toISOString();
+  const desdeDia = desdeISO.slice(0,10);
+  const [vis, clk] = await Promise.all([
+    supabase.rpc('vistas_por_propiedad', { p_dias: INTERES_DIAS }),
+    supabase.from('web_clicks').select('propiedad').eq('boton','propiedad').gte('created_at', desdeISO)
+  ]);
+  const norm = t => String(t||'').trim().toUpperCase();
+  const out = {};
+  webPropsDB.forEach(p => { out[p.id] = { vistas:0, clics:0, prospectos:0, citas:0 }; });
+  (vis.data||[]).forEach(r => { if(out[r.propiedad_id]) out[r.propiedad_id].vistas = Number(r.vistas)||0; });
+  const porTitulo = {};
+  webPropsDB.forEach(p => { porTitulo[norm(p.titulo)] = p.id; });
+  (clk.data||[]).forEach(r => { const id = porTitulo[norm(r.propiedad)]; if(id) out[id].clics++; });
+  (DB.prospects||[]).forEach(x => { const id = porTitulo[norm(x.prop)]; if(id && x.created_at && x.created_at >= desdeISO && !x.venta_registro_manual) out[id].prospectos++; });
+  (DB.citas||[]).forEach(c => { const id = porTitulo[norm(c.prop)]; if(id && c.date && c.date >= desdeDia && !c.cancelada) out[id].citas++; });
+  _wpInteres = out;
+}
+function interesScore(p){ const i=_wpInteres[p.id]; return i ? i.vistas + i.clics*10 + i.prospectos*25 + i.citas*50 : 0; }
+// Checklist de una ficha para venderse bien en el sitio
+function fichaChecklist(p){
+  const nf = Array.isArray(p.fotos) ? p.fotos.filter(Boolean).length : 0;
+  return [
+    { ok: nf >= 8, txt: nf >= 8 ? nf+' fotos' : 'fotos ('+nf+'/8)' },
+    { ok: !!(p.video_url||'').trim(), txt: 'video' },
+    { ok: String(p.descripcion||'').trim().length >= 150, txt: 'descripción' },
+    { ok: !!(p.recamaras && p.banos && p.m2_construccion), txt: 'recámaras, baños y m²' },
+    { ok: !!(p.fraccionamiento && p.municipio), txt: 'zona' }
+  ];
+}
+function fichaFaltantes(p){ return fichaChecklist(p).filter(c=>!c.ok).length; }
+function interesFichaHTML(p){
+  const i = _wpInteres[p.id] || { vistas:0, clics:0, prospectos:0, citas:0 };
+  const paso = (ic, n, lbl) => `<span class="wpi-paso${n?'':' cero'}" title="${lbl}">${ic} <b>${n}</b></span>`;
+  const embudo = `<div class="wpi" title="Interés de los últimos ${INTERES_DIAS} días">
+      <span class="wpi-lbl">${INTERES_DIAS} días</span>
+      ${paso('👁', i.vistas, 'Visitantes únicos de la ficha en mangu.mx')}<span class="wpi-sep">›</span>
+      ${paso('💬', i.clics, 'Clics a WhatsApp desde la ficha')}<span class="wpi-sep">›</span>
+      ${paso('👤', i.prospectos, 'Prospectos registrados con esta propiedad')}<span class="wpi-sep">›</span>
+      ${paso('📅', i.citas, 'Citas agendadas')}
+    </div>`;
+  if (p.estatus === 'vendida') return embudo;
+  const ch = fichaChecklist(p), falta = ch.filter(c=>!c.ok);
+  const ficha = !falta.length
+    ? `<div class="wpf ok">✓ Ficha completa</div>`
+    : `<div class="wpf falta" onclick="openPropModal('${escJs(p.id)}')" title="Clic para editar">⚠ Ficha ${ch.length-falta.length}/${ch.length} · falta: ${falta.map(c=>esc(c.txt)).join(', ')}</div>`;
+  return embudo + ficha;
+}
+
 function renderWebProps(){
   const grid = document.getElementById('wp-grid');
   const stats = document.getElementById('wp-stats');
@@ -10036,6 +10108,9 @@ function renderWebProps(){
   let props = webPropsDB;
   if (_wpFilterEstatus.size) props = props.filter(p => _wpFilterEstatus.has(p.estatus));
   if (fa !== '') props = props.filter(p => p.activa === (fa === '1'));
+  const orden = document.getElementById('wp-orden')?.value || 'precio';
+  if (orden === 'interes') props = props.slice().sort((a,b)=>interesScore(b)-interesScore(a));
+  else if (orden === 'ficha') props = props.slice().sort((a,b)=>((b.estatus!=='vendida')-(a.estatus!=='vendida')) || fichaFaltantes(b)-fichaFaltantes(a));
 
   if (stats) {
     const disp = webPropsDB.filter(p=>p.estatus==='disponible'&&p.activa).length;
@@ -10074,7 +10149,8 @@ function renderWebProps(){
         </div>
         <div style="font-size:17px;font-weight:700;color:var(--navy);margin-bottom:4px;">${fmtPrecio(p.precio)}</div>
         ${(p.ubicacion||p.direccion)?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;"><span style="color:#DC2626;">📍</span> ${esc(p.ubicacion||p.direccion)}</div>`:''}
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">${p.recamaras||0} rec · ${p.banos||0} baños · ${p.m2_construccion||0} m²<span title="Visitas a la ficha en mangu.mx (una por visitante por sesión, desde el 4-oct-2026)"> · 👁 ${(p.vistas||0).toLocaleString('es-MX')} vista${(p.vistas||0)===1?'':'s'}</span></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">${p.recamaras||0} rec · ${p.banos||0} baños · ${p.m2_construccion||0} m²<span title="Visitantes únicos por día de la ficha en mangu.mx, sin robots (contador reiniciado el 30-oct-2026)"> · 👁 ${(p.vistas||0).toLocaleString('es-MX')} vista${(p.vistas||0)===1?'':'s'}</span></div>
+        ${interesFichaHTML(p)}
         ${p.planta_baja?`<div style="font-size:10.5px;color:#15803D;margin-bottom:8px;font-weight:700;">♿ Apta para personas de la tercera edad o con discapacidad</div>`:''}
         ${(p.amenidades&&p.amenidades.length)?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;">${p.amenidades.map(a=>`<span style="background:#F0FDF4;color:#15803D;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">${esc(a)}</span>`).join('')}</div>`:''}
         ${(p.accesorios&&p.accesorios.length)?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;">${p.accesorios.map(a=>`<span style="background:#EFF6FF;color:#1D4ED8;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">${esc(a)}</span>`).join('')}</div>`:''}
@@ -10662,10 +10738,19 @@ async function borrarArchivosProp(urls, idsExcluir){
 }
 
 async function marcarVendidaProp(id){
-  if (!(await showConfirm('¿Marcar esta casa como vendida?\n\nSaldrá de las casas disponibles y aparecerá en "Casas vendidas" de mangu.mx (en grises, sin precio en la tarjeta). Si no quieres que se vea, después usa "Dar de baja".'))) return;
+  if (!(await showConfirm('¿Marcar esta casa como vendida?\n\nSaldrá de las casas disponibles y aparecerá en "Casas vendidas" de mangu.mx (en grises, sin precio en la tarjeta; el sitio muestra solo las 6 vendidas más recientes). Si no quieres que se vea, después usa "Dar de baja".'))) return;
   const { error } = await supabase.from('web_propiedades').update({ estatus: 'vendida', destacada: false, es_nuevo: false }).eq('id', id);
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
-  loadWebProps();
+  await loadWebProps();
+  // 30-oct-2026: si la venta aún no está en Vendidos, ofrecer registrarla
+  const wp = webPropsDB.find(x=>x.id===id);
+  const titulo = String(wp?.titulo||'').trim().toUpperCase();
+  const yaRegistrada = (DB.prospects||[]).some(x => x.vendido && String(x.prop||'').trim().toUpperCase() === titulo);
+  if (wp && !yaRegistrada && typeof canVentas==='function' && canVentas()
+      && await showConfirm('¿Quieres registrar esta venta en Vendidos?\n\nAsí queda el precio final, la forma de pago y las fechas, y entra al seguimiento de post-venta.')) {
+    openVentaModal(null, 'Venta de ' + (wp.titulo||'') + ' — completa los datos del cliente.');
+    const el = document.getElementById('v-prop'); if (el) { el.value = wp.titulo || ''; ventaPropCambio(); }
+  }
 }
 
 async function toggleActivaProp(id){
