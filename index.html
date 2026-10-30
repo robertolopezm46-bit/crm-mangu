@@ -224,6 +224,38 @@
   .kcard-avatar{width:18px;height:18px;border-radius:50%;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .kcard-activity b{color:var(--text);font-weight:600;}.kcard-badges{position:absolute;top:12px;right:14px;display:flex;gap:6px;}.kcard-badge{background:var(--gold);color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;line-height:1.4;white-space:nowrap;}.kcard-badge.wa{background:#16A34A;}.calif-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 4px;}.calif-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;line-height:1.5;white-space:nowrap;}.calif-badge.caliente{background:#DCFCE7;color:#15803D;}.calif-badge.tibio{background:#FEF3C7;color:#A16207;}.calif-badge.frio{background:#FEE2E2;color:#B91C1C;}.calif-badge.calificando{background:#F1F5F9;color:#475569;}.calif-pend{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:#1D4ED8;color:#fff;line-height:1.5;white-space:nowrap;}.calif-resumen{font-size:11.5px;color:var(--text-muted);}.calif-box{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;background:var(--surface);font-size:12.5px;}.calif-box .calif-box-title{font-weight:700;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}.calif-box dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0;}.calif-box dt{color:var(--text-muted);}.calif-box dd{margin:0;font-weight:600;color:var(--text);}.kcard-pills{display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-bottom:10px;}.kcard-pill{display:inline-flex;align-items:center;gap:6px;background:#FBF3DE;color:var(--gold-dark);font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;}.kcard-pill b{color:var(--gold-dark);}.kcard-pill .muted{color:var(--text-muted);font-weight:500;}.kcard-pill.wa{background:#E9F9EF;color:#16A34A;}.kcard-pill.wa b{color:#16A34A;}button.kcard-pill{border:none;font-family:inherit;cursor:pointer;text-align:left;}button.kcard-pill:hover{filter:brightness(.97);}
   .kcard-dias{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin:0 0 10px;}
+  /* 30-oct-2026: próxima acción, sub-etapas de Proceso y vista Perdidos */
+  .kcard-accion{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border:1px solid #E5E7EB;background:#F9FAFB;border-radius:8px;padding:7px 9px;margin:0 0 10px;cursor:pointer;font-family:'Inter',sans-serif;}
+  .kcard-accion .ka-fecha{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#6B7280;}
+  .kcard-accion .ka-texto{font-size:12px;color:#111827;line-height:1.35;}
+  .kcard-accion.sin{flex-direction:row;justify-content:center;border-style:dashed;color:#6B7280;font-size:11.5px;font-weight:600;background:transparent;}
+  .kcard-accion.hoy{background:#FFFBEB;border-color:#FCD34D;}
+  .kcard-accion.hoy .ka-fecha{color:#B45309;}
+  .kcard-accion.vencida{background:#FEF2F2;border-color:#FCA5A5;}
+  .kcard-accion.vencida .ka-fecha{color:#B91C1C;}
+  .kcard-etapa{margin:0 0 10px;}
+  .pe-pasos{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:5px;}
+  .pe-paso{height:5px;border-radius:3px;background:#E5E7EB;}
+  .pe-paso.hecho{background:#A78BFA;}
+  .pe-paso.actual{background:#7C3AED;}
+  .pe-select{width:100%;padding:5px 8px;border:1px solid #E5E7EB;border-radius:6px;font-size:11.5px;font-family:'Inter',sans-serif;background:#fff;color:#4C1D95;font-weight:600;cursor:pointer;}
+  .accion-chip{padding:6px 12px;border:1px solid var(--border);border-radius:20px;background:var(--white);font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;color:var(--text);}
+  .accion-chip:hover{border-color:var(--navy);}
+  .pr-resumen{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .pr-resumen-chip{font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3px 10px;color:var(--text-muted);}
+  .pr-resumen-chip b{color:var(--navy);margin-left:3px;}
+  .perdido-row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--border);}
+  .pr-main{min-width:0;flex:1;}
+  .pr-nombre{font-weight:600;font-size:13px;color:var(--navy);}
+  .pr-sub{font-size:11.5px;color:var(--text-muted);margin-top:2px;}
+  .pr-motivo{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;}
+  .pr-chip{font-size:11px;font-weight:600;background:#FEE2E2;color:#991B1B;border-radius:20px;padding:2px 9px;}
+  .pr-origen{font-size:11px;color:var(--text-muted);}
+  .pr-detalle{font-size:11.5px;color:var(--text);flex-basis:100%;}
+  .pr-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+  .pr-fecha{font-size:11px;color:var(--text-muted);}
+  .pr-btns{display:flex;gap:4px;}
+  .pr-reactivar{color:#15803D !important;font-weight:600;}
   .kanban-card .card-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:0;}
   .kbtn{flex:1 1 auto;min-width:0;border:none;border-radius:10px;padding:9px 6px;font-size:12px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-sizing:border-box;white-space:nowrap;}
   .kbtn svg{width:14px;height:14px;flex-shrink:0;}
@@ -247,7 +279,7 @@
   .search-bar:focus{border-color:var(--gold);}
 
   /* ── KANBAN ── */
-  .kanban-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding-bottom:16px;}
+  .kanban-board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding-bottom:16px;}
   .kanban-col{background:var(--surface2);border-radius:var(--radius-lg);padding:10px;min-height:600px;min-width:0;}
   .kanban-col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
   .kanban-col-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;line-height:1.3;}
@@ -546,7 +578,6 @@
     #section-kanban .view-toggle { display: none; }
     #citas-hoy-banner { display: none; }
     #kanban-by-month { display: none; }
-    #kanban-table-view { display: none !important; }
 
     /* Tabs por fase (móvil) */
     #kanban-mobile-tabs {
@@ -610,11 +641,11 @@
 
     /* ══════════ VISTA "TABLA" ══════════ */
     /* Ocultar tabla de escritorio, KPIs, header */
-    #section-pipeline .kpi-grid,
-    #section-pipeline .card-header,
-    #section-pipeline #pipeline-table,
+    #kanban-lista-view .kpi-grid,
+    #kanban-lista-view .card-header,
+    #kanban-lista-view #pipeline-table,
     #countif-table { display: none; }
-    #section-pipeline .card {
+    #kanban-lista-view .card {
       background: transparent; box-shadow: none;
       border: none; padding: 0;
     }
@@ -1014,11 +1045,9 @@
       <div class="nav-item" id="nav-dashboard" onclick="showSection('dashboard')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>Dashboard
       </div>
-      <div class="nav-item active" onclick="showSection('pipeline')">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Pipeline
-      </div>
-      <div class="nav-item" onclick="showSection('kanban')">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="11"/><rect x="17" y="3" width="5" height="14"/></svg>Kanban
+      <!-- 30-oct-2026: Pipeline y Kanban fusionados en un solo módulo "Pipeline" (vistas Tablero / Lista / Perdidos) -->
+      <div class="nav-item active" onclick="showSection('kanban')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="11"/><rect x="17" y="3" width="5" height="14"/></svg>Pipeline
       </div>
       <div class="nav-item" id="nav-vendidos" onclick="showSection('vendidos')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>Vendidos
@@ -1085,13 +1114,13 @@
   </button>
 
   <nav id="mobile-nav">
-    <button class="mnav-btn active" id="mnav-pipeline" onclick="showSection('kanban')">
+    <button class="mnav-btn active" id="mnav-pipeline" onclick="_kanbanView='kanban';showSection('kanban')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       <span>Pipeline</span>
     </button>
     <button class="mnav-btn" id="mnav-tabla" onclick="showSection('pipeline')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
-      <span>Tabla</span>
+      <span>Lista</span>
     </button>
     <button class="mnav-btn" id="mnav-whatsapp" onclick="showSection('whatsapp')" style="position:relative;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
@@ -1339,8 +1368,24 @@
         </div>
       </div>
 
-      <!-- PIPELINE -->
-      <div id="section-pipeline" class="section active">
+      <!-- PIPELINE (30-oct-2026: Pipeline y Kanban fusionados en un solo módulo).
+           Vistas: Tablero (Kanban de fases activas), Lista (la antigua tabla de
+           Pipeline, con filtros/exportar/eliminar) y Perdidos (archivo con motivo
+           y botón Reactivar). section-pipeline queda vacío solo por compatibilidad:
+           showSection('pipeline') redirige a la vista Lista. -->
+      <div id="section-pipeline" class="section"></div>
+
+      <div id="section-kanban" class="section active">
+        <div id="citas-hoy-banner" style="display:none;margin-bottom:16px;"></div>
+        <div id="kanban-mobile-tabs" class="kmob-tabs"></div>
+        <div class="view-toggle">
+          <button id="kv-btn-kanban" class="view-btn active" onclick="setKanbanView('kanban')">Tablero</button>
+          <button id="kv-btn-lista" class="view-btn" onclick="setKanbanView('lista')">Lista</button>
+          <button id="kv-btn-perdidos" class="view-btn" onclick="setKanbanView('perdidos')">📁 Perdidos <span id="kv-perdidos-count" style="opacity:.75;"></span></button>
+        </div>
+        <div class="kanban-metrics" id="kanban-metrics"></div>
+        <div class="kanban-board" id="kanban-board"></div>
+        <div id="kanban-lista-view" style="display:none;">
         <!-- Tabla móvil (visible solo ≤768px) -->
         <div id="mobile-tabla-view"></div>
         <div class="kpi-grid" id="kpi-grid"></div>
@@ -1368,23 +1413,9 @@
             <tbody id="pipeline-body"></tbody>
           </table>
         </div>
-      </div>
-
-        <div id="countif-table" style="margin-top:20px;"></div>
-
-      <!-- KANBAN -->
-      <div id="section-kanban" class="section">
-        <div id="citas-hoy-banner" style="display:none;margin-bottom:16px;"></div>
-        <div id="kanban-mobile-tabs" class="kmob-tabs"></div>
-        <div class="view-toggle">
-          <button id="kv-btn-kanban" class="view-btn active" onclick="setKanbanView('kanban')">Kanban</button>
-          <button id="kv-btn-tabla" class="view-btn" onclick="setKanbanView('tabla')">Tabla</button>
+          <div id="countif-table" style="margin-top:20px;"></div>
         </div>
-        <div class="kanban-metrics" id="kanban-metrics"></div>
-        <div class="kanban-board" id="kanban-board"></div>
-        <div id="kanban-table-view" style="display:none;"></div>
-
-
+        <div id="kanban-perdidos-view" style="display:none;"></div>
       </div>
 
       <!-- VENDIDOS -->
@@ -2926,7 +2957,7 @@ let _mobilePhase = 'Registro';
 function setMobilePhase(f){ _mobilePhase = f; try { localStorage.setItem('mangu_last_kanban_phase', f); } catch(e) {} renderKanban(); }
 function updateMobileNav(id){
   // Mapeo: sección visible → botón de la nav móvil que debe quedar activo
-  const map = { kanban:'pipeline', pipeline:'tabla', whatsapp:'whatsapp', citas:'citas', dashboard:'dashboard' };
+  const map = { kanban:(_kanbanView==='lista'?'tabla':'pipeline'), pipeline:'tabla', whatsapp:'whatsapp', citas:'citas', dashboard:'dashboard' };
   const activeBtn = map[id] || null;
   ['pipeline','tabla','whatsapp','citas','dashboard'].forEach(x=>{
     const b=document.getElementById('mnav-'+x);
@@ -4312,13 +4343,26 @@ function openMobileAgendarCita(){
 function closeMobileAgendarCita(){
   document.body.classList.remove('mobile-agendar-open');
 }
+// 30-oct-2026: el módulo Pipeline tiene 3 vistas — 'kanban' (Tablero de fases
+// activas), 'lista' (la antigua tabla de Pipeline) y 'perdidos' (archivo).
 function setKanbanView(v){
+  if(!['kanban','lista','perdidos'].includes(v)) v='kanban';
   _kanbanView = v;
-  document.getElementById('kv-btn-kanban').classList.toggle('active', v==='kanban');
-  document.getElementById('kv-btn-tabla').classList.toggle('active', v==='tabla');
-  document.getElementById('kanban-board').style.display = v==='kanban' ? '' : 'none';
-  document.getElementById('kanban-table-view').style.display = v==='tabla' ? '' : 'none';
-  if(v==='tabla') renderKanbanTable();
+  try { localStorage.setItem('mangu_last_kanban_view', v); } catch(e) {}
+  const tg=(id,on)=>{ const b=document.getElementById(id); if(b) b.classList.toggle('active', on); };
+  tg('kv-btn-kanban', v==='kanban'); tg('kv-btn-lista', v==='lista'); tg('kv-btn-perdidos', v==='perdidos');
+  const show=(id,on)=>{ const el=document.getElementById(id); if(el) el.style.display = on ? '' : 'none'; };
+  show('kanban-board', v==='kanban');
+  show('kanban-metrics', v==='kanban');
+  show('kanban-lista-view', v==='lista');
+  show('kanban-perdidos-view', v==='perdidos');
+  // Tabs móviles: visibles en Tablero y Perdidos (Perdidos es la última pestaña); ocultas en Lista
+  show('kanban-mobile-tabs', v!=='lista');
+  const ctEl=document.getElementById('countif-table'); if(ctEl) ctEl.style.display = v==='lista' ? '' : 'none';
+  const si=document.getElementById('search-input'); if(si) si.placeholder = v==='lista' ? 'Buscar prospecto...' : 'Buscar en todo el CRM...';
+  if(v==='lista'){ renderPipeline(); if(window.innerWidth<=768) renderMobileTabla(); }
+  else renderKanban();
+  if(isSectionActive('kanban')) updateMobileNav('kanban');
 }
 // Registrar contacto WA y abrir la conversación
 function quickWAProspect(id){
@@ -4958,11 +5002,12 @@ async function checkExistingSession(){
 // canal Realtime y tambien el "resync" al regresar a la app (25-sep-2026).
 function refreshProspectsUI() {
   return loadProspects().then(()=>{
-      if(isSectionActive('pipeline'))renderPipeline();
+      const _enLista = isSectionActive('kanban') && _kanbanView==='lista';
+      if(_enLista)renderPipeline();
       if(isSectionActive('kanban'))renderKanban();
 loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban(); });
       if(window.innerWidth<=768){
-        if(isSectionActive('pipeline')) renderMobileTabla();
+        if(_enLista) renderMobileTabla();
       }
       if(isSectionActive('whatsapp')) renderMobileWhatsAppList();
       renderConvBoard();
@@ -5101,7 +5146,7 @@ if(prospect){ DB._waLastInbound=DB._waLastInbound||{}; DB._waLastInbound[prospec
   }catch(e){}
   // Refresca la fila del prospecto (last_wa_at) si está visible en Kanban/Pipeline
   if(prospect){
-    if(isSectionActive('pipeline')) renderPipeline();
+    if(isSectionActive('kanban') && _kanbanView==='lista') renderPipeline();
     if(isSectionActive('kanban')) renderKanban();
   }
 }
@@ -5115,7 +5160,7 @@ async function loadUsers() {
 }
 async function loadProspects() {
   // notes se excluye del listado (puede crecer mucho); se consulta bajo demanda al editar/exportar/cambiar fase
-  let q=supabase.from('crm_prospects').select('id,name,phone,email,prop,value,phase,seller,seller_id,source,created_at,vendido,vendido_at,calificacion,calif_estado,calif_compra,calif_pago,calif_plazo,compra_estimada_hasta,atencion_pendiente_desde').order('created_at',{ascending:false});
+  let q=supabase.from('crm_prospects').select('id,name,phone,email,prop,value,phase,seller,seller_id,source,created_at,phase_updated_at,last_wa_at,vendido,vendido_at,calificacion,calif_estado,calif_compra,calif_pago,calif_plazo,compra_estimada_hasta,atencion_pendiente_desde,proxima_accion,proxima_accion_fecha,proceso_etapa').order('created_at',{ascending:false});
   if(!puedeVerTodosProspectos()) { if(DB.currentUser.id) q=q.eq('seller_id',DB.currentUser.id); else q=q.eq('seller',DB.currentUser.name); }
   const{data,error}=await q;
   if(!error) DB.prospects=(data||[]).map(p=>({...p,phase:normalizePhase(p.phase)}));
@@ -5140,7 +5185,8 @@ loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban();
   // (en escritorio y en móvil) y, dentro de ella, al mismo sub-estado: fase de Kanban en móvil,
   // conversación de WhatsApp abierta en el panel de escritorio, y posición de scroll — en vez de
   // mandar siempre a Pipeline/Kanban por default.
-  let lastSection = (window.innerWidth <= 768) ? 'kanban' : 'pipeline';
+  let lastSection = 'kanban';
+  try { const kv = localStorage.getItem('mangu_last_kanban_view'); if (kv) _kanbanView = kv; } catch(e) {}
   try {
     const saved = localStorage.getItem('mangu_last_section');
     if (saved && document.getElementById('section-'+saved)) lastSection = saved;
@@ -5149,7 +5195,7 @@ loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban();
   if (lastSection === 'kanban' && window.innerWidth <= 768) {
     try {
       const savedPhase = localStorage.getItem('mangu_last_kanban_phase');
-      if (savedPhase && ALL_PHASES.includes(savedPhase)) setMobilePhase(savedPhase);
+      if (savedPhase && PHASES.includes(savedPhase)) setMobilePhase(savedPhase);
     } catch(e) {}
   }
   if (lastSection === 'whatsapp' && window.innerWidth > 768) {
@@ -5182,7 +5228,7 @@ window.addEventListener('scroll', function(){
   clearTimeout(__scrollSaveTimer);
   __scrollSaveTimer = setTimeout(function(){
     try {
-      const sec = localStorage.getItem('mangu_last_section') || 'pipeline';
+      const sec = localStorage.getItem('mangu_last_section') || 'kanban';
       localStorage.setItem('mangu_scroll_'+sec, String(window.scrollY));
     } catch(e) {}
   }, 200);
@@ -5220,7 +5266,7 @@ function renderCitasHoyBanner(){
 // Cargar credenciales guardadas al abrir el login
 
 
-const sectionTitles={dashboard:'Dashboard de Marketing',pipeline:'Pipeline de Prospectos',kanban:'Tablero Kanban',vendidos:'Vendidos',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades',calidad:'Calidad por fuente'};
+const sectionTitles={dashboard:'Dashboard de Marketing',pipeline:'Pipeline',kanban:'Pipeline',vendidos:'Vendidos',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades',calidad:'Calidad por fuente'};
 function showWaTab(tab){
   const sec = document.getElementById('section-whatsapp');
   if(!sec) return;
@@ -5239,6 +5285,9 @@ function showWaTab(tab){
   }
 }
 function showSection(id){
+  // 30-oct-2026: Pipeline y Kanban fusionados. 'pipeline' (menú viejo, botón
+  // "Tabla" móvil, última sección guardada) abre el módulo en la vista Lista.
+  if(id==='pipeline'){ id='kanban'; _kanbanView='lista'; }
   // Recuerda la última sección para que un refresh/reload en móvil no siempre mande a Kanban
   try { localStorage.setItem('mangu_last_section', id); } catch(e) {}
   // Cerrar sidebar en mobile al navegar
@@ -5251,11 +5300,10 @@ function showSection(id){
   updateMobileNav(id);
   // Búsqueda visible en todos los módulos (global)
   document.getElementById('search-input').style.display='';
-  document.getElementById('search-input').placeholder = id==='pipeline' ? 'Buscar prospecto...' : 'Buscar en todo el CRM...';
+  document.getElementById('search-input').placeholder = (id==='kanban' && _kanbanView==='lista') ? 'Buscar prospecto...' : 'Buscar en todo el CRM...';
   hideGlobalSearch();
   if(id==='dashboard'){loadDashboardMkt();}
-  if(id==='pipeline'){renderPipeline(); if(window.innerWidth<=768) renderMobileTabla();}
-  if(id==='kanban'){_mobilePhase='Visita'; renderKanban();}
+  if(id==='kanban'){_mobilePhase='Visita'; setKanbanView(_kanbanView);}
   if(id==='vendidos'){renderVendidos();}
   if(id==='citas'){renderCalendar(); if(window.innerWidth<=768) renderMobileCitas();}
   if(id==='whatsapp'){ renderMobileWhatsAppList(); showWaBadge(false); renderConvBoard(); }
@@ -5268,7 +5316,7 @@ function showSection(id){
   if(id==='contratos') loadContratos();
   // Mostrar countif solo en pipeline
   const ctEl = document.getElementById('countif-table');
-  if(ctEl) ctEl.style.display = (id==='pipeline') ? '' : 'none';
+  if(ctEl) ctEl.style.display = (id==='kanban' && _kanbanView==='lista') ? '' : 'none';
   // Ocultar selector vendedor en presupuesto
   const sf = document.getElementById('seller-filter');
   if(sf) sf.style.display = (isAdmin() && id !== 'presupuesto') ? '' : 'none';
@@ -5525,9 +5573,9 @@ function renderPipeline(){
   if(filterPhase) data=data.filter(function(p){return p.phase===filterPhase;});
   if(searchText) data=data.filter(function(p){return p.name.toLowerCase().includes(searchText)||p.phone.includes(searchText)||(p.prop||'').toLowerCase().includes(searchText);});
   var bm=PHASE_BADGES;
-  var admin=isAdmin(); var cols=(admin?8:7)+(_selectMode?1:0);
+  var admin=isAdmin(); var cols=(admin?9:8)+(_selectMode?1:0);
   var thead=document.querySelector('#pipeline-table thead tr');
-  if(thead) thead.innerHTML=(_selectMode?'<th style="width:32px;"><input type="checkbox" id="select-all-chk" onclick="toggleSelectAll(this.checked)"></th>':'')+'<th>Nombre</th><th>Teléfono</th><th>Propiedad</th><th style="text-align:right;">Valor</th><th>Fase</th><th>Fecha</th>'+(admin?'<th>Vendedor</th>':'')+'<th></th>';
+  if(thead) thead.innerHTML=(_selectMode?'<th style="width:32px;"><input type="checkbox" id="select-all-chk" onclick="toggleSelectAll(this.checked)"></th>':'')+'<th>Nombre</th><th>Teléfono</th><th>Propiedad</th><th style="text-align:right;">Valor</th><th>Fase</th><th>Próxima acción</th><th>Fecha</th>'+(admin?'<th>Vendedor</th>':'')+'<th></th>';
   if(!data.length){document.getElementById('pipeline-body').innerHTML='<tr><td colspan="'+cols+'" class="empty-state">No hay prospectos que mostrar</td></tr>';return;}
   var now=new Date();
   var cy=String(now.getFullYear());
@@ -5560,7 +5608,8 @@ function renderPipeline(){
           +'<td style="padding:13px 16px;font-size:12.5px;"><a href="https://wa.me/'+waDigits(encodeURIComponent(p.phone.replace(/\s|\+/g,'')))+'" target="_blank" style="color:var(--text);text-decoration:none;">'+esc(p.phone)+'</a></td>'
           +'<td style="padding:13px 16px;font-size:12.5px;color:var(--text-muted);">'+esc(p.prop||'\u2014')+'</td>'
           +'<td style="padding:13px 16px;font-weight:600;color:var(--navy);font-size:13px;text-align:right;">$'+(p.value||0).toLocaleString('es-MX')+'</td>'
-          +'<td style="padding:13px 16px;"><span class="badge '+(bm[p.phase]||'')+'">'+p.phase+'</span></td>'
+          +'<td style="padding:13px 16px;"><span class="badge '+(bm[p.phase]||'')+'">'+p.phase+'</span>'+(p.phase==='Proceso'&&p.proceso_etapa?'<div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">'+esc(p.proceso_etapa)+'</div>':'')+'</td>'
+          +'<td style="padding:13px 16px;font-size:12px;max-width:220px;">'+(p.phase==='Perdido'?'<span style="color:var(--text-muted);">\u2014</span>':(p.proxima_accion?'<a href="javascript:void(0)" onclick="openProximaAccion(\''+p.id+'\')" style="text-decoration:none;color:'+({vencida:'#B91C1C',hoy:'#B45309'}[accionEstado(p)]||'var(--text)')+';"><b>'+esc(fmtFechaCorta(p.proxima_accion_fecha))+'</b> · '+esc(p.proxima_accion)+'</a>':'<a href="javascript:void(0)" onclick="openProximaAccion(\''+p.id+'\')" style="color:var(--text-muted);font-size:11.5px;">＋ Definir</a>'))+'</td>'
           +'<td style="padding:13px 16px;font-size:11.5px;color:var(--text-muted);">'+fmtDate((p.created_at||'').split('T')[0])+'</td>'
           +(admin?'<td style="padding:13px 16px;font-size:12.5px;color:var(--text-muted);">'+esc(p.seller||'\u2014')+'</td>':'')
           +'<td style="padding:13px 16px;text-align:right;white-space:nowrap;">'
@@ -5616,7 +5665,7 @@ function filterTable(){
   clearTimeout(_searchDebounce);
   _searchDebounce=setTimeout(function(){
     searchText=document.getElementById('search-input').value.toLowerCase();
-    const enPipeline=document.getElementById('section-pipeline')?.classList.contains('active');
+    const enPipeline=isSectionActive('kanban') && _kanbanView==='lista';
     if(enPipeline){ renderPipeline(); hideGlobalSearch(); }
     else renderGlobalSearch(searchText);
   },200);
@@ -8064,9 +8113,14 @@ function renderKanban(){
   const visible = getVisibleProspects(); // una sola pasada, reutilizada en todo el render
 
   // Construir columnas dinámicamente (6 fases del proceso MANGU)
+  // 30-oct-2026: Perdido ya no es columna del tablero; vive en la vista "Perdidos".
+  if (!PHASES.includes(_mobilePhase)) _mobilePhase = 'Registro';
+  const perdidosN = visible.filter(p => p.phase === 'Perdido').length;
+  const kvCnt = document.getElementById('kv-perdidos-count');
+  if (kvCnt) kvCnt.textContent = perdidosN ? '('+perdidosN+')' : '';
   const board = document.getElementById('kanban-board');
   if (board && !board.dataset.built) {
-    board.innerHTML = ALL_PHASES.map(phase=>`
+    board.innerHTML = PHASES.map(phase=>`
       <div class="kanban-col" id="col-${phase}" style="border-top:3px solid ${PHASE_COLORS[phase]};" ondragover="onDragOver(event)" ondrop="onDrop(event,'${phase}')" ondragleave="onDragLeave(event)">
         <div class="kanban-col-header"><span class="kanban-col-title" style="color:${PHASE_COLORS[phase]}">${phase}</span><span class="kanban-count" id="cnt-${phase}">0</span></div>
         <div class="kanban-cards" id="cards-${phase}"></div>
@@ -8077,7 +8131,7 @@ function renderKanban(){
   // Métricas por fase: total de prospectos y valor acumulado
   const met = document.getElementById('kanban-metrics');
   if (met) {
-    met.innerHTML = ALL_PHASES.map(f => {
+    met.innerHTML = PHASES.map(f => {
       const arr = visible.filter(p => p.phase === f);
       const val = arr.reduce((t,p) => t + (p.value||0), 0);
       return `<div class="metric-chip" style="border-left-color:${PHASE_COLORS[f]};">
@@ -8092,19 +8146,23 @@ function renderKanban(){
   const tabs = document.getElementById('kanban-mobile-tabs');
   if (tabs) {
     const fmtM = v => v >= 1e6 ? '$'+(v/1e6).toFixed(1)+'M' : '$'+Math.round(v/1e3)+'K';
-    tabs.innerHTML = ALL_PHASES.map(f => {
+    tabs.innerHTML = PHASES.map(f => {
       const arr = visible.filter(p => p.phase === f);
       const val = arr.reduce((t,p) => t + (p.value||0), 0);
-      return `<button class="kmob-tab${f===_mobilePhase?' active':''}" style="--ph:${PHASE_COLORS[f]};" onclick="setMobilePhase('${f}')">
+      return `<button class="kmob-tab${(f===_mobilePhase&&_kanbanView!=='perdidos')?' active':''}" style="--ph:${PHASE_COLORS[f]};" onclick="setMobilePhase('${f}')">
         <span class="kt-name">${f} <span class="kt-count">${arr.length}</span></span>
         <span class="kt-val">${fmtM(val)}</span>
       </button>`;
-    }).join('');
+    }).join('') + `<button class="kmob-tab${_kanbanView==='perdidos'?' active':''}" style="--ph:${PHASE_COLORS['Perdido']};" onclick="setKanbanView('perdidos')">
+        <span class="kt-name">📁 Perdidos <span class="kt-count">${perdidosN}</span></span>
+        <span class="kt-val">Archivo</span>
+      </button>`;
   }
 
-  ALL_PHASES.forEach(phase=>{
+  PHASES.forEach(phase=>{
     let inPhase = visible.filter(p => p.phase === phase);
-   if (phase === 'Perdido') inPhase = inPhase.slice().sort((a,b)=>daysInPhase(a)-daysInPhase(b));
+    // Primero lo que requiere atención: acción vencida → sin próxima acción → acción a futuro
+    inPhase = inPhase.slice().sort((a,b)=>accionPrioridad(a)-accionPrioridad(b) || daysInPhase(b)-daysInPhase(a));
     const allData = inPhase;
 
     const data = allData;
@@ -8136,6 +8194,8 @@ const wa=waUnreadInfo(p);
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
           ${dias} día${dias===1?'':'s'} en esta fase
         </div>`:''}
+        ${phase==='Proceso'?procesoEtapaRow(p):''}
+        ${phase!=='Perdido'?proximaAccionRow(p):''}
         ${((ni.unread&&act)||wa.unread)?`<div class="kcard-pills">${(ni.unread&&act)?`<button type="button" class="kcard-pill" onclick="openNotaRapida('${p.id}')" title="Ver nota">📝 <b>${esc(act.author)}</b> dejó una nota${act.ago?' · '+act.ago:''}${ni.newCount>1?` <span class="muted">· +${ni.newCount-1} antes</span>`:''} →</button>`:''}${wa.unread?`<span class="kcard-pill wa">💬 Mensaje nuevo de WhatsApp${wa.ago?' · '+wa.ago:''}</span>`:''}</div>`:''}
         <div class="card-actions">
           <button type="button" class="kbtn kbtn-notes" onclick="openNotaRapida('${p.id}')" title="Ver notas">
@@ -8155,16 +8215,226 @@ const wa=waUnreadInfo(p);
           </div>
         </div>
       </div>`;});
-    const cards = (phase==='Perdido' ? cardsArr.slice(0, KANBAN_PERDIDO_VISIBLE) : cardsArr).join('');
-       const extraCount = phase==='Perdido' ? Math.max(0, cardsArr.length - KANBAN_PERDIDO_VISIBLE) : 0;
-       const folderHtml = extraCount>0 ? '<div class="kanban-folder"><button type="button" class="kanban-folder-toggle" onclick="togglePerdidoFolder()"><span>📁 '+extraCount+' más</span><span id="perdido-folder-icon">▶</span></button><div class="kanban-folder-body" id="perdido-folder-body" style="display:none;">'+cardsArr.slice(KANBAN_PERDIDO_VISIBLE).join('')+'</div></div>' : '';
+    const cards = cardsArr.join('');
        const verMas = data.length ? '' : '<div class="kanban-empty">Sin prospectos en esta fase</div>';
        const cardsEl = document.getElementById('cards-'+phase);
-       if (cardsEl) cardsEl.innerHTML=cards+folderHtml+verMas;
+       if (cardsEl) cardsEl.innerHTML=cards+verMas;
     const colEl = document.getElementById('col-'+phase);
     if (colEl) colEl.classList.toggle('mobile-active', phase === _mobilePhase);
   });
   renderKanbanByMonth();
+  if (_kanbanView === 'perdidos') renderPerdidos();
+}
+
+// ══════════════════════════════════════════
+//  PRÓXIMA ACCIÓN · SUB-ETAPAS DE PROCESO · PERDIDOS  (30-oct-2026)
+// ══════════════════════════════════════════
+// Cada prospecto activo lleva "qué sigue y cuándo". La tarjeta se pinta en
+// rojo si la fecha ya pasó, ámbar si es hoy. Mientras tenga una próxima acción
+// vigente, la regla automática (Edge Function prospectos-inactivos) no lo
+// manda a Perdido.
+const PROCESO_ETAPAS=['Apartado','Crédito en trámite','Avalúo','Firma'];
+function hoyISO(){ const d=new Date(), pad=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function sumarDiasISO(n){ const d=new Date(); d.setDate(d.getDate()+n); const pad=x=>String(x).padStart(2,'0'); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function accionEstado(p){
+  if(!p.proxima_accion_fecha) return 'sin';
+  const h=hoyISO();
+  if(p.proxima_accion_fecha<h) return 'vencida';
+  if(p.proxima_accion_fecha===h) return 'hoy';
+  return 'futura';
+}
+function accionPrioridad(p){ return {vencida:0,hoy:1,sin:2,futura:3}[accionEstado(p)]; }
+function fmtFechaCorta(iso){
+  if(!iso) return '';
+  const [y,m,d]=iso.split('-').map(Number);
+  const dt=new Date(y,m-1,d);
+  const dias=['dom','lun','mar','mié','jue','vie','sáb'];
+  const meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return dias[dt.getDay()]+' '+d+' '+meses[m-1];
+}
+function proximaAccionRow(p){
+  const st=accionEstado(p);
+  if(st==='sin'){
+    return `<button type="button" class="kcard-accion sin" onclick="openProximaAccion('${p.id}')">＋ Definir próxima acción</button>`;
+  }
+  const etiqueta = st==='vencida' ? 'Vencida · '+fmtFechaCorta(p.proxima_accion_fecha) : st==='hoy' ? 'Hoy' : fmtFechaCorta(p.proxima_accion_fecha);
+  return `<button type="button" class="kcard-accion ${st}" onclick="openProximaAccion('${p.id}')" title="Editar próxima acción">
+    <span class="ka-fecha">${st==='vencida'?'⚠ ':'📌 '}${esc(etiqueta)}</span>
+    <span class="ka-texto">${esc(p.proxima_accion||'')}</span>
+  </button>`;
+}
+function procesoEtapaRow(p){
+  const actual=p.proceso_etapa||'';
+  const idx=PROCESO_ETAPAS.indexOf(actual);
+  const pasos=PROCESO_ETAPAS.map((e,i)=>`<span class="pe-paso${i<=idx?' hecho':''}${i===idx?' actual':''}" title="${e}"></span>`).join('');
+  return `<div class="kcard-etapa">
+    <div class="pe-pasos">${pasos}</div>
+    <select class="pe-select" onchange="cambiarEtapaProceso('${p.id}',this.value)">
+      <option value="">${actual?'Etapa: '+esc(actual):'Elegir etapa del proceso…'}</option>
+      ${PROCESO_ETAPAS.filter(e=>e!==actual).map(e=>`<option value="${e}">${e}</option>`).join('')}
+    </select>
+  </div>`;
+}
+async function cambiarEtapaProceso(id, etapa){
+  if(!etapa) return;
+  const p=DB.prospects.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  const antes=p.proceso_etapa||'Sin etapa';
+  p.proceso_etapa=etapa;
+  renderKanban();
+  setSyncBadge(true);
+  try{
+    const{data:cur}=await supabase.from('crm_prospects').select('notes').eq('id',id).single();
+    const notes=(cur?.notes||'')+`\n[${nowStamp()}] Nota de ${DB.currentUser?.name||''}: Etapa del proceso: ${antes} → ${etapa}.`;
+    const{error}=await supabase.from('crm_prospects').update({proceso_etapa:etapa,notes}).eq('id',id);
+    if(error) throw error;
+    p.notes=notes;
+    showToast('Etapa: '+etapa,'success');
+  }catch(e){ showToast('Error al guardar la etapa: '+(e.message||e),'error'); }
+  setSyncBadge(false);
+}
+
+// Modal "Próxima acción" (se crea al primer uso)
+let _accionProspectId=null;
+function openProximaAccion(id){
+  const p=DB.prospects.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  _accionProspectId=id;
+  let modal=document.getElementById('modal-accion');
+  if(!modal){
+    modal=document.createElement('div'); modal.id='modal-accion'; modal.className='modal-overlay';
+    modal.innerHTML=`<div class="modal" style="width:440px;max-width:94vw;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <h3 style="margin:0;font-size:15px;">📌 Próxima acción</h3>
+        <button onclick="closeModal('accion')" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);">×</button>
+      </div>
+      <p id="accion-prospecto" style="font-size:12px;color:var(--text-muted);margin-bottom:14px;"></p>
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">¿Qué sigue?</label>
+      <input id="accion-texto" type="text" maxlength="120" placeholder="Ej. Llamar para confirmar visita, mandar avalúo…" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:'Inter',sans-serif;box-sizing:border-box;margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">¿Cuándo?</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        <button type="button" class="accion-chip" onclick="setAccionFecha(0)">Hoy</button>
+        <button type="button" class="accion-chip" onclick="setAccionFecha(1)">Mañana</button>
+        <button type="button" class="accion-chip" onclick="setAccionFecha(3)">En 3 días</button>
+        <button type="button" class="accion-chip" onclick="setAccionFecha(7)">En 1 semana</button>
+      </div>
+      <input id="accion-fecha" type="date" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:'Inter',sans-serif;box-sizing:border-box;margin-bottom:16px;">
+      <div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;">
+        <button type="button" id="accion-btn-hecha" onclick="marcarAccionHecha()" style="padding:9px 14px;border:1px solid #16A34A;color:#15803D;background:var(--white);border-radius:var(--radius);font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">✓ Ya la hice</button>
+        <button type="button" onclick="guardarProximaAccion()" style="padding:9px 18px;border:none;background:var(--navy);color:#fff;border-radius:var(--radius);font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-left:auto;">Guardar</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{ if(e.target===modal) closeModal('accion'); });
+  }
+  document.getElementById('accion-prospecto').textContent=p.name+' · '+p.phase;
+  document.getElementById('accion-texto').value=p.proxima_accion||'';
+  document.getElementById('accion-fecha').value=p.proxima_accion_fecha||sumarDiasISO(1);
+  document.getElementById('accion-btn-hecha').style.display=p.proxima_accion?'':'none';
+  document.getElementById('accion-texto').style.borderColor='var(--border)';
+  modal.classList.add('open');
+  setTimeout(()=>document.getElementById('accion-texto').focus(),100);
+}
+function setAccionFecha(n){ const el=document.getElementById('accion-fecha'); if(el) el.value=sumarDiasISO(n); }
+async function _guardarAccion(id, texto, fecha, notaTxt){
+  const p=DB.prospects.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  p.proxima_accion=texto; p.proxima_accion_fecha=fecha;
+  renderKanban();
+  if(isSectionActive('kanban') && _kanbanView==='lista') renderPipeline();
+  setSyncBadge(true);
+  try{
+    const{data:cur}=await supabase.from('crm_prospects').select('notes').eq('id',id).single();
+    const notes=(cur?.notes||'')+`\n[${nowStamp()}] Nota de ${DB.currentUser?.name||''}: ${notaTxt}`;
+    const{error}=await supabase.from('crm_prospects').update({proxima_accion:texto,proxima_accion_fecha:fecha,notes}).eq('id',id);
+    if(error) throw error;
+    p.notes=notes;
+    showToast('Próxima acción guardada','success');
+  }catch(e){ showToast('Error al guardar: '+(e.message||e),'error'); }
+  setSyncBadge(false);
+}
+async function guardarProximaAccion(){
+  const texto=document.getElementById('accion-texto').value.trim();
+  const fecha=document.getElementById('accion-fecha').value;
+  if(!texto){ document.getElementById('accion-texto').style.borderColor='var(--danger)'; document.getElementById('accion-texto').focus(); return; }
+  if(!fecha){ showToast('Elige la fecha','error'); return; }
+  const id=_accionProspectId;
+  closeModal('accion');
+  await _guardarAccion(id, texto, fecha, `Próxima acción: ${texto} (${fmtFechaCorta(fecha)}).`);
+}
+async function marcarAccionHecha(){
+  const id=_accionProspectId;
+  const p=DB.prospects.find(x=>String(x.id)===String(id));
+  if(!p||!p.proxima_accion) return;
+  const hecha=p.proxima_accion;
+  closeModal('accion');
+  await _guardarAccion(id, null, null, `Acción hecha: ${hecha}.`);
+  // Pide la siguiente acción para que el prospecto no se quede sin seguimiento
+  setTimeout(()=>{ openProximaAccion(id); document.getElementById('accion-texto').value=''; },350);
+}
+
+// Vista "Perdidos": archivo con fase de origen, motivo y botón Reactivar.
+// El motivo sale de crm_auditoria (ahí quedan todos los pasos a Perdido,
+// manuales y automáticos, con el formato "Motivo — detalle").
+let _perdidosMotivos=null;
+async function cargarMotivosPerdidos(){
+  const{data,error}=await supabase.from('crm_auditoria').select('prospect_id,fase_anterior,comentario,created_at').eq('fase_nueva','Perdido').order('created_at',{ascending:false}).limit(2000);
+  _perdidosMotivos={};
+  if(!error&&data) data.forEach(r=>{ if(r.prospect_id && !_perdidosMotivos[r.prospect_id]) _perdidosMotivos[r.prospect_id]=r; });
+}
+function renderPerdidos(){
+  const el=document.getElementById('kanban-perdidos-view');
+  if(!el) return;
+  if(_perdidosMotivos===null){
+    el.innerHTML='<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">Cargando…</div>';
+    cargarMotivosPerdidos().then(renderPerdidos);
+    return;
+  }
+  let data=getVisibleProspects().filter(p=>p.phase==='Perdido');
+  if(searchText) data=data.filter(p=>(p.name||'').toLowerCase().includes(searchText)||(p.phone||'').includes(searchText)||(p.prop||'').toLowerCase().includes(searchText));
+  data.sort((a,b)=>new Date(b.phase_updated_at||b.created_at)-new Date(a.phase_updated_at||a.created_at));
+  if(!data.length){
+    el.innerHTML='<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">No hay prospectos perdidos 🎉</div>';
+    return;
+  }
+  // Resumen por motivo (arriba)
+  const porMotivo={};
+  const filas=data.map(p=>{
+    const a=_perdidosMotivos[p.id];
+    let motivo='Sin motivo registrado', detalle='', origen=a?.fase_anterior||'';
+    if(a&&a.comentario){
+      const partes=a.comentario.split(' \u2014 ');
+      if(a.comentario.startsWith('Sin actividad (automático)')){ motivo='Sin actividad (automático)'; }
+      else if(partes.length>1){ motivo=partes[0]; detalle=partes.slice(1).join(' \u2014 '); }
+      else { detalle=a.comentario; }
+    }
+    porMotivo[motivo]=(porMotivo[motivo]||0)+1;
+    const fecha=(p.phase_updated_at||p.created_at||'').split('T')[0];
+    const puedeReactivar=puedeCambiarFase(p,'Registro');
+    return `<div class="perdido-row">
+      <div class="pr-main">
+        <div class="pr-nombre">${esc(p.name)}</div>
+        <div class="pr-sub">${esc(p.prop||'—')}${p.source?' · '+esc(p.source):''}${p.value?' · $'+Number(p.value).toLocaleString('es-MX'):''}</div>
+        <div class="pr-motivo"><span class="pr-chip">${esc(motivo)}</span>${origen?`<span class="pr-origen">desde ${esc(origen)}</span>`:''}${detalle?`<span class="pr-detalle">${esc(detalle)}</span>`:''}</div>
+      </div>
+      <div class="pr-side">
+        <div class="pr-fecha">${fmtDate(fecha)}</div>
+        <div class="pr-btns">
+          <button type="button" class="action-btn" onclick="openNotaRapida('${p.id}')">Notas</button>
+          ${puedeReactivar?`<button type="button" class="action-btn pr-reactivar" onclick="reactivarProspecto('${p.id}')">↺ Reactivar</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const resumen=Object.entries(porMotivo).sort((a,b)=>b[1]-a[1]).map(([m,n])=>`<span class="pr-resumen-chip">${esc(m)} <b>${n}</b></span>`).join('');
+  el.innerHTML=`<div class="card" style="padding:16px;">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      <h4 style="margin:0;font-size:14px;color:var(--navy);">📁 Perdidos · ${data.length}</h4>
+      <span style="font-size:11.5px;color:var(--text-muted);">Reactivar regresa al prospecto a Registro</span>
+    </div>
+    <div class="pr-resumen">${resumen}</div>
+    ${filas}
+  </div>`;
 }
 
 // ── Nota rápida: agrega comentario al historial sin cambiar de fase ──
@@ -8440,6 +8710,8 @@ async function confirmFaseChange() {
   prospect.phase = newPhase;
   prospect.phase_updated_at = new Date().toISOString();
   const upd = { phase: newPhase, phase_updated_at: prospect.phase_updated_at };
+  // 30-oct-2026: al perderse se limpia la próxima acción (si se reactiva, se define una nueva)
+  if (newPhase === 'Perdido') { upd.proxima_accion = null; upd.proxima_accion_fecha = null; prospect.proxima_accion = null; prospect.proxima_accion_fecha = null; }
   let reasignado = '';
   if (nuevoResp && nuevoResp.id !== prospect.seller_id) {
     upd.seller = nuevoResp.name;
@@ -8458,9 +8730,11 @@ async function confirmFaseChange() {
   await supabase.from('crm_prospects').update(upd).eq('id', id);
   setSyncBadge(false);
   renderPipeline();
-  if(_kanbanView==='tabla') renderKanbanTable();
+  if(_kanbanView==='perdidos') renderPerdidos();
   showToast(reasignado ? `Fase actualizada \u00b7 asignado a ${nuevoResp.name}` : 'Fase actualizada', 'success');
 
+  _perdidosMotivos = null; // la vista Perdidos vuelve a leer motivos
+  if (_kanbanView === 'perdidos') renderPerdidos();
   // Guardar en auditor\u00eda todo paso a Perdido (con motivo y fase de origen)
   if (newPhase === 'Perdido') {
     const auditRecord = {
@@ -8475,6 +8749,7 @@ async function confirmFaseChange() {
     if (id) auditRecord.prospect_id = id;
     supabase.from('crm_auditoria').insert(auditRecord)
       .then(({ error }) => {
+        _perdidosMotivos = null; if (_kanbanView === 'perdidos' && isSectionActive('kanban')) renderPerdidos();
         if (error) console.log('Auditoria error:', error.message);
         else console.log('\u2705 Auditoria guardada');
       });
