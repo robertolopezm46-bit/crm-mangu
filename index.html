@@ -4580,7 +4580,8 @@ const WA_META_TEMPLATE_MAP = {
   4: { name: 'mangu_financiamiento',      params: ['nombre'] },
   5: { name: 'mangu_seguimiento_cierre',  params: ['nombre'] },
   6: { name: 'mangu_felicitacion_cierre', params: ['nombre'] },
-  7: { name: 'mangu_reactivacion_prospecto', params: ['nombre'] },
+  // 30-oct-2026: la versión corta (2 de 3 contestan) reemplaza a la larga y formal.
+  7: { name: 'mangu_reactivacion_corta', params: [] },
 };
 // ── Bienvenida por canal (23-jul-2026) ──
 // La plantilla "Bienvenida" (id 1) ya no es un solo mensaje genérico: según
@@ -4598,8 +4599,13 @@ const WA_BIENVENIDA_POR_CANAL = {
 // Canales sin plantilla dedicada (Página Web, Instagram ADS, Otro, sin
 // origen) siguen usando la plantilla genérica mangu_bienvenida — así se
 // respeta "para el sitio web déjalo sin cambios".
+// 30-oct-2026: bienvenida corta, de tú y con botones (mangu_bienvenida_v2) para
+// todos los canales; las respuestas las atiende la Edge Function
+// bienvenida-respuesta. Referidos conserva su plantilla personal.
+const WA_BIENVENIDA_V2 = { name: 'mangu_bienvenida_v2', params: ['nombre_corto','propiedad_bonita'] };
 function getWelcomeMeta(p){
-  return WA_BIENVENIDA_POR_CANAL[p?.source] || WA_META_TEMPLATE_MAP[1];
+  if (p?.source === 'Referidos') return WA_BIENVENIDA_POR_CANAL['Referidos'];
+  return WA_BIENVENIDA_V2;
 }
 const WA_EDGE_FUNCTION_URL = 'https://dgpuqlnjwisqyynpvdyw.supabase.co/functions/v1/whatsapp-send';
 
@@ -4609,6 +4615,8 @@ function buildWAParams(keys, p){
     if(k==='propiedad') return p.prop || 'la propiedad de tu interés';
     if(k==='precio') return '$'+((p.value||0).toLocaleString('es-MX'));
     if(k==='referido_por') return getReferredBy(p) || 'un contacto de confianza';
+    if(k==='nombre_corto') return (p.name||'').trim().split(/\s+/)[0] || 'Hola';
+    if(k==='propiedad_bonita') return p.prop ? String(p.prop).toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase()) : 'nuestras casas';
     if(k==='link_propiedad'){
       const t=String(p.prop||'').trim().toUpperCase();
       const wp=(typeof webPropsDB!=='undefined'?webPropsDB:[]).find(x=>String(x.titulo||'').trim().toUpperCase()===t);
@@ -9471,8 +9479,12 @@ function notaWANotifyRecipients(p){
 // ══════════════════════════════════════════
 //  WHATSAPP
 // ══════════════════════════════════════════
+// 30-oct-2026: el menú solo muestra las plantillas que funcionan. Seguimiento de
+// visita, felicitación de cierre y encuesta ya se mandan solas; financiamiento y
+// seguimiento de cierre nunca se usaron.
+const WA_TEMPLATES_VISIBLES = [1, 2, 7];
 function renderWATemplates(){
-  document.getElementById('wa-list').innerHTML=WA_TEMPLATES.map(t=>`
+  document.getElementById('wa-list').innerHTML=WA_TEMPLATES.filter(t=>WA_TEMPLATES_VISIBLES.includes(t.id)).map(t=>`
     <div class="wa-item" onclick="selectTemplate(${t.id})" id="wa-tmpl-${t.id}">
       <h4>${t.title}</h4><p>Fase: ${t.phase}</p>
     </div>`).join('');
@@ -9498,9 +9510,16 @@ function updateWAPreview(){
   if(!selectedTemplate)return;
   const selId=document.getElementById('wa-prospect-select').value;
   const p=selId?DB.prospects.find(pr=>pr.id===selId||pr.id===parseInt(selId)):null;
-  let text=(selectedTemplate.id===1 && p && WA_BIENVENIDA_PREVIEWS[p.source]) ? WA_BIENVENIDA_PREVIEWS[p.source] : selectedTemplate.text;
+  let text=selectedTemplate.id===1
+    ? ((p && p.source==='Referidos') ? WA_BIENVENIDA_PREVIEWS['Referidos'] : 'Hola {nombre_corto} 👋 Soy de MANGU. Vimos que te interesa {propiedad_bonita}. ¿Cómo te podemos ayudar?\n\n[Agendar visita]  [Ver fotos y precio]  [Tengo una duda]')
+    : selectedTemplate.id===2 ? 'Hola {nombre} 👋, quería compartirte esta propiedad que puede interesarte:\n\n🏠 {propiedad}\n\nMira fotos, precio y todos los detalles aquí: {link}'
+    : selectedTemplate.id===7 ? 'Hola 👋 ¿Continúas buscando casa nueva en Pachuca?'
+    : selectedTemplate.text;
   if(p){
-    text=text.replace(/{nombre}/g,p.name)
+    text=text.replace(/{nombre_corto}/g,buildWAParams(['nombre_corto'],p)[0])
+      .replace(/{propiedad_bonita}/g,buildWAParams(['propiedad_bonita'],p)[0])
+      .replace(/{link}/g,buildWAParams(['link_propiedad'],p)[0])
+      .replace(/{nombre}/g,p.name)
       .replace(/{propiedad}/g,p.prop||'la propiedad de tu interés')
       .replace(/{precio}/g,'$'+(p.value||0).toLocaleString('es-MX'))
       .replace(/{referido_por}/g,getReferredBy(p)||'un contacto de confianza');
