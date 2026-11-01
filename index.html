@@ -4496,7 +4496,7 @@ async function finalizarProspecto(id){
   if(!p) return;
   const lp = (typeof webPropsDB!=='undefined') ? webPropsDB.find(x=>x.titulo===p.prop) : null;
   const propTxt = lp ? lp.titulo : (p.prop || '—');
-  if(!(await showConfirm('Finalizar la venta de '+p.name+' ('+propTxt+').\n\nSe marcará la propiedad como vendida, el prospecto se moverá a Vendidos y se le enviará una felicitación por WhatsApp. ¿Continuar?'))) return;
+  if(!(await showConfirm('Finalizar la venta de '+p.name+' ('+propTxt+').\n\nSe marcará la propiedad como vendida y el prospecto se moverá a Vendidos. ¿Continuar?'))) return;
   if(lp){
     const { error } = await supabase.from('web_propiedades').update({ estatus: 'vendida', destacada: false }).eq('id', lp.id);
     if(error){ showToast('Error al marcar la propiedad como vendida: ' + error.message, 'error'); return; }
@@ -4511,7 +4511,12 @@ async function finalizarProspecto(id){
   p.vendido_at = vendidoAt;
   renderKanban();
   if(typeof renderVendidos === 'function') renderVendidos();
-  enviarFelicitacionCierre(p);
+  // 31-oct-2026 (pedido de Robert): la felicitación ya no sale sola; se pregunta antes.
+  if (p.phone && (p.phone||'').replace(/\D/g,'').length>=10 &&
+      await showConfirm('¿Enviar a '+p.name+' el mensaje de felicitación por su compra por WhatsApp?\n\n"¡Muchas felicidades! 🎉🏡 Es un honor informarte que tu nueva casa ya es tuya…"',
+        { title:'Mensaje al cliente', okText:'Sí, enviar', cancelText:'No enviar' })) {
+    enviarFelicitacionCierre(p);
+  }
   // 30-oct-2026: completar el detalle de la venta (precio final, forma de pago, fechas)
   if(typeof openVentaModal === 'function' && canVentas()) openVentaModal(p.id, '¡Venta cerrada! 🎉 Completa el precio final, la forma de pago y las fechas.');
 }
@@ -10299,6 +10304,7 @@ function showConfirm(message, opts){
     const cancelBtn = document.getElementById('confirm-cancel-btn');
     okBtn.textContent = opts.okText || 'Confirmar';
     cancelBtn.style.display = opts.hideCancel ? 'none' : '';
+    cancelBtn.textContent = opts.cancelText || 'Cancelar';
     modal.classList.add('open');
     function cleanup(result){
       modal.classList.remove('open');
