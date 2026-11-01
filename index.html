@@ -4477,17 +4477,14 @@ function quickWAProspect(id){
 // aprobada mangu_felicitacion_cierre (nunca se había usado). Si falla, solo se
 // avisa; la venta ya quedó registrada.
 async function enviarFelicitacionCierre(p){
-  const tel=(p.phone||'').replace(/\D/g,'');
-  if(tel.length<10) return;
+  // 31-oct-2026: la Edge Function resena-cliente manda mangu_felicitacion_v2 y
+  // programa la pregunta de reseña en Google (hora al azar, 48 h, horario hábil).
   try{
-    const {data:{session}} = await supabase.auth.getSession();
-    if(!session?.access_token) return;
-    const nombre=(p.name||'').trim().split(/\s+/)[0]||'';
-    const resp=await fetch(WA_EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
-      body:JSON.stringify({to:tel,prospect_id:p.id,kind:'template',template_name:'mangu_felicitacion_cierre',template_lang:'es_MX',params:[nombre]})});
-    const j=await resp.json().catch(()=>({}));
-    if(resp.ok&&j.ok) showToast('🎉 Se envió la felicitación a '+(p.name||'el cliente')+' por WhatsApp','success');
-    else showToast('La venta quedó registrada, pero no se pudo enviar la felicitación por WhatsApp','info',5000);
+    const {data,error}=await supabase.functions.invoke('resena-cliente',{body:{prospect_id:p.id,accion:'felicitar'}});
+    if(!error&&data&&data.ok){
+      p.resena_estado='programada';
+      showToast('🎉 Felicitación enviada a '+(p.name||'el cliente')+'. En los próximos días se le pedirá su reseña.','success',5000);
+    } else showToast('La venta quedó registrada, pero no se pudo enviar la felicitación: '+((data&&data.error)||(error&&error.message)||'error'),'info',6000);
   }catch(e){ console.log('felicitación cierre:', e.message); }
 }
 
@@ -4513,7 +4510,7 @@ async function finalizarProspecto(id){
   if(typeof renderVendidos === 'function') renderVendidos();
   // 31-oct-2026 (pedido de Robert): la felicitación ya no sale sola; se pregunta antes.
   if (p.phone && (p.phone||'').replace(/\D/g,'').length>=10 &&
-      await showConfirm('¿Enviar a '+p.name+' el mensaje de felicitación por su compra por WhatsApp?\n\n"¡Muchas felicidades! 🎉🏡 Es un honor informarte que tu nueva casa ya es tuya…"',
+      await showConfirm('¿Enviar a '+p.name+' la felicitación por su compra por WhatsApp?\n\n"¡Muchas felicidades! 🎉🏡 Tu nueva casa ya es tuya… En los próximos días te pediremos tu opinión."\n\nEn las siguientes 48 h (horario hábil) se le preguntará si quiere calificarnos en Google.',
         { title:'Mensaje al cliente', okText:'Sí, enviar', cancelText:'No enviar' })) {
     enviarFelicitacionCierre(p);
   }
@@ -5300,7 +5297,7 @@ async function loadUsers() {
 }
 async function loadProspects() {
   // notes se excluye del listado (puede crecer mucho); se consulta bajo demanda al editar/exportar/cambiar fase
-  let q=supabase.from('crm_prospects').select('id,name,phone,email,prop,value,phase,seller,seller_id,source,created_at,phase_updated_at,last_wa_at,vendido,vendido_at,calificacion,calif_estado,calif_compra,calif_pago,calif_plazo,compra_estimada_hasta,atencion_pendiente_desde,proxima_accion,proxima_accion_fecha,proceso_etapa,precio_final,forma_pago,fecha_apartado,fecha_escrituracion,fecha_entrega,comision,postventa_resena_at,postventa_referidos_at,venta_registro_manual,encuesta_estado,encuesta_enviada_at,encuesta_experiencia,encuesta_recomienda,encuesta_permiso_publicar,encuesta_testimonio').order('created_at',{ascending:false});
+  let q=supabase.from('crm_prospects').select('id,name,phone,email,prop,value,phase,seller,seller_id,source,created_at,phase_updated_at,last_wa_at,vendido,vendido_at,calificacion,calif_estado,calif_compra,calif_pago,calif_plazo,compra_estimada_hasta,atencion_pendiente_desde,proxima_accion,proxima_accion_fecha,proceso_etapa,precio_final,forma_pago,fecha_apartado,fecha_escrituracion,fecha_entrega,comision,postventa_resena_at,postventa_referidos_at,venta_registro_manual,resena_estado,encuesta_estado,encuesta_enviada_at,encuesta_experiencia,encuesta_recomienda,encuesta_permiso_publicar,encuesta_testimonio').order('created_at',{ascending:false});
   if(!puedeVerTodosProspectos()) { if(DB.currentUser.id) q=q.eq('seller_id',DB.currentUser.id); else q=q.eq('seller',DB.currentUser.name); }
   const{data,error}=await q;
   if(!error) DB.prospects=(data||[]).map(p=>({...p,phase:normalizePhase(p.phase)}));
@@ -5781,6 +5778,7 @@ function togglePipelineGroup(gid){
 //   escrituración y entrega, comisión (solo admin).
 // - Post-venta: a los 30 días de la entrega (o de la venta si no hay fecha de
 //   entrega) se pide reseña en Google y referidos.
+const RESENA_TXT={programada:'Reseña programada',preguntada:'Reseña: esperando respuesta',aceptada:'Liga de reseña enviada',rechazada:'Prefirió no calificar',sin_respuesta:'Reseña: sin respuesta'};
 const FORMAS_PAGO=['Crédito bancario','Recursos propios','Infonavit + banco','Cofinavit','Otro'];
 const ORIGENES_VENTA=['Referidos','Página Web','Facebook ADS','Instagram ADS','Google Ads','Inmuebles24','Propiedades.com','Otro'];
 const POSTVENTA_DIAS=30;
@@ -5844,7 +5842,7 @@ function renderVendidos(){
       ${pv.map(p=>`<div class="vend-pv-row">
         <div><b>${esc(p.name)}</b> <span class="muted">· ${esc(p.prop||'')} · ${diasDesde(postventaBase(p))} días</span></div>
         <div class="vend-pv-btns">
-          ${p.postventa_resena_at?'<span class="vend-chip ok">⭐ Reseña pedida</span>':`<button type="button" class="action-btn" onclick="pedirPostventa('${p.id}','resena')">⭐ Pedir reseña</button>`}
+          ${(p.postventa_resena_at||p.resena_estado)?`<span class="vend-chip ok">⭐ ${RESENA_TXT[p.resena_estado]||'Reseña pedida'}</span>`:`<button type="button" class="action-btn" onclick="pedirPostventa('${p.id}','resena')">⭐ Pedir reseña</button>`}
           ${p.postventa_referidos_at?'<span class="vend-chip ok">🤝 Referidos pedidos</span>':`<button type="button" class="action-btn" onclick="pedirPostventa('${p.id}','referidos')">🤝 Pedir referidos</button>`}
         </div>
       </div>`).join('')}
@@ -5863,7 +5861,7 @@ function renderVendidos(){
     const precio=fin?`<div style="font-weight:700;color:var(--navy);">${fmtMoney(fin)}</div>${lista&&lista!==fin?`<div style="font-size:11px;color:var(--text-muted);text-decoration:line-through;">${fmtMoney(lista)}</div>`:''}`:`<div style="font-weight:700;color:var(--navy);">${fmtMoney(lista)}</div><div style="font-size:10.5px;color:#B45309;">sin precio final</div>`;
     const fechaEsc=p.fecha_escrituracion?fmtDate(p.fecha_escrituracion):'<span class="muted">Pendiente</span>';
     const fechaEnt=p.fecha_entrega?fmtDate(p.fecha_entrega):'<span class="muted">Pendiente</span>';
-    const pvTxt=(p.postventa_resena_at?'⭐':'<span class="muted">⭐</span>')+' '+(p.postventa_referidos_at?'🤝':'<span class="muted">🤝</span>');
+    const pvTxt=(p.postventa_resena_at?`<span title="${RESENA_TXT[p.resena_estado]||'Reseña pedida'}">⭐</span>`:p.resena_estado?`<span title="${RESENA_TXT[p.resena_estado]}">⏳</span>`:'<span class="muted">⭐</span>')+' '+(p.postventa_referidos_at?'🤝':'<span class="muted">🤝</span>');
     const tel=p.phone?`<div style="font-size:11.5px;margin-top:1px;"><a href="https://wa.me/${waDigits(encodeURIComponent(p.phone.replace(/\s|\+/g,'')))}" target="_blank" style="color:var(--text-muted);text-decoration:none;">${esc(p.phone)}</a></div>`:'';
     return `<tr style="border-bottom:1px solid var(--border);">
       <td style="${td}"><div style="font-weight:600;font-size:13px;color:var(--navy);">${esc(p.name)}</div>${tel}${p.venta_registro_manual?'<div class="vend-chip">Registro manual</div>':''}</td>
