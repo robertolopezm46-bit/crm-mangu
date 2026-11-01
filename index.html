@@ -2574,6 +2574,7 @@
     <div class="wp-toggles">
       <label class="wp-tog"><input type="checkbox" id="wp-nueva" onchange="scheduleDraftSave()"><span class="wp-tog-box"></span><span><b>🆕 Nueva</b><small>Sale con la etiqueta "Nuevo" en el sitio</small></span></label>
       <label class="wp-tog"><input type="checkbox" id="wp-preventa" onchange="togglePreventaProp();scheduleDraftSave()"><span class="wp-tog-box"></span><span><b>🏗️ Preventa</b><small>Se agrupa en "Preventa" en el sitio</small></span></label>
+      <label class="wp-tog"><input type="checkbox" id="wp-render" onchange="scheduleDraftSave()"><span class="wp-tog-box"></span><span><b>🖼️ La foto es render</b><small>Sale con la etiqueta "Render" en el sitio</small></span></label>
     </div>
     <div id="wp-ficha-live" class="wp-ficha" style="display:none;"></div>
 
@@ -10639,6 +10640,7 @@ function openPropModal(id){
   document.querySelectorAll('.wp-accesorio').forEach(chk => { chk.checked = accs.includes(chk.value); });
   document.getElementById('wp-destacada').checked = !!p?.destacada;
   document.getElementById('wp-nueva').checked = !!p?.es_nuevo;
+  document.getElementById('wp-render').checked = !!p?.es_render;
   document.getElementById('wp-fotos-input').value = '';
   document.getElementById('wp-fotos-status').textContent = '';
   if (p?.fotos) _propFotos = [...p.fotos];
@@ -11025,6 +11027,7 @@ function collectPropFormData(){
     amenidades: [...document.querySelectorAll('.wp-amenidad:checked')].map(c => c.value),
     accesorios: [...document.querySelectorAll('.wp-accesorio:checked')].map(c => c.value),
     esNueva: document.getElementById('wp-nueva').checked,
+    esRender: document.getElementById('wp-render').checked,
     fotos: _propFotos,
     savedAt: Date.now()
   };
@@ -11073,6 +11076,7 @@ function restoreDraftProp(){
   document.querySelectorAll('.wp-amenidad').forEach(chk => { chk.checked = (draft.amenidades||[]).includes(chk.value); });
   document.querySelectorAll('.wp-accesorio').forEach(chk => { chk.checked = (draft.accesorios||[]).includes(chk.value); });
   document.getElementById('wp-nueva').checked = !!draft.esNueva;
+  document.getElementById('wp-render').checked = !!draft.esRender;
   _propFotos = draft.fotos || [];
   renderFotosPreview();
   document.getElementById('wp-draft-banner').style.display = 'none';
@@ -11170,6 +11174,7 @@ async function savePropiedad(mode){
     accesorios: [...document.querySelectorAll('.wp-accesorio:checked')].map(c => c.value),
     destacada: document.getElementById('wp-destacada').checked,
     es_nuevo: document.getElementById('wp-nueva').checked,
+    es_render: document.getElementById('wp-render').checked,
     activa: mode === 'publicar',
     fotos: _propFotos,
     video_url: _propVideo || null
