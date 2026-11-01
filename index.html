@@ -4488,7 +4488,10 @@ async function enviarFelicitacionCierre(p){
   }catch(e){ console.log('felicitación cierre:', e.message); }
 }
 
+// 1-nov-2026 (Robert): solo Roberto puede dar "Finalizar" a una venta.
+function puedeFinalizar(){ return (DB.currentUser?.username||'').toLowerCase()==='roberto'; }
 async function finalizarProspecto(id){
+  if(!puedeFinalizar()){ showToast('Solo Roberto puede finalizar una venta.','error'); return; }
   const p = DB.prospects.find(x => String(x.id) === String(id));
   if(!p) return;
   const lp = (typeof webPropsDB!=='undefined') ? webPropsDB.find(x=>x.titulo===p.prop) : null;
@@ -8849,7 +8852,7 @@ const wa=waUnreadInfo(p);
           ${hasModule('whatsapp')&&phase!=='Cierre'?`<button class="kbtn kbtn-wa" onclick="quickWAProspect('${p.id}')" title="WhatsApp">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.28-1.38a9.9 9.9 0 0 0 4.76 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2z"/></svg>
             WhatsApp</button>`:''}
-          ${phase==='Cierre'?(lp&&lp.estatus==='vendida'?`<span class="kbtn kbtn-finalizado" title="Finalizado" style="opacity:.7;cursor:default;">✅ Finalizado</span>`:`<button class="kbtn kbtn-finalizar" onclick="finalizarProspecto('${p.id}')" title="Finalizar cierre">✅ Finalizar</button>`):''}
+          ${phase==='Cierre'?(lp&&lp.estatus==='vendida'?`<span class="kbtn kbtn-finalizado" title="Finalizado" style="opacity:.7;cursor:default;">✅ Finalizado</span>`:(puedeFinalizar()?`<button class="kbtn kbtn-finalizar" onclick="finalizarProspecto('${p.id}')" title="Finalizar cierre">✅ Finalizar</button>`:'')):''}
           <div class="kbtn-phase-wrap">
             <svg class="phase-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             <select class="kbtn-phase" onchange="cambiarFaseDesdeModal('${p.id}','${esc(p.name)}','${p.phase}',this.value,this)">
