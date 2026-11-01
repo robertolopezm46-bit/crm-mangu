@@ -10748,9 +10748,11 @@ function renderFichaLive(){
     recamaras: parseInt(v('wp-recamaras')) || 0, banos: parseFloat(v('wp-banos')) || 0, m2_construccion: parseFloat(v('wp-m2c')) || 0,
     fraccionamiento: v('wp-fracc').trim(), municipio: v('wp-municipio') });
   const ok = ch.filter(c => c.ok).length, completa = ok === ch.length;
-  const pct = Math.round(ok / ch.length * 100);
-  const color = pct >= 100 ? '#16A34A' : pct >= 60 ? '#D97706' : '#DC2626';
-  el.className = 'wp-ficha' + (completa ? ' ok' : '');
+  // Peso de cada punto: el video (opcional) vale 10%, así que una ficha con todo menos video queda en 90% = verde
+  const PESOS = { video: 10 }, pesoDe = c => PESOS[c.txt] || 22.5;
+  const pct = Math.round(ch.filter(c => c.ok).reduce((a, c) => a + pesoDe(c), 0));
+  const color = pct >= 90 ? '#16A34A' : pct >= 60 ? '#D97706' : '#DC2626';
+  el.className = 'wp-ficha' + (pct >= 90 ? ' ok' : '');
   el.style.display = '';
   el.innerHTML = `<div class="wp-ficha-tit"><span class="wp-ficha-pct" style="color:${color};">${pct}%</span>${completa ? '✅ Ficha completa — lista para vender' : 'de la ficha completa · llena lo amarillo'}</div>
     <div class="wp-ficha-bar"><i style="width:${pct}%;background:${color};"></i></div>
