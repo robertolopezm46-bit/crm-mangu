@@ -414,7 +414,31 @@
   .form-group input,.form-group select,.form-group textarea{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:'Inter',sans-serif;outline:none;}
   .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--gold);}
   .form-group.invalid input,.form-group.invalid textarea,.form-group.invalid select{border-color:var(--danger);box-shadow:0 0 0 3px rgba(220,38,38,0.12);}
-  #fg-fotos.invalid #wp-fotos-input{outline:1.5px solid var(--danger);border-radius:6px;}
+  #fg-fotos.invalid #wp-drop{border-color:var(--danger);background:#FEF2F2;}
+  /* Formulario de propiedad por secciones (1-nov-2026) */
+  #modal-propiedad .form-group label{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:600;color:var(--text);}
+  #modal-propiedad .form-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+  #modal-propiedad .form-group input:not([type=checkbox]),#modal-propiedad .form-group select{width:100%;min-width:0;box-sizing:border-box;}
+  #modal-propiedad .wp-hint{font-size:11.5px;font-weight:400;color:var(--text-muted);}
+  #modal-propiedad .wp-sec{font-size:13.5px;font-weight:700;color:var(--navy);margin:22px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--border);}
+  #modal-propiedad .wp-drop{display:flex;flex-direction:column;align-items:center;gap:4px;padding:18px 12px;border:2px dashed var(--border);border-radius:10px;background:var(--surface2);cursor:pointer;text-align:center;font-weight:400;}
+  #modal-propiedad .wp-drop b{font-size:13.5px;color:var(--navy);}
+  #modal-propiedad .wp-drop span{font-size:11.5px;color:var(--text-muted);}
+  #modal-propiedad .wp-drop.over,#modal-propiedad .wp-drop:hover{border-color:var(--gold);background:#FFFBEB;}
+  #wp-car-row{grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:12px !important;}
+  .wp-step{display:flex;align-items:stretch;border:1px solid var(--border);border-radius:8px;overflow:hidden;height:40px;}
+  .wp-step button{width:38px;flex-shrink:0;border:0;background:var(--surface2);font-size:18px;font-weight:600;color:var(--navy);cursor:pointer;}
+  .wp-step button:active{background:var(--border);}
+  #modal-propiedad .wp-step input{border:0 !important;border-radius:0;text-align:center;padding:0 2px;font-size:15px;font-weight:600;flex:1;-moz-appearance:textfield;}
+  .wp-step input::-webkit-outer-spin-button,.wp-step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .wp-ficha{border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px;background:var(--surface2);}
+  .wp-ficha.ok{background:#F0FDF4;border-color:#86EFAC;}
+  .wp-ficha-tit{font-size:13px;font-weight:700;margin-bottom:6px;}
+  .wp-ficha-items{display:flex;flex-wrap:wrap;gap:6px;}
+  .wp-ficha-items span{font-size:11.5px;padding:3px 9px;border-radius:12px;font-weight:600;}
+  .wp-ficha-items .ok{background:#DCFCE7;color:#15803D;}
+  .wp-ficha-items .no{background:#FEF3C7;color:#92400E;}
+  .wp-foto-btn{position:absolute;width:22px;height:22px;border-radius:50%;border:none;font-size:12px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.3);}
   .link-result{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;font-size:12px;color:var(--info);word-break:break-all;margin-top:12px;display:none;}
   .copy-btn{background:var(--navy);color:var(--white);border:none;padding:8px 16px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-family:'Inter',sans-serif;margin-top:8px;}
 
@@ -2529,14 +2553,56 @@
       </span>
     </div>
     <div id="wp-validation-summary" style="display:none;background:#FEF2F2;border:1px solid var(--danger);color:#991B1B;font-size:12.5px;padding:10px 14px;border-radius:8px;margin-bottom:14px;"></div>
+    <div id="wp-ficha-live" class="wp-ficha" style="display:none;"></div>
 
     <div class="form-full">
+      <!-- Formulario por secciones (1-nov-2026): primero lo que vende (fotos),
+           luego datos, ubicación, características y descripción. -->
+      <div class="wp-sec" style="margin-top:2px;">📸 1. Fotos y video</div>
+      <div class="form-group" id="fg-fotos">
+        <label>Fotos <span class="wp-hint" id="wp-fotos-count"></span></label>
+        <label for="wp-fotos-input" id="wp-drop" class="wp-drop" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="wpDropFotos(event)">
+          <span style="font-size:24px;line-height:1;">📷</span>
+          <b>Toca aquí o arrastra tus fotos</b>
+          <span>Puedes elegir varias a la vez · se comprimen solas al subir</span>
+        </label>
+        <input type="file" id="wp-fotos-input" accept="image/*" multiple onchange="handlePropFotos(this)" style="display:none;">
+        <div id="wp-fotos-status" style="font-size:12px;color:var(--text-muted);"></div>
+        <div id="wp-fotos-preview" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+        <div class="wp-hint" id="wp-fotos-tip" style="display:none;">Arrastra una foto para cambiar el orden · toca ⭐ para ponerla de portada.</div>
+      </div>
+
+      <div class="form-group" id="fg-video">
+        <label>Video de recorrido <span class="wp-hint">opcional</span></label>
+        <div class="wp-hint" style="margin-top:-2px;">Máximo 60 MB. Ideal: vertical (como para celular) y de menos de 1 minuto.</div>
+        <input type="file" id="wp-video-input" accept="video/*" onchange="handlePropVideo(this)" style="font-size:13px;padding:8px;border:1px dashed var(--border);border-radius:8px;">
+        <div id="wp-video-status" style="font-size:12px;color:var(--text-muted);"></div>
+        <div id="wp-video-preview"></div>
+      </div>
+
+      <div class="wp-sec">🏷️ 2. Datos básicos</div>
       <!-- 1. Identificación -->
       <div class="form-group" id="fg-titulo"><label>Título</label><input type="text" id="wp-titulo" placeholder="EJ. CASA CASTAÑO 101" style="text-transform:uppercase;" oninput="clearFieldError('fg-titulo');syncSlugDesdeTitulo();scheduleDraftSave()"></div>
 
-      <!-- 2. Dirección -->
-      <div class="form-group" id="fg-direccion"><label>Dirección</label><input type="text" id="wp-direccion-full" placeholder="Calle, fraccionamiento y municipio" oninput="scheduleDraftSave()"></div>
+      <!-- 3. Precio y estatus -->
+      <div class="form-row">
+        <div class="form-group" id="fg-precio"><label>Precio (MXN)</label>
+          <div style="position:relative;">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:600;color:var(--text-muted);pointer-events:none;">$</span>
+            <input type="text" id="wp-precio" inputmode="numeric" placeholder="0" style="padding-left:24px;" oninput="formatValueInput(this);clearFieldError('fg-precio');scheduleDraftSave()">
+          </div>
+        </div>
+        <div class="form-group"><label>Estatus</label>
+          <select id="wp-estatus" onchange="scheduleDraftSave();renderFichaLive()"><option value="disponible">Disponible</option><option value="reservada">Reservada</option><option value="preventa">Preventa</option><option value="vendida">Vendida</option></select>
+        </div>
+      </div>
 
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin:0 0 4px;font-weight:400;">
+        <input type="checkbox" id="wp-nueva" style="width:auto;" onchange="scheduleDraftSave()"> Marcar como "Nueva" en el sitio web
+      </label>
+
+
+      <div class="wp-sec">📍 3. Ubicación</div>
       <!-- 2b. Fraccionamiento y municipio (29-oct-2026): el sitio agrupa la preventa
            y filtra por zona con estos dos campos; se eligen de una lista para que
            el mismo fraccionamiento no quede escrito de dos formas. -->
@@ -2556,6 +2622,8 @@
         </div>
       </div>
 
+      <div class="form-group" id="fg-direccion"><label>Calle y número <span class="wp-hint">opcional · solo para ubicar el mapa, el sitio no la muestra escrita</span></label><input type="text" id="wp-direccion-full" placeholder="Ej. Av. de los Fresnos 101" oninput="scheduleDraftSave()"></div>
+
       <!-- 2c. URL en mangu.mx (29-oct-2026). Se genera del título al dar de alta y
            después queda FIJA: así los links compartidos y los anuncios no se rompen
            si se corrige el título. Si se cambia a mano, la URL anterior sigue
@@ -2569,42 +2637,23 @@
         <div id="wp-slug-help" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;"></div>
       </div>
 
-      <!-- 3. Precio y estatus -->
+
+      <div class="wp-sec">🛏️ 4. Características</div>
       <div class="form-row">
-        <div class="form-group" id="fg-precio"><label>Precio (MXN)</label>
-          <div style="position:relative;">
-            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:600;color:var(--text-muted);pointer-events:none;">$</span>
-            <input type="text" id="wp-precio" inputmode="numeric" placeholder="0" style="padding-left:24px;" oninput="formatValueInput(this);clearFieldError('fg-precio');scheduleDraftSave()">
-          </div>
-        </div>
-        <div class="form-group"><label>Estatus</label>
-          <select id="wp-estatus" onchange="scheduleDraftSave()"><option value="disponible">Disponible</option><option value="reservada">Reservada</option><option value="preventa">Preventa</option><option value="vendida">Vendida</option></select>
-        </div>
+        <div class="form-group"><label>m² de terreno</label><input type="number" id="wp-m2t" min="0" step="0.01" oninput="scheduleDraftSave()"></div>
+        <div class="form-group"><label>m² de construcción</label><input type="number" id="wp-m2c" min="0" step="0.01" oninput="scheduleDraftSave()"></div>
       </div>
-
-      <!-- 4. Metros cuadrados (justo debajo del renglón de precio) -->
-      <div class="form-row">
-        <div class="form-group"><label>m² terreno</label><input type="number" id="wp-m2t" min="0" step="0.01" oninput="scheduleDraftSave()"></div>
-        <div class="form-group"><label>m² construcción</label><input type="number" id="wp-m2c" min="0" step="0.01" oninput="scheduleDraftSave()"></div>
+      <div class="form-row" id="wp-car-row">
+        <div class="form-group"><label>Recámaras</label><div class="wp-step"><button type="button" onclick="wpStep('wp-recamaras',-1)" aria-label="Menos">−</button><input type="number" id="wp-recamaras" min="0" max="99" value="0" oninput="scheduleDraftSave()"><button type="button" onclick="wpStep('wp-recamaras',1)" aria-label="Más">+</button></div></div>
+        <div class="form-group"><label>Baños</label><div class="wp-step"><button type="button" onclick="wpStep('wp-banos',-1)" aria-label="Menos">−</button><input type="number" id="wp-banos" min="0" max="99" step="0.5" value="0" oninput="scheduleDraftSave()"><button type="button" onclick="wpStep('wp-banos',1)" aria-label="Más">+</button></div></div>
+        <div class="form-group"><label>Autos</label><div class="wp-step"><button type="button" onclick="wpStep('wp-estacionamientos',-1)" aria-label="Menos">−</button><input type="number" id="wp-estacionamientos" min="0" max="99" value="0" oninput="scheduleDraftSave()"><button type="button" onclick="wpStep('wp-estacionamientos',1)" aria-label="Más">+</button></div></div>
       </div>
-
-      <!-- 5. Características -->
-      <div class="form-row" style="grid-template-columns:repeat(3,max-content);gap:24px;">
-        <div class="form-group"><label>Recámaras</label><input type="number" id="wp-recamaras" class="wp-stepper" min="0" max="99" value="0" oninput="scheduleDraftSave()"></div>
-        <div class="form-group"><label>Baños</label><input type="number" id="wp-banos" class="wp-stepper" min="0" max="99" step="0.5" value="0" oninput="scheduleDraftSave()"></div>
-        <div class="form-group"><label>Estacionamientos</label><input type="number" id="wp-estacionamientos" class="wp-stepper" min="0" max="99" value="0" oninput="scheduleDraftSave()"></div>
-      </div>
-
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin:-4px 0 0;font-weight:400;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin:0 0 8px;font-weight:400;">
         <input type="checkbox" id="wp-planta-baja" style="width:auto;" onchange="togglePlantaBajaBadge();scheduleDraftSave()"> Tiene recámara en planta baja
       </label>
-      <div id="wp-badge-accesible" style="display:none;background:#F0FDF4;border:1px solid var(--success);color:#15803D;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:-6px;font-weight:700;">
+      <div id="wp-badge-accesible" style="display:none;background:#F0FDF4;border:1px solid var(--success);color:#15803D;font-size:12px;padding:8px 12px;border-radius:8px;margin:-2px 0 10px;font-weight:700;">
         ♿ Se anunciará como apta para personas de la tercera edad o con discapacidad
       </div>
-
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin:-4px 0 0;font-weight:400;">
-        <input type="checkbox" id="wp-nueva" style="width:auto;" onchange="scheduleDraftSave()"> Marcar como "Nueva" en el sitio web
-      </label>
 
       <!-- 6. Amenidades -->
       <div class="form-group"><label>Amenidades</label>
@@ -2635,8 +2684,10 @@
         </div>
       </div>
 
+
+      <div class="wp-sec">✍️ 5. Descripción</div>
       <!-- 7. Descripción -->
-      <div class="form-group"><label>Descripción</label>
+      <div class="form-group">
         <div style="display:flex;gap:6px;margin-bottom:6px;">
           <button type="button" title="Negrita" onclick="wrapDescSelection('b')" style="width:30px;height:28px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;font-weight:700;font-size:13px;">B</button>
           <button type="button" title="Subrayado" onclick="wrapDescSelection('u')" style="width:30px;height:28px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;text-decoration:underline;font-size:13px;">U</button>
@@ -2646,21 +2697,6 @@
         <textarea id="wp-descripcion" rows="6" placeholder="Descripción para el sitio web..." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;" oninput="scheduleDraftSave()"></textarea>
       </div>
 
-      <!-- 8. Fotos -->
-      <div class="form-group" id="fg-fotos">
-        <label>Fotos <span style="text-transform:none;font-weight:400;color:var(--text-muted);">— la primera es la portada, se comprimen automáticamente al subir</span></label>
-        <input type="file" id="wp-fotos-input" accept="image/*" multiple onchange="handlePropFotos(this)" style="font-size:13px;">
-        <div id="wp-fotos-status" style="font-size:12px;color:var(--text-muted);margin-top:4px;"></div>
-        <div id="wp-fotos-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
-      </div>
-
-      <!-- 8b. Video de recorrido -->
-      <div class="form-group" id="fg-video">
-        <label>Video de recorrido <span style="text-transform:none;font-weight:400;color:var(--text-muted);">— opcional, máx. 60MB (comprime el video antes de subirlo si pesa más)</span></label>
-        <input type="file" id="wp-video-input" accept="video/*" onchange="handlePropVideo(this)" style="font-size:13px;">
-        <div id="wp-video-status" style="font-size:12px;color:var(--text-muted);margin-top:4px;"></div>
-        <div id="wp-video-preview" style="margin-top:8px;"></div>
-      </div>
 
       <button type="button" onclick="openPropPreview()" style="background:transparent;border:1px dashed var(--border);color:var(--gold-dark);font-size:12.5px;font-weight:600;padding:9px;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;">👁 Vista previa rápida</button>
 
@@ -10443,8 +10479,11 @@ function interesScore(p){ const i=_wpInteres[p.id]; return i ? i.vistas + i.clic
 // Checklist de una ficha para venderse bien en el sitio
 function fichaChecklist(p){
   const nf = Array.isArray(p.fotos) ? p.fotos.filter(Boolean).length : 0;
+  // El mínimo de 8 fotos solo aplica a casas Disponibles; en preventa/reservada basta 1.
+  const disp = p.estatus === 'disponible';
   return [
-    { ok: nf >= 8, txt: nf >= 8 ? nf+' fotos' : 'fotos ('+nf+'/8)' },
+    disp ? { ok: nf >= 8, txt: nf >= 8 ? nf+' fotos' : 'fotos ('+nf+'/8)' }
+         : { ok: nf >= 1, txt: nf ? nf+' foto'+(nf>1?'s':'') : 'al menos 1 foto' },
     { ok: !!(p.video_url||'').trim(), txt: 'video' },
     { ok: String(p.descripcion||'').trim().length >= 150, txt: 'descripción' },
     { ok: !!(p.recamaras && p.banos && p.m2_construccion), txt: 'recámaras, baños y m²' },
@@ -10598,13 +10637,56 @@ function renderFotosPreview(){
     const el = document.getElementById('wp-fotos-preview');
     if (!el) return;
     el.innerHTML = _propFotos.map((url,i)=>`<div class="wp-foto-thumb" data-idx="${i}" style="position:relative;touch-action:none;cursor:grab;" onpointerdown="fotoDragStart(event,${i})" onpointermove="fotoDragMove(event)" onpointerup="fotoDragEnd(event)" onpointercancel="fotoDragEnd(event)">
-        <img src="${esc(url)}" draggable="false" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:${i===0?'2px solid var(--navy)':'1px solid var(--border)'};pointer-events:none;-webkit-user-drag:none;">
-            ${i===0?'<span style="position:absolute;bottom:2px;left:2px;background:var(--navy);color:#fff;font-size:9px;padding:1px 4px;border-radius:4px;pointer-events:none;">Portada</span>':''}
-                <button onclick="quitarFotoProp(${i})" onpointerdown="event.stopPropagation()" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:var(--danger,#dc2626);color:#fff;font-size:11px;cursor:pointer;line-height:1;">×</button>
-                  </div>`).join('');
+        <img src="${esc(url)}" draggable="false" style="width:${i===0?'120px':'88px'};height:88px;object-fit:cover;border-radius:8px;border:${i===0?'3px solid var(--gold)':'1px solid var(--border)'};pointer-events:none;-webkit-user-drag:none;display:block;">
+        ${i===0?'<span style="position:absolute;bottom:4px;left:4px;background:var(--gold);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;pointer-events:none;">⭐ Portada</span>':`<button type="button" class="wp-foto-btn" onclick="hacerPortadaProp(${i})" onpointerdown="event.stopPropagation()" title="Usar como portada" style="bottom:4px;left:4px;background:#fff;">⭐</button><span style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;padding:1px 5px;border-radius:4px;pointer-events:none;">${i+1}</span>`}
+        <button type="button" class="wp-foto-btn" onclick="quitarFotoProp(${i})" onpointerdown="event.stopPropagation()" title="Quitar foto" style="top:-7px;right:-7px;background:var(--danger,#dc2626);color:#fff;">×</button>
+      </div>`).join('');
+    const tip = document.getElementById('wp-fotos-tip');
+    if (tip) tip.style.display = _propFotos.length > 1 ? '' : 'none';
+    renderFichaLive();
 }
+function hacerPortadaProp(i){
+  const f = _propFotos.splice(i,1)[0];
+  _propFotos.unshift(f);
+  renderFotosPreview(); scheduleDraftSave();
+}
+function wpDropFotos(ev){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('over');
+  const files = Array.from(ev.dataTransfer?.files || []).filter(f => f.type.startsWith('image/'));
+  if (files.length) handlePropFotos({ files, value: '' });
+}
+function wpStep(id, dir){
+  const el = document.getElementById(id);
+  const step = parseFloat(el.step) || 1;
+  el.value = Math.min(99, Math.max(0, (parseFloat(el.value) || 0) + dir * step));
+  scheduleDraftSave(); renderFichaLive();
+}
+// Semáforo "ficha completa" dentro del formulario (mismas reglas que las tarjetas)
+function renderFichaLive(){
+  const el = document.getElementById('wp-ficha-live');
+  if (!el) return;
+  const v = id => document.getElementById(id)?.value || '';
+  const estatus = v('wp-estatus');
+  const nf = _propFotos.length;
+  const cnt = document.getElementById('wp-fotos-count');
+  if (cnt) {
+    if (estatus === 'disponible') cnt.innerHTML = nf >= 8 ? `<span style="color:#15803D;font-weight:700;">✓ ${nf} fotos</span>` : `<b style="color:#B45309;">${nf} de 8</b> fotos mínimo`;
+    else cnt.textContent = nf + ' foto' + (nf===1?'':'s') + ' · sin mínimo en ' + (WP_ESTATUS_LABELS[estatus]||estatus).toLowerCase();
+  }
+  if (estatus === 'vendida') { el.style.display = 'none'; return; }
+  const ch = fichaChecklist({ estatus, fotos: _propFotos, video_url: _propVideo, descripcion: v('wp-descripcion'),
+    recamaras: parseInt(v('wp-recamaras')) || 0, banos: parseFloat(v('wp-banos')) || 0, m2_construccion: parseFloat(v('wp-m2c')) || 0,
+    fraccionamiento: v('wp-fracc').trim(), municipio: v('wp-municipio') });
+  const ok = ch.filter(c => c.ok).length, completa = ok === ch.length;
+  el.className = 'wp-ficha' + (completa ? ' ok' : '');
+  el.style.display = '';
+  el.innerHTML = `<div class="wp-ficha-tit">${completa ? '✅ Ficha completa — lista para vender' : '📋 Ficha ' + ok + ' de ' + ch.length + ' — completa lo amarillo para que luzca mejor'}</div>
+    <div class="wp-ficha-items">${ch.map(c => `<span class="${c.ok?'ok':'no'}">${c.ok?'✓':'○'} ${esc(c.txt)}</span>`).join('')}</div>`;
+}
+['input','change'].forEach(t => document.addEventListener(t, e => { if (e.target && e.target.closest && e.target.closest('#modal-propiedad')) renderFichaLive(); }));
 
-  function quitarFotoProp(i){ _propFotos.splice(i,1); renderFotosPreview(); }
+  function quitarFotoProp(i){ _propFotos.splice(i,1); renderFotosPreview(); scheduleDraftSave(); }
 
 function renderVideoPreview(){
     const el = document.getElementById('wp-video-preview');
@@ -10613,6 +10695,7 @@ function renderVideoPreview(){
         <video src="${esc(_propVideo)}" controls preload="metadata" style="width:180px;border-radius:8px;border:1px solid var(--border);display:block;"></video>
         <button onclick="quitarVideoProp()" style="position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;border:none;background:var(--danger,#dc2626);color:#fff;font-size:13px;cursor:pointer;line-height:1;">×</button>
       </div>` : '';
+    renderFichaLive();
 }
 function quitarVideoProp(){ _propVideo = ''; document.getElementById('wp-video-input').value = ''; renderVideoPreview(); scheduleDraftSave(); }
 async function handlePropVideo(input){
@@ -10669,6 +10752,7 @@ async function handlePropVideo(input){
       }
       _fotoDragIdx = null;
       renderFotosPreview();
+      scheduleDraftSave();
   }
 
 function compressImageFile(file, maxDim = 1600, quality = 0.75){
@@ -10819,7 +10903,7 @@ function renderRichText(str){
 // ---- Vista previa rápida ----
 function openPropPreview(){
   const titulo = document.getElementById('wp-titulo').value.trim().toUpperCase() || 'Sin título';
-  const direccion = document.getElementById('wp-direccion-full').value.trim() || 'Sin dirección';
+  const direccion = [document.getElementById('wp-fracc').value.trim(), document.getElementById('wp-municipio').value].filter(Boolean).join(', ') || document.getElementById('wp-direccion-full').value.trim() || 'Sin ubicación';
   const precioVal = document.getElementById('wp-precio').value.trim();
   const estatus = document.getElementById('wp-estatus').value;
   const rec = document.getElementById('wp-recamaras').value || 0;
@@ -10984,7 +11068,7 @@ async function savePropiedad(mode){
   // Avisos que no bloquean (la ficha se ve mejor con ellos)
   if (strict) {
     const avisos = [];
-    if (_propFotos.length < 5) avisos.push('tiene solo ' + _propFotos.length + ' foto(s); con 8 o más la ficha luce mucho mejor');
+    if (document.getElementById('wp-estatus').value === 'disponible' && _propFotos.length < 8) avisos.push('tiene solo ' + _propFotos.length + ' foto(s); para una casa disponible pedimos mínimo 8');
     if (!document.getElementById('wp-descripcion').value.trim()) avisos.push('no tiene descripción');
     if (avisos.length && !(await showConfirm('La casa ' + avisos.join(' y ') + '. ¿Publicar de todos modos?'))) return;
   }
