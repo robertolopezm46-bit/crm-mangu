@@ -580,6 +580,17 @@
 
     #conv-board{display:none;}
 
+  /* Respuestas rápidas y barra de siguiente paso (5-nov-2026): escritorio y celular */
+  .qr-bar{display:flex;gap:6px;align-items:center;overflow-x:auto;padding:8px 12px;border-top:1px solid var(--border,#eee);background:#fafafa;flex-shrink:0;scrollbar-width:thin;}
+  .qr-bar select{flex-shrink:0;max-width:150px;font-size:12px;padding:5px 6px;border:1px solid #d6d6d6;border-radius:14px;background:#fff;font-family:inherit;}
+  .qr-chip{flex-shrink:0;border:1px solid #d6d6d6;background:#fff;border-radius:14px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit;color:#1f2430;}
+  .qr-chip:hover{border-color:#C9A84C;background:#FFFBEB;}
+  .paso-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;font-size:12px;flex-shrink:0;}
+  .paso-item{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;background:#fff;border:1px solid #E2E8F0;}
+  .paso-item.alerta{background:#FEF2F2;border-color:#FCA5A5;color:#991B1B;font-weight:600;}
+  .paso-item.info{color:#475569;}
+  .paso-item button{border:1px solid #1f2430;background:#1f2430;color:#fff;border-radius:6px;padding:3px 8px;font-size:11.5px;cursor:pointer;font-family:inherit;}
+  .paso-item input{border:1px solid #d6d6d6;border-radius:6px;padding:3px 6px;font-size:12px;width:150px;font-family:inherit;}
   @media (min-width: 769px) {
     #section-whatsapp.tab-plantillas #conv-board{display:none;}
     #section-whatsapp:not(.tab-plantillas) #mob-wa-list{display:none;}
@@ -3381,8 +3392,10 @@ function ensureWaChatModalDom(){
     '  </div>',
     '  <div id="wachat-attr-box" style="display:none;"></div>',
     '  <div id="wachat-warn" style="display:none;"></div>',
+    '  <div class="paso-bar" id="paso-bar-m" style="display:none;"></div>',
     '  <div id="wachat-body"><div id="wachat-empty">Cargando...</div></div>',
     '  <div id="wachat-preview" style="display:none;"></div>',
+    '  <div class="qr-bar" id="qr-bar-m"></div>',
     '  <div id="wachat-footer">',
     '    <label id="wachat-attach-btn" for="wachat-file" title="Adjuntar foto o video">&#128206;</label>',
     '    <input type="file" id="wachat-file" accept="image/*,video/*" style="display:none;" onchange="handleWaChatAttach(this)">',
@@ -3487,6 +3500,7 @@ if(__waChatProspectId){ const __pSeen=(DB.prospects||[]).find(function(x){return
   document.getElementById('wachat-overlay').style.display = 'flex';
   document.getElementById('wachat-input').value = '';
   clearWaChatAttach();
+  renderQuickReplies('m');
   if (window.__syncWaChatViewport) window.__syncWaChatViewport();
   await loadAndRenderWaChat();
   if (window.innerWidth > 768) document.getElementById('wachat-input').focus();
@@ -3519,8 +3533,11 @@ async function loadAndRenderWaChat(){
     .from('crm_wa_messages')
     .select('id, direction, message_type, body, status, created_at, sent_by, error_detail, media_url, template_name')
     .like('phone', '%' + __waChatPhone + '%')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(200);
+  // 5-nov-2026: antes se pedían los 200 MÁS VIEJOS y en conversaciones largas
+  // no aparecían los mensajes nuevos. Ahora se piden los 200 más recientes.
+  if (data) data.reverse();
   if (error || !data) {
     body.innerHTML = '<div id="wachat-empty">No se pudo cargar la conversacion.</div>';
     return;
@@ -3547,7 +3564,7 @@ async function loadAndRenderWaChat(){
       } else if (m.message_type === 'audio' && m.media_url) {
         content = '<audio class="wachat-media-audio" src="' + esc(m.media_url) + '" controls></audio>';
       } else {
-        content = m.message_type === 'audio' ? 'ð¤ Audio' : (m.message_type === 'image' ? 'ð· Imagen' : (m.message_type === 'video' ? 'ð¥ Video' : esc(m.body || '')));
+        content = m.message_type === 'audio' ? '🎤 Audio' : (m.message_type === 'image' ? '📷 Imagen' : (m.message_type === 'video' ? '🎥 Video' : esc(m.body || '')));
       }
       const ticks = (isOut && !failed) ? waStatusTicks(m.status) : '';
       const failNote = failed
@@ -3560,6 +3577,7 @@ async function loadAndRenderWaChat(){
   else { body.scrollTop = Math.max(0, body.scrollHeight - body.clientHeight - __distFromBottom); }
 
   renderReactivacionWarn(document.getElementById('wachat-warn'), data, 'm');
+  renderSiguientePaso('m', data);
 }
 
 async function handleWaChatAttach(input){
@@ -3953,6 +3971,117 @@ return;
 if (where === 'm') { await loadAndRenderWaChat(); }
 else { await loadAndRenderConvChat(); if (typeof renderConvBoard === 'function') renderConvBoard(); }
 }
+// ── Respuestas rápidas y "siguiente paso" en el chat (5-nov-2026) ──
+// Los botones ESCRIBEN el mensaje en la caja (no lo envían): Alfredo lo revisa,
+// lo ajusta y lo manda. Así los mensajes salen completos, juntos y sin faltas.
+function qrProspecto(w){ const id = w==='m' ? __waChatProspectId : __convChatProspectId; return id ? (DB.prospects||[]).find(x=>String(x.id)===String(id)) : null; }
+function qrSinNombre(p){ return !p || !p.name || /^Sin nombre/i.test(p.name); }
+function qrPrimerNombre(p){ if(qrSinNombre(p)) return ''; const n=String(p.name).trim().split(/\s+/)[0]||''; return n.charAt(0).toUpperCase()+n.slice(1).toLowerCase(); }
+function qrTitulo(t){ return String(t||'').toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase()); }
+function qrCasas(){ return (webPropsDB||[]).filter(w=>w.activa && ['disponible','reservada','preventa'].includes(w.estatus)); }
+function qrCasaSel(w){ const id=document.getElementById('qr-casa-'+w)?.value; return qrCasas().find(c=>String(c.id)===String(id)) || null; }
+function qrLigaCasa(c){ return c.slug ? 'https://mangu.mx/'+c.slug : 'https://mangu.mx/?p='+c.id; }
+function qrFecha(d){ const t=d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'}).replace(',',''); return t.charAt(0).toUpperCase()+t.slice(1); }
+function renderQuickReplies(w){
+  const bar = document.getElementById('qr-bar-'+w);
+  if (!bar) return;
+  const p = qrProspecto(w);
+  const casas = qrCasas();
+  const pref = p && p.prop ? String(p.prop).trim().toUpperCase() : '';
+  const opts = casas.map(c=>`<option value="${esc(c.id)}" ${String(c.titulo||'').trim().toUpperCase()===pref?'selected':''}>${esc(qrTitulo(c.titulo))}</option>`).join('');
+  const chip = (k,t,tip) => `<button type="button" class="qr-chip" title="${esc(tip)}" onclick="usarRespuestaRapida('${w}','${k}')">${t}</button>`;
+  bar.innerHTML = (casas.length ? `<select id="qr-casa-${w}" title="Casa para la ficha, la ubicación y la visita">${opts}</select>` : '')
+    + chip('saludo','👋 Saludo','Presentación con tu nombre')
+    + chip('nombre','🙋 Pedir nombre','¿Con quién tengo el gusto?')
+    + (casas.length ? chip('ficha','🏠 Ficha','Liga de la casa en mangu.mx con fotos y precio') + chip('ubicacion','📍 Ubicación','Fraccionamiento y mapa') : '')
+    + chip('visita','📅 Proponer 2 horarios','Propone un día entre semana y el sábado')
+    + chip('credito','💳 Crédito','Ofrece precalificación sin costo');
+}
+function usarRespuestaRapida(w, k){
+  const p = qrProspecto(w);
+  const c = qrCasaSel(w);
+  const nom = qrPrimerNombre(p);
+  const yo = String(DB.currentUser?.name || '').trim() || 'tu asesor';
+  const casaT = c ? qrTitulo(c.titulo) : 'la casa';
+  let t = '';
+  if (k==='saludo') t = `¡Hola${nom?' '+nom:''}! 👋 Soy ${yo}, de MANGU Bienes Raíces. Con gusto te ayudo.` + (qrSinNombre(p) ? ' ¿Con quién tengo el gusto?' : '');
+  else if (k==='nombre') t = 'Para atenderte mejor, ¿con quién tengo el gusto? 😊';
+  else if (k==='ficha' && c) t = `Te comparto ${casaT} con fotos, precio y todos los detalles 👉 ${qrLigaCasa(c)}\n\n¿Te gustaría conocerla en persona?`;
+  else if (k==='ubicacion' && c) {
+    const zona = [c.fraccionamiento, c.municipio].filter(Boolean).join(', ') || c.ubicacion || 'Pachuca';
+    const q = encodeURIComponent([(c.direccion||c.fraccionamiento||''), c.municipio||'Pachuca', 'Hidalgo'].filter(Boolean).join(', '));
+    t = `📍 ${casaT} está en ${zona}.\nAquí la ves en el mapa: https://www.google.com/maps/search/?api=1&query=${q}\n\nLa dirección exacta te la compartimos al confirmar tu visita.`;
+  }
+  else if (k==='visita') {
+    const hoy = new Date(); hoy.setHours(12,0,0,0);
+    const sab = new Date(hoy); sab.setDate(hoy.getDate() + (((6 - hoy.getDay()) + 7) % 7 || 7));
+    const ent = new Date(hoy); ent.setDate(hoy.getDate()+1); while (ent.getDay()===0 || ent.getDay()===6) ent.setDate(ent.getDate()+1);
+    const [a,b] = ent < sab ? [[ent,'5:00 pm'],[sab,'11:00 am']] : [[sab,'11:00 am'],[ent,'5:00 pm']];
+    t = `¿Te gustaría conocer ${c ? casaT : 'la casa'}? Te propongo dos opciones:\n\n• ${qrFecha(a[0])} a las ${a[1]}\n• ${qrFecha(b[0])} a las ${b[1]}\n\n¿Cuál te acomoda mejor? Si prefieres otro día u hora, dime y lo ajustamos 🙌`;
+  }
+  else if (k==='credito') t = 'Con gusto te ayudamos con el crédito 🙌 Trabajamos con crédito bancario, Infonavit y Fovissste. Si quieres, te hacemos una precalificación sin costo para saber cuánto te prestan: solo necesito tu ingreso mensual aproximado y tu edad. ¿Te parece?';
+  if (!t) return;
+  const input = document.getElementById(w==='m' ? 'wachat-input' : 'cchat-input');
+  if (!input) return;
+  input.value = input.value.trim() ? input.value.trim() + '\n\n' + t : t;
+  input.focus();
+  try { input.setSelectionRange(input.value.length, input.value.length); } catch(e) {}
+  input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+}
+// Barra "siguiente paso": recuerda poner el nombre, agendar la cita y la próxima acción.
+function renderSiguientePaso(w, data){
+  const bar = document.getElementById('paso-bar-'+w);
+  if (!bar) return;
+  const p = qrProspecto(w);
+  if (!p || p.phase==='Perdido') { bar.style.display='none'; bar.innerHTML=''; return; }
+  const hoyStr = new Date().toLocaleDateString('en-CA',{timeZone:'America/Mexico_City'});
+  const cita = (DB.citas||[]).filter(c=>String(c.prospect_id)===String(p.id) && !c.cancelada && String(c.date||'')>=hoyStr).sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0];
+  const hablóVisita = (data||[]).slice(-40).some(m=>/visit|conocer|cita|agendar|fin de semana/i.test(m.body||''));
+  const items = [];
+  if (qrSinNombre(p)) items.push(`<span class="paso-item alerta">✏️ Falta su nombre <input id="paso-nombre-${w}" placeholder="Nombre del cliente" onkeydown="if(event.key==='Enter'){event.preventDefault();guardarNombreChat('${w}');}"><button type="button" onclick="guardarNombreChat('${w}')">Guardar</button></span>`);
+  if (cita) items.push(`<span class="paso-item info">📅 Cita: ${esc(new Date(cita.date+'T12:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}))} ${esc(String(cita.time||'').slice(0,5))}</span>`);
+  else if (p.phase==='Registro' || p.phase==='Visita') items.push(`<span class="paso-item ${hablóVisita?'alerta':''}">${hablóVisita?'⚠️ Hablaron de visita y no hay cita':'📅 Sin cita agendada'} <button type="button" onclick="agendarCitaDesdeChat('${w}')">Agendar cita</button></span>`);
+  if (p.proxima_accion) items.push(`<span class="paso-item info" title="Próxima acción">🎯 ${esc(p.proxima_accion)}${p.proxima_accion_fecha?' · '+esc(new Date(p.proxima_accion_fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})):''}</span>`);
+  else if (!cita) items.push(`<span class="paso-item">🎯 Sin próxima acción <button type="button" onclick="${w==='m'?'closeWaChatModal();':''}openProximaAccion('${escJs(p.id)}')">Poner</button></span>`);
+  bar.innerHTML = items.join('');
+  bar.style.display = items.length ? 'flex' : 'none';
+}
+async function guardarNombreChat(w){
+  const p = qrProspecto(w);
+  const inp = document.getElementById('paso-nombre-'+w);
+  const nombre = (inp?.value||'').trim().replace(/\s+/g,' ');
+  if (!p || nombre.length < 2) { showToast('Escribe el nombre del cliente','error'); return; }
+  const { error } = await supabase.from('crm_prospects').update({ name: nombre }).eq('id', p.id);
+  if (error) { showToast('No se pudo guardar: '+error.message,'error'); return; }
+  p.name = nombre;
+  showToast('Nombre guardado ✓','success');
+  if (w==='m') { const t=document.getElementById('wachat-title'); if(t) t.textContent=nombre; await loadAndRenderWaChat(); }
+  else {
+    const h=document.querySelector('#conv-panel .cchat-header-name'); if(h) h.textContent=nombre;
+    const conv=(window.__convList||[]).find(c=>c.kind==='prospect' && String(c.id)===String(p.id)); if(conv) conv.name=nombre;
+    renderConvList(window.__convList||[]); await loadAndRenderConvChat();
+  }
+  renderQuickReplies(w);
+}
+// Abre "Agendar cita" con el cliente y la casa ya elegidos.
+function agendarCitaDesdeChat(w){
+  const p = qrProspecto(w);
+  if (!p) return;
+  if (typeof puedeAgendarCita==='function' && !puedeAgendarCita(p)) { showToast('No tienes permiso para agendar la cita de este cliente','error'); return; }
+  const c = qrCasaSel(w);
+  if (w==='m') closeWaChatModal();
+  showSection('citas');
+  if (typeof cancelarEdicionCita==='function') cancelarEdicionCita();
+  const isMobile = window.innerWidth<=768;
+  if (isMobile) openMobileAgendarCita(); else { populateSelects(); populateCitaPropSelect(); }
+  const sel = document.getElementById('cita-prospect'); if (sel) sel.value = String(p.id);
+  const selProp = document.getElementById('cita-prop');
+  const want = String((c && c.titulo) || p.prop || '').trim().toUpperCase();
+  const opt = selProp ? Array.from(selProp.options).find(o=>String(o.value).trim().toUpperCase()===want) : null;
+  if (opt) selProp.value = opt.value;
+  if (!isMobile) sel?.closest('.card')?.scrollIntoView({behavior:'smooth', block:'center'});
+  showToast('Elige fecha y hora y guarda la cita','info');
+}
 function convMatchesFilter(c,key){
 if(key==='calif_reactivar') return convParaReactivar(c);
 if(key==='calif_caliente') return califKey(c)==='caliente';
@@ -4200,8 +4329,10 @@ ${(!conv.adReferral && !conv.siteProperty && conv.googleAdsInterest) ? `<div cla
 </div>
 </div>` : ''}
 <div class="cchat-warn" id="cchat-warn" style="display:none;"></div>
+<div class="paso-bar" id="paso-bar-d" style="display:none;"></div>
 <div class="cchat-body" id="cchat-body"><div class="conv-panel-empty">Cargando...</div></div>
 <div class="cchat-preview" id="cchat-preview" style="display:none;"></div>
+<div class="qr-bar" id="qr-bar-d"></div>
 <div class="cchat-footer">
 <label class="cchat-attach-btn" for="cchat-file" title="Adjuntar foto o video">&#128206;</label>
 <input type="file" id="cchat-file" accept="image/*,video/*" style="display:none;" onchange="handleConvChatAttach(this)">
@@ -4213,6 +4344,7 @@ const inputEl = document.getElementById('cchat-input');
 if (inputEl) inputEl.addEventListener('keydown', function(e){
 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendConvChatMessage(); }
 });
+renderQuickReplies('d');
 await loadAndRenderConvChat();
 if (inputEl) inputEl.focus();
 }
@@ -4300,8 +4432,9 @@ const { data, error } = await supabase
 .from('crm_wa_messages')
 .select('id, direction, message_type, body, status, created_at, sent_by, error_detail, media_url, template_name')
 .like('phone', '%' + __convChatPhone + '%')
-.order('created_at', { ascending: true })
+.order('created_at', { ascending: false })
 .limit(200);
+if (data) data.reverse(); // 5-nov-2026: los 200 más recientes, en orden
 if (error || !data) {
 body.innerHTML = '<div class="conv-panel-empty">No se pudo cargar la conversación.</div>';
 return;
@@ -4340,6 +4473,7 @@ return '<div class="cchat-msg ' + (isOut ? 'out' : 'in') + (failed ? ' failed' :
 if (__wasNearBottom) { body.scrollTop = body.scrollHeight; }
 else { body.scrollTop = Math.max(0, body.scrollHeight - body.clientHeight - __distFromBottom); }
 renderReactivacionWarn(document.getElementById('cchat-warn'), data, 'd');
+renderSiguientePaso('d', data);
 }
 async function sendConvChatMessage(){
 if (__convChatPendingFile) { await sendConvChatMedia(); return; }
