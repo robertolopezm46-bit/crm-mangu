@@ -2766,6 +2766,29 @@
   </div>
 </div>
 
+<!-- MODAL LIGAS DE DRIVE (4-nov-2026): carpetas de la casa en el Drive de mangu.archivo -->
+<div class="modal-overlay" id="modal-drive-prop">
+  <div class="modal" style="max-width:480px;">
+    <h3>📂 Carpetas de Drive de la casa</h3>
+    <p id="dp-prop-titulo" style="font-size:13px;font-weight:700;margin:0 0 4px;"></p>
+    <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px;">Abre la carpeta en Drive, copia la liga del navegador y pégala aquí.</p>
+    <input type="hidden" id="dp-prop-id">
+    <div class="form-group" style="margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:700;">📸 Fotos y planos <span style="font-weight:400;color:var(--text-muted);">(MANGU – Comercial)</span></label>
+      <input type="url" id="dp-comercial" placeholder="https://drive.google.com/drive/folders/..." style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;box-sizing:border-box;">
+    </div>
+    <div class="form-group" style="margin-bottom:6px;">
+      <label style="font-size:12px;font-weight:700;">📁 Expediente <span style="font-weight:400;color:var(--text-muted);">(MANGU – Expedientes)</span></label>
+      <input type="url" id="dp-expediente" placeholder="https://drive.google.com/drive/folders/..." style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;box-sizing:border-box;">
+    </div>
+    <div id="dp-error" style="display:none;font-size:12px;color:var(--danger);margin-top:6px;"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
+      <button class="btn-cancel" onclick="closeModal('drive-prop')">Cancelar</button>
+      <button class="btn-primary" id="dp-save-btn" onclick="saveDriveProp()">Guardar ligas</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL VISTA PREVIA RÁPIDA -->
 <div class="modal-overlay" id="modal-prop-preview">
   <div class="modal" style="max-width:380px;padding:0;overflow:hidden;">
@@ -10401,6 +10424,7 @@ async function loadWebProps(){
   webPropsDB = data || [];
   renderWebProps();
   cargarInteresWeb().then(()=>{ if(isSectionActive('sitioweb')) renderWebProps(); });
+  cargarDriveProps().then(()=>{ if(isSectionActive('sitioweb')) renderWebProps(); });
   populatePropSelect();
   populateContratoPropSelect();
     populateCitaPropSelect();
@@ -10594,6 +10618,7 @@ function renderWebProps(){
           <button onclick="toggleActivaProp('${escJs(p.id)}')" title="${p.activa?'Quita la casa de mangu.mx (no se borra nada; puedes volver a publicarla)':'Vuelve a mostrar la casa en mangu.mx'}" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;">${p.activa?'Dar de baja':'Publicar'}</button>
           ${p.activa?'':`<button onclick="deleteWebProp('${escJs(p.id)}')" title="Borra la casa y sus fotos para siempre" style="padding:6px 10px;font-size:12px;border:1px solid var(--danger);background:var(--surface);color:var(--danger);border-radius:6px;cursor:pointer;">Eliminar</button>`}
         </div>
+        ${archivosCasaHTML(p)}
         <div style="display:flex;gap:10px;align-items:center;margin-top:8px;font-size:11.5px;color:var(--text-muted);">
           ${p.activa&&p.slug?`<a href="https://mangu.mx/${encodeURIComponent(p.slug)}" target="_blank" rel="noopener" style="color:var(--navy);font-weight:600;">Ver en mangu.mx ↗</a><button onclick="copiarLinkProp('${escJs(p.slug)}')" style="border:0;background:none;color:var(--text-muted);cursor:pointer;font-size:11.5px;padding:0;text-decoration:underline;">Copiar link</button>`:`<span>No se ve en el sitio${p.estatus==='vendida'?'':' (oculta)'}</span>`}
           ${(p.fraccionamiento&&p.municipio)?'':'<span style="color:#b45309;font-weight:600;" title="Edítala para elegir fraccionamiento y municipio: el sitio los usa para filtrar y agrupar">⚠ Falta zona</span>'}
@@ -10601,6 +10626,70 @@ function renderWebProps(){
       </div>
     </div>`;
   }).join('');
+}
+
+// ── 4-nov-2026: "Archivos de la casa" — botones a sus carpetas del Drive de mangu.archivo ──
+// Las ligas viven en web_propiedades_drive (tabla privada, solo usuarios con sesión),
+// no en web_propiedades, que el sitio mangu.mx lee de forma pública.
+// Fotos y planos (MANGU – Comercial): Admin y Alfredo. Expediente (MANGU – Expedientes): solo Admin.
+// Drive decide el acceso real: cada quien solo abre las carpetas que le compartieron.
+let drivePropsDB = {};
+async function cargarDriveProps(){
+  const { data, error } = await supabase.from('web_propiedades_drive').select('propiedad_id,comercial_url,expediente_url');
+  if (error) { console.warn('Drive props:', error.message); return; }
+  drivePropsDB = {};
+  (data || []).forEach(r => { drivePropsDB[r.propiedad_id] = r; });
+}
+function archivosCasaHTML(p){
+  const d = drivePropsDB[p.id] || {};
+  const admin = isAdmin();
+  const boton = (url, icono, texto, titulo) => url
+    ? `<a href="${esc(url)}" target="_blank" rel="noopener" title="${esc(titulo)}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 6px;font-size:12px;font-weight:600;border:1px solid var(--navy);background:var(--surface);color:var(--navy);border-radius:6px;text-decoration:none;">${icono} ${texto}</a>`
+    : `<span title="Esta casa todavía no tiene su carpeta ligada" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 6px;font-size:12px;border:1px dashed var(--border);color:var(--text-muted);border-radius:6px;">${icono} ${texto} · sin carpeta</span>`;
+  return `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.3px;">📂 ARCHIVOS DE LA CASA</span>
+      ${admin?`<button onclick="openDrivePropModal('${escJs(p.id)}')" title="Pegar o cambiar las ligas de Drive" style="border:0;background:none;color:var(--text-muted);cursor:pointer;font-size:11.5px;padding:0;text-decoration:underline;">✏️ Ligas</button>`:''}
+    </div>
+    <div style="display:flex;gap:6px;">
+      ${boton(d.comercial_url, '📸', 'Fotos y planos', 'Abre la carpeta de la casa en MANGU – Comercial')}
+      ${admin ? boton(d.expediente_url, '📁', 'Expediente', 'Abre la carpeta de la casa en MANGU – Expedientes') : ''}
+    </div>
+  </div>`;
+}
+function openDrivePropModal(id){
+  if (!isAdmin()) return;
+  const p = webPropsDB.find(x => x.id === id);
+  if (!p) return;
+  const d = drivePropsDB[id] || {};
+  document.getElementById('dp-prop-id').value = id;
+  document.getElementById('dp-prop-titulo').textContent = p.titulo || '';
+  document.getElementById('dp-comercial').value = d.comercial_url || '';
+  document.getElementById('dp-expediente').value = d.expediente_url || '';
+  document.getElementById('dp-error').style.display = 'none';
+  document.getElementById('modal-drive-prop').classList.add('open');
+}
+async function saveDriveProp(){
+  const id = document.getElementById('dp-prop-id').value;
+  const limpiar = v => v.trim() || null;
+  const com = limpiar(document.getElementById('dp-comercial').value);
+  const exp = limpiar(document.getElementById('dp-expediente').value);
+  const err = document.getElementById('dp-error');
+  const esDrive = u => !u || /^https:\/\/(drive|docs)\.google\.com\//i.test(u);
+  if (!esDrive(com) || !esDrive(exp)) {
+    err.textContent = 'Pega una liga de Google Drive (empieza con https://drive.google.com/).';
+    err.style.display = ''; return;
+  }
+  const btn = document.getElementById('dp-save-btn');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const { error } = await supabase.from('web_propiedades_drive')
+    .upsert({ propiedad_id: id, comercial_url: com, expediente_url: exp, updated_at: new Date().toISOString() });
+  btn.disabled = false; btn.textContent = 'Guardar ligas';
+  if (error) { err.textContent = 'No se pudo guardar: ' + error.message; err.style.display = ''; return; }
+  drivePropsDB[id] = { propiedad_id: id, comercial_url: com, expediente_url: exp };
+  closeModal('drive-prop');
+  renderWebProps();
+  showToast('Ligas de Drive guardadas', 'success');
 }
 
 function openPropModal(id){
