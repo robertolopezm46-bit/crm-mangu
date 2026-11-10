@@ -5714,6 +5714,8 @@ function isAdmin(){return ['Administrador','Gerencia'].includes(DB.currentUser?.
 const COMPLIANCE_FASES = ['Proceso','Cierre'];
 const COMPLIANCE_SECCIONES = ['kanban','vendidos','sitioweb'];
 function isCompliance(){ return DB.currentUser?.role === 'Compliance'; }
+// Compliance no vende ni atiende prospectos: no aparece en las listas de vendedor/asesor
+function usuariosVendedores(){ return (DB.users||[]).filter(u=>u.role!=='Compliance'); }
 function fasesTablero(){ return isCompliance() ? COMPLIANCE_FASES : PHASES; }
 // ── Permisos de Contratos (firma electrónica DocuSign) ──
 // Roberto (y Administrador/Gerencia): control total — crear, editar, eliminar y enviar a firma.
@@ -5787,7 +5789,7 @@ function getVendidosProspects(){
 function populateSelects(){
   // Admin ve todos los vendedores; otros solo se ven a sí mismos
   const sellers = isAdmin()
-    ? DB.users.map(u=>u.name)
+    ? usuariosVendedores().map(u=>u.name)
     : [DB.currentUser.name];
   ['p-seller'].forEach(id=>{
     const el=document.getElementById(id);
@@ -6246,7 +6248,7 @@ function openVentaModal(id, aviso){
   }
   const props=(typeof webPropsDB!=='undefined'?webPropsDB:[]);
   document.getElementById('v-prop-list').innerHTML=props.map(x=>`<option value="${esc(x.titulo)}">`).join('');
-  document.getElementById('v-asesor').innerHTML='<option value="">Seleccionar…</option>'+DB.users.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
+  document.getElementById('v-asesor').innerHTML='<option value="">Seleccionar…</option>'+usuariosVendedores().map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
   document.getElementById('venta-titulo').textContent=p?'💰 Detalles de la venta':'💰 Registrar venta';
   document.getElementById('venta-aviso').textContent=aviso||(p?'':'Para ventas que no pasaron por el Pipeline (referidos, ventas directas o históricas).');
   const val=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v??''; };
@@ -10141,7 +10143,7 @@ function openModal(type, prefill){
     // Modo simple: alta rápida en una columna (valor/fase/fecha ocultos con defaults)
     document.getElementById('modal-prospect').querySelector('.modal').classList.add('modal-simple');
     const sg=document.getElementById('p-seller-group');
-    if(isAdmin()){sg.style.display='';document.getElementById('p-seller').innerHTML=DB.users.map(u=>`<option>${u.name}</option>`).join('');}
+    if(isAdmin()){sg.style.display='';document.getElementById('p-seller').innerHTML=usuariosVendedores().map(u=>`<option>${u.name}</option>`).join('');}
     else{sg.style.display='none';document.getElementById('p-seller').innerHTML=`<option>${DB.currentUser.name}</option>`;}
     // Prefill opcional (usado al registrar desde una conversación de WhatsApp
     // sin registrar — ver registrarDesdeConversacion()). No pisa el flujo
@@ -10375,7 +10377,7 @@ async function editProspect(id){
   document.getElementById('p-notes').value=p.notes.replace(/(^|\n)Referido por:\s*[^\n]*$/i,'').trim();
   document.getElementById('p-edit-id').value=id;
   const sg=document.getElementById('p-seller-group');
-  if(isAdmin()){sg.style.display='';document.getElementById('p-seller').innerHTML=DB.users.map(u=>`<option${u.name===p.seller?' selected':''}>${u.name}</option>`).join('');}
+  if(isAdmin()){sg.style.display='';document.getElementById('p-seller').innerHTML=usuariosVendedores().map(u=>`<option${u.name===p.seller?' selected':''}>${u.name}</option>`).join('');}
   else{sg.style.display='none';document.getElementById('p-seller').innerHTML=`<option>${p.seller}</option>`;}
 }
 async function deleteProspect(id){
