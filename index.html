@@ -581,7 +581,7 @@
     #conv-board{display:none;}
 
   /* Rol Compliance (10-nov-2026): Sitio Web solo consulta, sin vista Perdidos */
-  body.rol-compliance .wp-acciones, body.rol-compliance .wp-nueva, body.rol-compliance #btn-wp-select-mode, body.rol-compliance #kv-btn-perdidos, body.rol-compliance #btn-nuevo-prospecto, body.rol-compliance .kbtn-phase-wrap{display:none !important;}
+  body.rol-compliance .wp-acciones, body.rol-compliance .wp-nueva, body.rol-compliance #btn-wp-select-mode, body.rol-compliance #kv-btn-perdidos, body.rol-compliance #btn-nuevo-prospecto{display:none !important;}
   /* Respuestas rápidas y barra de siguiente paso (5-nov-2026): escritorio y celular */
   .qr-bar{display:flex;gap:6px;align-items:center;overflow-x:auto;padding:8px 12px;border-top:1px solid var(--border,#eee);background:#fafafa;flex-shrink:0;scrollbar-width:thin;}
   .qr-bar select{flex-shrink:0;max-width:150px;font-size:12px;padding:5px 6px;border:1px solid #d6d6d6;border-radius:14px;background:#fff;font-family:inherit;}
@@ -5090,6 +5090,7 @@ function togglePwd(inputId, btn) {
 
 function hasModule(mod) {
   if(isAdmin()) return true;
+  if(isCompliance() && mod==='whatsapp') return true; // 10-nov-2026: Nayeli escribe a sus clientes desde la tarjeta
   const mods = DB.currentUser?.modules;
   if(!mods || (Array.isArray(mods) && mods.length===0)) return false;
   return Array.isArray(mods) ? mods.includes(mod) : true;
@@ -5710,7 +5711,8 @@ function isAdmin(){return ['Administrador','Gerencia'].includes(DB.currentUser?.
 // ── Rol Compliance (10-nov-2026, Nayeli: compliance, formalización del expediente y cierre) ──
 // Ve: Pipeline solo con clientes en Proceso y Cierre, Vendidos y Sitio Web (solo consulta,
 // con los botones de Expediente y Fotos y planos). Puede agregar notas, próxima acción y la
-// etapa de Proceso; no cambia de fase, no registra prospectos ni usa WhatsApp.
+// etapa de Proceso. Desde el 10-nov-2026 también pasa clientes de Proceso a Cierre y les
+// escribe por WhatsApp desde la tarjeta (sin la bandeja general de WhatsApp).
 const COMPLIANCE_FASES = ['Proceso','Cierre'];
 const COMPLIANCE_SECCIONES = ['kanban','vendidos','sitioweb'];
 function isCompliance(){ return DB.currentUser?.role === 'Compliance'; }
@@ -5742,6 +5744,8 @@ function puedeVerTodosProspectos(){
 function puedeCambiarFase(prospect, newPhase){
   const u=(DB.currentUser?.username||'').toLowerCase();
   if(u==='roberto') return true;
+  // 10-nov-2026: Compliance (Nayeli) solo puede pasar un cliente de Proceso a Cierre
+  if(isCompliance()) return prospect?.phase==='Proceso' && newPhase==='Cierre';
   const fase=prospect?.phase;
   if(fase==='Registro') return u==='alfredo';
     if(fase==='Visita' || fase==='Proceso' || fase==='Cierre') return u==='fabiola' || u==='alfredo';
@@ -9093,18 +9097,18 @@ const wa=waUnreadInfo(p);
           <button type="button" class="kbtn kbtn-notes" onclick="openNotaRapida('${p.id}')" title="Ver notas">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
             Notas</button>
-          ${hasModule('whatsapp')&&phase!=='Cierre'?`<button class="kbtn kbtn-wa" onclick="quickWAProspect('${p.id}')" title="WhatsApp">
+          ${hasModule('whatsapp')&&(phase!=='Cierre'||isCompliance())?`<button class="kbtn kbtn-wa" onclick="quickWAProspect('${p.id}')" title="WhatsApp">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.28-1.38a9.9 9.9 0 0 0 4.76 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2z"/></svg>
             WhatsApp</button>`:''}
           ${phase==='Cierre'?(lp&&lp.estatus==='vendida'?`<span class="kbtn kbtn-finalizado" title="Finalizado" style="opacity:.7;cursor:default;">✅ Finalizado</span>`:(puedeFinalizar()?`<button class="kbtn kbtn-finalizar" onclick="finalizarProspecto('${p.id}')" title="Finalizar cierre">✅ Finalizar</button>`:'')):''}
-          <div class="kbtn-phase-wrap">
+          ${(!isCompliance()||phase==='Proceso')?`<div class="kbtn-phase-wrap">
             <svg class="phase-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             <select class="kbtn-phase" onchange="cambiarFaseDesdeModal('${p.id}','${esc(p.name)}','${p.phase}',this.value,this)">
               <option value="">Cambiar Fase</option>
-              ${ALL_PHASES.filter(f=>f!==phase).map(f=>`<option value="${f}">${f}</option>`).join('')}
+              ${(isCompliance()?['Cierre']:ALL_PHASES.filter(f=>f!==phase)).map(f=>`<option value="${f}">${f}</option>`).join('')}
             </select>
             <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
+          </div>`:''}
         </div>
       </div>`;});
     const cards = cardsArr.join('');
