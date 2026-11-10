@@ -580,6 +580,8 @@
 
     #conv-board{display:none;}
 
+  /* Rol Compliance (10-nov-2026): Sitio Web solo consulta, sin vista Perdidos */
+  body.rol-compliance .wp-acciones, body.rol-compliance .wp-nueva, body.rol-compliance #btn-wp-select-mode, body.rol-compliance #kv-btn-perdidos, body.rol-compliance #btn-nuevo-prospecto, body.rol-compliance .kbtn-phase-wrap{display:none !important;}
   /* Respuestas rápidas y barra de siguiente paso (5-nov-2026): escritorio y celular */
   .qr-bar{display:flex;gap:6px;align-items:center;overflow-x:auto;padding:8px 12px;border-top:1px solid var(--border,#eee);background:#fafafa;flex-shrink:0;scrollbar-width:thin;}
   .qr-bar select{flex-shrink:0;max-width:150px;font-size:12px;padding:5px 6px;border:1px solid #d6d6d6;border-radius:14px;background:#fff;font-family:inherit;}
@@ -2556,7 +2558,7 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button id="btn-wp-select-mode" onclick="toggleWpSelectMode()" style="padding:6px 12px;font-size:12px;font-family:'Inter',sans-serif;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;background:var(--white);color:var(--text);">Seleccionar</button>
             <button id="btn-wp-delete-selected" onclick="deleteSelectedWebProps()" style="display:none;padding:6px 12px;font-size:12px;font-family:'Inter',sans-serif;border:1px solid var(--danger);border-radius:var(--radius);cursor:pointer;background:var(--white);color:var(--danger);font-weight:600;">🗑 Eliminar (<span id="wp-select-count">0</span>)</button>
-            <button class="btn-primary" onclick="openPropModal()">
+            <button class="btn-primary wp-nueva" onclick="openPropModal()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva Propiedad
             </button>
           </div>
@@ -2927,7 +2929,7 @@
       </div>
       <div class="form-row">
         <div class="form-group"><label>Correo (para iniciar sesión)</label><input type="email" id="u-email" placeholder="Ej. alfredo@mangu.mx"></div>
-        <div class="form-group"><label>Rol</label><select id="u-role"><option value="Atención a Cliente">Atención a Cliente</option><option value="Comercial">Comercial</option><option value="Gerencia">Gerencia</option></select></div>
+        <div class="form-group"><label>Rol</label><select id="u-role"><option value="Atención a Cliente">Atención a Cliente</option><option value="Comercial">Comercial</option><option value="Compliance">Compliance (expediente y cierre)</option><option value="Gerencia">Gerencia</option></select></div>
       </div>
       <div class="form-group"><label>Color de avatar</label>
         <select id="u-color"><option value="#B8963E">Dorado</option><option value="#0D1B2A">Navy</option><option value="#16A34A">Verde</option><option value="#2563EB">Azul</option><option value="#DC2626">Rojo</option><option value="#9333EA">Morado</option></select>
@@ -4660,6 +4662,7 @@ function closeMobileAgendarCita(){
 // activas), 'lista' (la antigua tabla de Pipeline) y 'perdidos' (archivo).
 function setKanbanView(v){
   if(!['kanban','lista','perdidos'].includes(v)) v='kanban';
+  if(v==='perdidos' && isCompliance()) v='kanban';
   _kanbanView = v;
   try { localStorage.setItem('mangu_last_kanban_view', v); } catch(e) {}
   const tg=(id,on)=>{ const b=document.getElementById(id); if(b) b.classList.toggle('active', on); };
@@ -5177,9 +5180,23 @@ function applyUserModules(user) {
   const navContratos = document.getElementById('nav-contratos');
   if (navContratos) navContratos.style.display = canContratosView() ? '' : 'none';
 
-  // Sitio Web: Admin y Alfredo
+  // Sitio Web: Admin y Alfredo (y Compliance, solo consulta)
   const navSitioWeb = document.getElementById('nav-sitioweb');
-  if (navSitioWeb) navSitioWeb.style.display = (isAdmin() || u === 'alfredo') ? '' : 'none';
+  if (navSitioWeb) navSitioWeb.style.display = (isAdmin() || u === 'alfredo' || isCompliance()) ? '' : 'none';
+
+  // Compliance: solo Pipeline (Proceso y Cierre), Vendidos y Sitio Web
+  document.body.classList.toggle('rol-compliance', isCompliance());
+  const navDash = document.getElementById('nav-dashboard');
+  if (navDash) navDash.style.display = isCompliance() ? 'none' : '';
+  if (isCompliance()) {
+    ['nav-whatsapp','nav-anuncios','nav-citas','nav-mensajes','nav-contratos','nav-rentabilidad','nav-presupuesto','nav-equipo'].forEach(idn => { const el = document.getElementById(idn); if (el) el.style.display = 'none'; });
+    if (_kanbanView === 'perdidos') _kanbanView = 'kanban';
+  }
+  // Oculta los títulos de sección del menú que se quedaron sin opciones
+  document.querySelectorAll('.sidebar .nav-section').forEach(sec => {
+    const items = [...sec.querySelectorAll('.nav-item')];
+    sec.style.display = items.length && items.every(it => it.style.display === 'none') ? 'none' : '';
+  });
 
   // Selección múltiple en Pipeline: solo Admin
   const btnSelectMode = document.getElementById('btn-select-mode');
@@ -5640,6 +5657,7 @@ function showWaTab(tab){
   }
 }
 function showSection(id){
+  if (isCompliance() && !COMPLIANCE_SECCIONES.includes(id) && id!=='pipeline') id = 'kanban';
   // 30-oct-2026: Pipeline y Kanban fusionados. 'pipeline' (menú viejo, botón
   // "Tabla" móvil, última sección guardada) abre el módulo en la vista Lista.
   if(id==='pipeline'){ id='kanban'; _kanbanView='lista'; }
@@ -5689,6 +5707,14 @@ function showSection(id){
 //  SCOPE HELPERS
 // ══════════════════════════════════════════
 function isAdmin(){return ['Administrador','Gerencia'].includes(DB.currentUser?.role);}
+// ── Rol Compliance (10-nov-2026, Nayeli: compliance, formalización del expediente y cierre) ──
+// Ve: Pipeline solo con clientes en Proceso y Cierre, Vendidos y Sitio Web (solo consulta,
+// con los botones de Expediente y Fotos y planos). Puede agregar notas, próxima acción y la
+// etapa de Proceso; no cambia de fase, no registra prospectos ni usa WhatsApp.
+const COMPLIANCE_FASES = ['Proceso','Cierre'];
+const COMPLIANCE_SECCIONES = ['kanban','vendidos','sitioweb'];
+function isCompliance(){ return DB.currentUser?.role === 'Compliance'; }
+function fasesTablero(){ return isCompliance() ? COMPLIANCE_FASES : PHASES; }
 // ── Permisos de Contratos (firma electrónica DocuSign) ──
 // Roberto (y Administrador/Gerencia): control total — crear, editar, eliminar y enviar a firma.
 // Fabiola: solo puede ver/recibir los contratos y compartirlos (link de firma), sin crear/editar/eliminar.
@@ -5738,6 +5764,7 @@ function puedeAgendarCita(prospect){
 }
 function getVisibleProspects(){
   let p = DB.prospects.filter(x=>!x.vendido);
+  if (isCompliance()) p = p.filter(x=>COMPLIANCE_FASES.includes(x.phase));
   if(DB._sellerFilter){
     const u = DB.users.find(x=>(x.username||'').toLowerCase()===DB._sellerFilter);
     if(u){
@@ -8977,13 +9004,13 @@ function renderKanban(){
 
   // Construir columnas dinámicamente (6 fases del proceso MANGU)
   // 30-oct-2026: Perdido ya no es columna del tablero; vive en la vista "Perdidos".
-  if (!PHASES.includes(_mobilePhase)) _mobilePhase = 'Registro';
+  if (!fasesTablero().includes(_mobilePhase)) _mobilePhase = fasesTablero()[0];
   const perdidosN = visible.filter(p => p.phase === 'Perdido').length;
   const kvCnt = document.getElementById('kv-perdidos-count');
   if (kvCnt) kvCnt.textContent = perdidosN ? '('+perdidosN+')' : '';
   const board = document.getElementById('kanban-board');
   if (board && !board.dataset.built) {
-    board.innerHTML = PHASES.map(phase=>`
+    board.innerHTML = fasesTablero().map(phase=>`
       <div class="kanban-col" id="col-${phase}" style="border-top:3px solid ${PHASE_COLORS[phase]};" ondragover="onDragOver(event)" ondrop="onDrop(event,'${phase}')" ondragleave="onDragLeave(event)">
         <div class="kanban-col-header"><span class="kanban-col-title" style="color:${PHASE_COLORS[phase]}">${phase}</span><span class="kanban-count" id="cnt-${phase}">0</span></div>
         <div class="kanban-cards" id="cards-${phase}"></div>
@@ -8994,7 +9021,7 @@ function renderKanban(){
   // Métricas por fase: total de prospectos y valor acumulado
   const met = document.getElementById('kanban-metrics');
   if (met) {
-    met.innerHTML = PHASES.map(f => {
+    met.innerHTML = fasesTablero().map(f => {
       const arr = visible.filter(p => p.phase === f);
       const val = arr.reduce((t,p) => t + (p.value||0), 0);
       return `<div class="metric-chip" style="border-left-color:${PHASE_COLORS[f]};">
@@ -9009,20 +9036,20 @@ function renderKanban(){
   const tabs = document.getElementById('kanban-mobile-tabs');
   if (tabs) {
     const fmtM = v => v >= 1e6 ? '$'+(v/1e6).toFixed(1)+'M' : '$'+Math.round(v/1e3)+'K';
-    tabs.innerHTML = PHASES.map(f => {
+    tabs.innerHTML = fasesTablero().map(f => {
       const arr = visible.filter(p => p.phase === f);
       const val = arr.reduce((t,p) => t + (p.value||0), 0);
       return `<button class="kmob-tab${(f===_mobilePhase&&_kanbanView!=='perdidos')?' active':''}" style="--ph:${PHASE_COLORS[f]};" onclick="setMobilePhase('${f}')">
         <span class="kt-name">${f} <span class="kt-count">${arr.length}</span></span>
         <span class="kt-val">${fmtM(val)}</span>
       </button>`;
-    }).join('') + `<button class="kmob-tab${_kanbanView==='perdidos'?' active':''}" style="--ph:${PHASE_COLORS['Perdido']};" onclick="setKanbanView('perdidos')">
+    }).join('') + (isCompliance() ? '' : `<button class="kmob-tab${_kanbanView==='perdidos'?' active':''}" style="--ph:${PHASE_COLORS['Perdido']};" onclick="setKanbanView('perdidos')">
         <span class="kt-name">📁 Perdidos <span class="kt-count">${perdidosN}</span></span>
         <span class="kt-val">Archivo</span>
-      </button>`;
+      </button>`);
   }
 
-  PHASES.forEach(phase=>{
+  fasesTablero().forEach(phase=>{
     let inPhase = visible.filter(p => p.phase === phase);
     // Primero lo que requiere atención: acción vencida → sin próxima acción → acción a futuro
     inPhase = inPhase.slice().sort((a,b)=>accionPrioridad(a)-accionPrioridad(b) || daysInPhase(b)-daysInPhase(a));
@@ -10745,7 +10772,7 @@ function renderWebProps(){
         ${(p.amenidades&&p.amenidades.length)?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;">${p.amenidades.map(a=>`<span style="background:#F0FDF4;color:#15803D;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">${esc(a)}</span>`).join('')}</div>`:''}
         ${(p.accesorios&&p.accesorios.length)?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;">${p.accesorios.map(a=>`<span style="background:#EFF6FF;color:#1D4ED8;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">${esc(a)}</span>`).join('')}</div>`:''}
         ${p.descripcion?`<div style="font-size:11.5px;color:var(--text-muted);white-space:pre-line;margin-bottom:10px;max-height:54px;overflow:hidden;">${renderRichText(p.descripcion)}</div>`:''}
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <div class="wp-acciones" style="display:flex;gap:6px;flex-wrap:wrap;">
           <button onclick="openPropModal('${escJs(p.id)}')" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;">Editar</button>
           <button onclick="openCompartirPropModal('${escJs(p.id)}')" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--success);background:var(--surface);color:var(--success);border-radius:6px;cursor:pointer;">📲 Compartir</button>
           ${p.estatus!=='vendida'?`<button onclick="marcarVendidaProp('${escJs(p.id)}')" style="flex:1;padding:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;">Vendida ✓</button>`:''}
@@ -10787,7 +10814,7 @@ function archivosCasaHTML(p){
     </div>
     <div style="display:flex;gap:6px;">
       ${boton(d.comercial_url, '📸', 'Fotos y planos', 'Abre la carpeta de la casa en MANGU – Comercial')}
-      ${admin ? boton(d.expediente_url, '📁', 'Expediente', 'Abre la carpeta de la casa en MANGU – Expedientes') : ''}
+      ${(admin || isCompliance()) ? boton(d.expediente_url, '📁', 'Expediente', 'Abre la carpeta de la casa en MANGU – Expedientes') : ''}
     </div>
   </div>`;
 }
