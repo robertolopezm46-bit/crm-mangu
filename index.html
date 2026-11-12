@@ -157,6 +157,70 @@
   .btn-secondary:hover{background:var(--surface);}
   .page-content{padding:32px;}
   .section{display:none;}.section.active{display:block;}
+  /* ── Bandeja WhatsApp: control Mis chats / Todos / Atorados (13-nov-2026) ── */
+  .wa-scope{display:flex;gap:4px;padding:4px;border-radius:12px;margin-bottom:10px;}
+  .wa-scope-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border:none;border-radius:9px;background:transparent;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  .wa-scope-cnt{font-size:12px;font-weight:700;padding:1px 7px;border-radius:999px;}
+  .wa-scope-d{background:#efede6;} .wa-scope-d .wa-scope-btn{color:#5c5c70;} .wa-scope-d .wa-scope-btn.active{background:#fff;color:#1a1a2e;box-shadow:0 1px 2px rgba(0,0,0,.08);} .wa-scope-d .wa-scope-cnt{background:#e3e1da;color:#1a1a2e;}
+  .wa-scope-m{background:#2a2a3e;} .wa-scope-m .wa-scope-btn{color:#c8c8dc;} .wa-scope-m .wa-scope-btn.active{background:#fff;color:#1a1a2e;} .wa-scope-m .wa-scope-cnt{background:#3a3a55;color:#fff;} .wa-scope-m .wa-scope-btn.active .wa-scope-cnt{background:#1a1a2e;color:#fff;}
+  .wa-scope .wa-scope-btn.alerta .wa-scope-cnt{background:#DC2626;color:#fff;}
+  /* ── Mi día (13-nov-2026) ── */
+  #section-midia .md-wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px;font-family:'Inter',sans-serif;color:#1a1a2e;}
+  .md-fecha{font-size:14px;color:#5c5c70;}
+  .md-hola{margin:2px 0;font-size:28px;font-weight:700;}
+  .md-rol{font-size:15px;color:#45455a;}
+  .md-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;}
+  .md-tile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px;border-radius:14px;border:1px solid #e3e1da;background:#fff;cursor:pointer;font-family:inherit;text-align:left;color:inherit;}
+  .md-tile-n{font-size:32px;font-weight:700;line-height:1;}
+  .md-tile-t{font-size:13.5px;font-weight:600;color:#45455a;}
+  .md-tile.alerta{background:#fdecec;border-color:#f0b4b4;} .md-tile.alerta .md-tile-n{color:#a3222f;} .md-tile.alerta .md-tile-t{color:#7a1d26;}
+  .md-cols{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;}
+  .md-main{flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:20px;}
+  .md-side{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:20px;}
+  .md-sec h2{margin:0 0 10px;font-size:17px;font-weight:700;}
+  .md-card{background:#fff;border:1px solid #e3e1da;border-radius:14px;padding:2px 14px;}
+  .md-row{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #eceae3;}
+  .md-card>.md-row:last-child{border-bottom:none;}
+  .md-row-btn{flex:1;min-width:0;display:flex;gap:12px;align-items:center;background:none;border:none;padding:0;font-family:inherit;color:inherit;text-align:left;cursor:pointer;}
+  .md-av{width:40px;height:40px;border-radius:50%;background:#e7d3a6;color:#5c430a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+  .md-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .md-row-t{font-size:15px;font-weight:600;}
+  .md-row-s{font-size:13.5px;color:#45455a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .md-row-x{font-size:12.5px;color:#5c5c70;}
+  .md-row-r{font-size:12.5px;font-weight:700;color:#5c5c70;white-space:nowrap;}
+  #section-midia .md-rojo{color:#a3222f;}
+  .md-mini{flex-shrink:0;min-height:40px;padding:8px 12px;border-radius:8px;border:1px solid #d6d3c9;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#1a1a2e;cursor:pointer;}
+  .md-hora{font-size:15px;font-weight:700;width:52px;flex-shrink:0;}
+  .md-sigue{background:#fff;border:2px solid #d4a017;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;}
+  .md-sigue-k{font-size:12px;font-weight:700;letter-spacing:.06em;color:#8a6510;}
+  .md-sigue-t{font-size:21px;font-weight:700;}
+  .md-acciones{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;}
+  .md-accion{min-height:46px;border-radius:10px;border:none;background:#1a1a2e;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;}
+  .md-clis{display:flex;flex-direction:column;gap:12px;}
+  .md-cli{background:#fff;border:1px solid #e3e1da;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;}
+  .md-cli-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap;}
+  .md-pill{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:#fbf0d6;color:#7a5208;white-space:nowrap;}
+  .md-datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:4px 14px;font-size:13.5px;color:#45455a;}
+  .md-fases{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+  .md-vacio{padding:14px 0;font-size:14px;color:#5c5c70;}
+  @media (max-width:768px){
+    #section-midia .md-wrap{color:#fff;gap:16px;padding:0 2px 80px;}
+    .md-fecha,.md-row-x,.md-row-r,.md-vacio{color:#a9a9c2;}
+    .md-rol,.md-row-s,.md-tile-t,.md-datos{color:#c8c8dc;}
+    .md-hola{font-size:24px;}
+    .md-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+    .md-tile,.md-card,.md-cli{background:#1a1a2e;border-color:#2f2f4d;}
+    .md-tile.alerta{background:#3b1d24;border-color:#7a2e3a;} .md-tile.alerta .md-tile-n{color:#ff8a8a;} .md-tile.alerta .md-tile-t{color:#ffd0d0;}
+    .md-row{border-bottom-color:#2a2a44;}
+    .md-sigue{background:#1a1a2e;border-color:#e8b93a;} .md-sigue-k{color:#e8b93a;}
+    .md-accion{background:#2a2a44;}
+    .md-mini{background:#2a2a44;border-color:#3a3a5c;color:#fff;}
+    .md-av{background:#3a3a55;color:#fff;}
+    .md-pill{background:#3a3018;color:#f5d27a;}
+    #section-midia .md-rojo{color:#ff8a8a;}
+    .md-fases{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
+
 
   /* ── KPI ── */
   .kpi-grid-top{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:24px;}
@@ -1174,6 +1238,9 @@
     <div class="sidebar-scroll">
       <div class="nav-section">
       <div class="nav-label">Principal</div>
+      <div class="nav-item" id="nav-midia" onclick="showSection('midia')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Mi día
+      </div>
       <div class="nav-item" id="nav-dashboard" onclick="showSection('dashboard')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>Dashboard
       </div>
@@ -1246,6 +1313,10 @@
   </button>
 
   <nav id="mobile-nav">
+    <button class="mnav-btn" id="mnav-midia" onclick="showSection('midia')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      <span>Mi día</span>
+    </button>
     <button class="mnav-btn active" id="mnav-pipeline" onclick="_kanbanView='kanban';showSection('kanban')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       <span>Pipeline</span>
@@ -1336,6 +1407,7 @@
     </div>
 
     <div class="page-content">
+      <div id="section-midia" class="section"><div id="midia-root"></div></div>
       <div id="section-dashboard" class="section">
         <!-- 30-oct-2026: el Dashboard abre en "Hoy" (para cada quien) y "Embudo y costos"
              (admin). Los KPIs de 30 días de marketing quedan dentro de las pestañas de
@@ -3149,9 +3221,9 @@ let _mobilePhase = 'Registro';
 function setMobilePhase(f){ _mobilePhase = f; try { localStorage.setItem('mangu_last_kanban_phase', f); } catch(e) {} renderKanban(); }
 function updateMobileNav(id){
   // Mapeo: sección visible → botón de la nav móvil que debe quedar activo
-  const map = { kanban:(_kanbanView==='lista'?'tabla':'pipeline'), pipeline:'tabla', whatsapp:'whatsapp', citas:'citas', dashboard:'dashboard' };
+  const map = { midia:'midia', kanban:(_kanbanView==='lista'?'tabla':'pipeline'), pipeline:'tabla', whatsapp:'whatsapp', citas:'citas', dashboard:'dashboard' };
   const activeBtn = map[id] || null;
-  ['pipeline','tabla','whatsapp','citas','dashboard'].forEach(x=>{
+  ['midia','pipeline','tabla','whatsapp','citas','dashboard'].forEach(x=>{
     const b=document.getElementById('mnav-'+x);
     if(b) b.classList.toggle('active', x===activeBtn);
   });
@@ -3769,6 +3841,7 @@ async function renderMobileWhatsAppList(){
     </div>
     <div class="mwa-search" id="mwa-search" style="display:none;"><input type="text" id="mwa-search-input" placeholder="Buscar por nombre o teléfono..." oninput="setMobileConvSearch(this.value)"></div>
     <div class="mwa-insights" id="mwa-insights"></div>
+    <div class="wa-scope wa-scope-m" id="mwa-scope"></div>
     <div class="mwa-filters" id="mwa-filters"></div>
     <div id="mwa-rows"></div>
   `;
@@ -3795,7 +3868,8 @@ function renderMobileConvBody(list){
     if (!counts[m.key]) counts[m.key] = {meta:m, n:0};
     counts[m.key].n++;
   });
-  const chips = [waScopeChips(__allConv,'mwa-chip'), `<button type="button" class="mwa-chip ${__mConvFilter==='all'?'active':''}" onclick="setMobileConvFilter('all')">Cualquier origen <span class="cnt">${list.length}</span></button>`];
+  waRenderScope(filtersEl, 'mwa-scope', __allConv, 'm');
+  const chips = [`<button type="button" class="mwa-chip ${__mConvFilter==='all'?'active':''}" onclick="setMobileConvFilter('all')">Todos los orígenes <span class="cnt">${list.length}</span></button>`];
   chips.push(...califFilterChips(list,__mConvFilter,'mwa-chip','setMobileConvFilter'));
   Object.values(counts).sort((a,b)=>b.n-a.n).forEach(({meta,n})=>{
     chips.push(`<button type="button" class="mwa-chip ${__mConvFilter===meta.key?'active':''}" onclick="setMobileConvFilter('${meta.key}')"><span class="dot" style="background:${meta.color}"></span>${esc(meta.label)} <span class="cnt">${n}</span></button>`);
@@ -4225,7 +4299,8 @@ const m = convOriginMeta(c);
 if (!counts[m.key]) counts[m.key] = {meta:m, n:0};
 counts[m.key].n++;
 });
-const chips = [waScopeChips(__allConv,'conv-chip'), `<button type="button" class="conv-chip ${__convFilter==='all'?'active':''}" onclick="setConvFilter('all')">Cualquier origen <span class="cnt">${list.length}</span></button>`];
+waRenderScope(el, 'conv-scope', __allConv, 'd');
+const chips = [`<button type="button" class="conv-chip ${__convFilter==='all'?'active':''}" onclick="setConvFilter('all')">Todos los orígenes <span class="cnt">${list.length}</span></button>`];
 chips.push(...califFilterChips(list,__convFilter,'conv-chip','setConvFilter'));
 Object.values(counts).sort((a,b)=>b.n-a.n).forEach(({meta,n})=>{
 chips.push(`<button type="button" class="conv-chip ${__convFilter===meta.key?'active':''}" onclick="setConvFilter('${meta.key}')"><span class="dot" style="background:${meta.color}"></span>${esc(meta.label)} <span class="cnt">${n}</span></button>`);
@@ -5467,6 +5542,7 @@ async function subscribeRealtime() {
   // agregaron.)
   const wa = supabase.channel('crm-wa-changes')
     .on('postgres_changes',{event:'*',schema:'public',table:'crm_wa_messages'},payload=>{
+      if (isSectionActive('midia')) { clearTimeout(window.__mdT); window.__mdT = setTimeout(renderMiDia, 1500); }
       const msg=payload.new;
       if(msg && msg.direction==='inbound') handleInboundWA(msg);
       if(msg) refreshOpenWaChatIfMatches(msg);
@@ -5587,6 +5663,7 @@ loadKanbanUnreadCache().then(()=>{ if(isSectionActive('kanban')) renderKanban();
     const saved = localStorage.getItem('mangu_last_section');
     if (saved && document.getElementById('section-'+saved)) lastSection = saved;
   } catch(e) {}
+  try { if (!sessionStorage.getItem('mangu_midia_inicio')) { sessionStorage.setItem('mangu_midia_inicio','1'); lastSection = 'midia'; } } catch(e) {}
   showSection(lastSection);
   if (lastSection === 'kanban' && window.innerWidth <= 768) {
     try {
@@ -5662,7 +5739,7 @@ function renderCitasHoyBanner(){
 // Cargar credenciales guardadas al abrir el login
 
 
-const sectionTitles={dashboard:'Dashboard',pipeline:'Pipeline',kanban:'Pipeline',vendidos:'Vendidos',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades',calidad:'Calidad por fuente'};
+const sectionTitles={midia:'Mi día',dashboard:'Dashboard',pipeline:'Pipeline',kanban:'Pipeline',vendidos:'Vendidos',whatsapp:'Plantillas WhatsApp',anuncios:'Anuncios & Correos',citas:'Agenda de Citas',equipo:'Equipo & Acceso',presupuesto:'Presupuesto',contratos:'Contratos',auditoria:'Auditoria — Areas de Oportunidad',rentabilidad:'Modelo de Rentabilidad',mensajes:'Mensajes',sitioweb:'Sitio Web — Propiedades',calidad:'Calidad por fuente'};
 function showWaTab(tab){
   const sec = document.getElementById('section-whatsapp');
   if(!sec) return;
@@ -5700,6 +5777,7 @@ function showSection(id){
   document.getElementById('search-input').placeholder = (id==='kanban' && _kanbanView==='lista') ? 'Buscar prospecto...' : 'Buscar en todo el CRM...';
   hideGlobalSearch();
   if(id==='dashboard'){ prepararDashboard(); }
+  if(id==='midia'){ renderMiDia(); }
   if(id==='kanban'){_mobilePhase='Visita'; setKanbanView(_kanbanView);}
   if(id==='vendidos'){renderVendidos();}
   if(id==='citas'){renderCalendar(); if(window.innerWidth<=768) renderMobileCitas();}
@@ -5737,11 +5815,153 @@ function isAdmin(){return ['Administrador','Gerencia'].includes(DB.currentUser?.
 // etapa de Proceso. Desde el 10-nov-2026 también pasa clientes de Proceso a Cierre y les
 // escribe por WhatsApp desde la tarjeta (sin la bandeja general de WhatsApp).
 const COMPLIANCE_FASES = ['Proceso','Cierre'];
-const COMPLIANCE_SECCIONES = ['kanban','vendidos','sitioweb','whatsapp']; // 12-nov-2026: + bandeja de WhatsApp
+const COMPLIANCE_SECCIONES = ['kanban','vendidos','sitioweb','whatsapp','midia']; // 12-nov-2026: + bandeja de WhatsApp
 function isCompliance(){ return DB.currentUser?.role === 'Compliance'; }
 // Compliance no vende ni atiende prospectos: no aparece en las listas de vendedor/asesor
 function usuariosVendedores(){ return (DB.users||[]).filter(u=>u.role!=='Compliance'); }
 function fasesTablero(){ return isCompliance() ? COMPLIANCE_FASES : PHASES; }
+
+// ══════════════════════════════════════════
+//  MI DÍA (13-nov-2026) — pantalla de inicio por persona
+// ══════════════════════════════════════════
+// Alfredo: Registro · Fabiola: Visita · Nayeli: Proceso y Cierre · Roberto: todo el equipo.
+// "Te están esperando" = el último mensaje es del cliente (de los últimos 3 días).
+window.__mdChats = {};
+function mdHoyStr(){ return new Date().toLocaleDateString('en-CA',{timeZone:'America/Mexico_City'}); }
+function mdFechaLarga(){ const t = new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',timeZone:'America/Mexico_City'}); return t.charAt(0).toUpperCase()+t.slice(1); }
+function mdFechaCorta(d){ if(!d) return ''; return new Date(String(d).slice(0,10)+'T12:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}); }
+function mdEspera(c){
+  if (!c || c.lastDir !== 'inbound' || !c.lastAt) return 0;
+  const m = (Date.now() - new Date(c.lastAt).getTime()) / 60000;
+  return m < 3*24*60 ? Math.max(1, Math.round(m)) : 0;
+}
+function mdIr(id){ const el = document.getElementById('md-'+id); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
+function mdAbrirChat(key){ const c = window.__mdChats[key]; if (!c) return; openWaChatModal(c.phone, c.kind==='unreg' ? c.name : null, c.kind==='prospect' ? c.id : null); }
+function mdChatProspecto(id){
+  const p = (DB.prospects||[]).find(x=>String(x.id)===String(id));
+  if (p && p.phone) openWaChatModal(p.phone, null, p.id); else showToast('Este cliente no tiene teléfono registrado.', 'error');
+}
+function mdRegistrar(key){ showSection('whatsapp'); setTimeout(()=>{ try { registrarDesdeConversacion(key); } catch(e) {} }, 400); }
+async function renderMiDia(){
+  const root = document.getElementById('midia-root');
+  if (!root) return;
+  const u = (DB.currentUser?.username||'').toLowerCase();
+  const admin = isAdmin();
+  const nombre = String(DB.currentUser?.name||'').split(' ')[0] || '';
+  if (!root.dataset.listo) root.innerHTML = '<div class="md-wrap"><div class="md-vacio">Cargando tu día…</div></div>';
+  let list = [];
+  try { list = await loadConversationsBoardData(); } catch(e) {}
+  root.dataset.listo = '1';
+  window.__mdChats = {}; list.forEach(c=>{ window.__mdChats[c.key] = c; });
+
+  const hoy = mdHoyStr();
+  const ahora = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'America/Mexico_City'});
+  const prospectos = (DB.prospects||[]).filter(p=>!p.vendido);
+  const pMap = {}; (DB.prospects||[]).forEach(p=>{ pMap[String(p.id)] = p; });
+  const misFases = admin ? ['Registro','Visita','Proceso','Cierre'] : Object.keys(WA_RESPONSABLE_FASE).filter(f=>WA_RESPONSABLE_FASE[f]===u);
+  const citas = (DB.citas||[]).filter(c=>!c.cancelada);
+  const conCita = new Set(citas.filter(c=>String(c.date||'').slice(0,10) >= hoy).map(c=>String(c.prospect_id)));
+  const citasHoy = citas.filter(c=>String(c.date||'').slice(0,10)===hoy).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
+  const esperando = list.filter(c=>mdEspera(c) > 0);
+  const misEsperando = (admin ? esperando.filter(c=>waAtoradoMin(c) > 0) : esperando.filter(waEsMio)).sort((a,b)=>new Date(a.lastAt)-new Date(b.lastAt));
+  const misProspectos = prospectos.filter(p=>misFases.includes(p.phase));
+  const pendientes = misProspectos.filter(p=>p.proxima_accion).sort((a,b)=>String(a.proxima_accion_fecha||'9999').localeCompare(String(b.proxima_accion_fecha||'9999')));
+  const sinCita = fase => prospectos.filter(p=>p.phase===fase && !conCita.has(String(p.id)));
+  const unreg = list.filter(c=>c.kind==='unreg').sort((a,b)=>new Date(b.lastAt||0)-new Date(a.lastAt||0));
+  const nFase = f => prospectos.filter(p=>p.phase===f).length;
+  const hayAtorado = misEsperando.some(c=>waAtoradoMin(c) > 0);
+
+  const tile = (n,t,ir,alerta) => `<button type="button" class="md-tile ${alerta?'alerta':''}" onclick="mdIr('${ir}')"><span class="md-tile-n">${n}</span><span class="md-tile-t">${t}</span></button>`;
+  const sec = (id,t,body) => `<div class="md-sec" id="md-${id}"><h2>${t}</h2>${body}</div>`;
+  const vacio = t => `<div class="md-card"><div class="md-vacio">${t}</div></div>`;
+  const chatRow = c => {
+    const m = mdEspera(c), at = waAtoradoMin(c) > 0;
+    const ini = c.kind==='unreg' ? '#' : esc(_waInitials(c.name));
+    const extra = [c.phase ? esc(c.phase) : 'Sin registrar', admin ? 'atiende ' + esc(waResponsableNombre(c.phase)) : ''].filter(Boolean).join(' · ');
+    return `<div class="md-row"><button type="button" class="md-row-btn" onclick="mdAbrirChat('${escJs(c.key)}')"><span class="md-av">${ini}</span><span class="md-row-main"><span class="md-row-t">${esc(c.name)}</span><span class="md-row-s">${esc(c.lastBody||'')}</span><span class="md-row-x">${extra}</span></span><span class="md-row-r ${at?'md-rojo':''}">${m ? waAtoradoTexto(m) : ''}</span></button></div>`;
+  };
+  const citaRow = c => {
+    const p = pMap[String(c.prospect_id)];
+    return `<div class="md-row"><span class="md-hora">${esc(String(c.time||'').slice(0,5))}</span><button type="button" class="md-row-btn" onclick="mdChatProspecto('${escJs(c.prospect_id)}')"><span class="md-row-main"><span class="md-row-t">${esc(p ? p.name : 'Cliente')}</span><span class="md-row-x">${esc(String(c.prop||'').split('—')[0])}${admin && c.seller ? ' · ' + esc(c.seller) : ''}</span></span></button></div>`;
+  };
+  const pendRow = p => {
+    const venc = p.proxima_accion_fecha && String(p.proxima_accion_fecha).slice(0,10) < hoy;
+    const f = p.proxima_accion_fecha ? mdFechaCorta(p.proxima_accion_fecha) : 'sin fecha';
+    return `<div class="md-row"><div class="md-row-main"><span class="md-row-t">${esc(p.proxima_accion)}</span><span class="md-row-x ${venc?'md-rojo':''}">${esc(p.name)} · ${venc?'venció ':''}${esc(f)}</span></div><button type="button" class="md-mini" onclick="mdChatProspecto('${escJs(p.id)}')">Escribirle</button></div>`;
+  };
+  const prospRow = p => `<div class="md-row"><div class="md-row-main"><span class="md-row-t">${esc(p.name)}</span><span class="md-row-x">${esc(p.prop||'Sin casa elegida')}</span></div><button type="button" class="md-mini" onclick="mdChatProspecto('${escJs(p.id)}')">Escribirle</button></div>`;
+  const unregRow = c => `<div class="md-row"><button type="button" class="md-row-btn" onclick="mdAbrirChat('${escJs(c.key)}')"><span class="md-row-main"><span class="md-row-t">${esc(c.name)}</span><span class="md-row-s">${esc(c.lastBody||'')}</span></span></button><button type="button" class="md-mini" onclick="mdRegistrar('${escJs(c.key)}')">+ Registrar</button></div>`;
+  const lista = (arr, fn, txt, max) => arr.length ? `<div class="md-card">${arr.slice(0, max||8).map(fn).join('')}</div>` : vacio(txt);
+
+  // Lo que sigue: la próxima visita de hoy
+  let sigue = '';
+  const prox = citasHoy.find(c=>String(c.time||'').slice(0,5) >= ahora);
+  if (prox && (admin || u==='fabiola' || u==='alfredo')) {
+    const p = pMap[String(prox.prospect_id)];
+    const casa = String(prox.prop||'').split('—')[0].trim();
+    const mapa = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent((casa||'') + ' Pachuca Hidalgo');
+    sigue = `<div class="md-sigue"><span class="md-sigue-k">LO QUE SIGUE</span><div><div class="md-sigue-t">${esc(String(prox.time||'').slice(0,5))} · ${esc(p ? p.name : 'Cliente')}</div><div class="md-row-s">Visita a ${esc(casa||'la casa')}${admin && prox.seller ? ' · ' + esc(prox.seller) : ''}</div></div><div class="md-acciones"><a class="md-accion" href="${mapa}" target="_blank" rel="noopener">Cómo llegar</a><button type="button" class="md-accion" onclick="mdChatProspecto('${escJs(prox.prospect_id)}')">Escribirle</button></div></div>`;
+  }
+
+  let rol = 'Tu resumen de hoy', tiles = '', main = '', side = '';
+  if (admin) {
+    rol = 'Así va todo el equipo hoy';
+    const mes = hoy.slice(0,7);
+    const vendidasMes = (DB.prospects||[]).filter(p=>p.vendido && String(p.vendido_at||'').slice(0,7)===mes).length;
+    tiles = tile(misEsperando.length, 'Chats atorados', 'esperando', misEsperando.length>0) + tile(citasHoy.length, 'Visitas hoy', 'agenda') + tile(prospectos.filter(p=>p.phase!=='Perdido').length, 'Clientes activos', 'fases') + tile(vendidasMes, 'Casas vendidas este mes', 'fases');
+    main = sigue + sec('esperando', 'Chats atorados', lista(misEsperando, chatRow, 'Ningún chat atorado. Todo el equipo va al día.'))
+      + sec('fases', 'Clientes por fase', `<div class="md-fases">${['Registro','Visita','Proceso','Cierre'].map(f=>`<button type="button" class="md-tile" onclick="showSection('kanban')"><span class="md-tile-t">${f}</span><span class="md-tile-n">${nFase(f)}</span><span class="md-row-x">${esc(waResponsableNombre(f))}</span></button>`).join('')}</div>`);
+    const equipo = ['alfredo','fabiola','nayeli'].map(x=>{
+      const e = esperando.filter(c=>waResponsableUsername(c.phase)===x);
+      const a = e.filter(c=>waAtoradoMin(c) > 0).length;
+      const fases = Object.keys(WA_RESPONSABLE_FASE).filter(f=>WA_RESPONSABLE_FASE[f]===x).join(' y ');
+      const n = (DB.users||[]).find(v=>(v.username||'').toLowerCase()===x);
+      return `<div class="md-row"><div class="md-row-main"><span class="md-row-t">${esc(n && n.name ? n.name.split(' ')[0] : x)}</span><span class="md-row-x">${esc(fases)} · ${e.length} esperando</span></div>${a ? `<span class="md-row-r md-rojo">${a} atorado${a>1?'s':''}</span>` : '<span class="md-row-r">Al día</span>'}</div>`;
+    }).join('');
+    side = sec('equipo', 'El equipo hoy', `<div class="md-card">${equipo}</div>`) + sec('agenda', 'Visitas de hoy', lista(citasHoy, citaRow, 'No hay visitas hoy.'));
+  } else if (u === 'alfredo') {
+    rol = 'Atiendes Registro: contestas los informes, calificas y agendas la visita';
+    const sc = sinCita('Registro');
+    tiles = tile(misEsperando.length, 'Te están esperando', 'esperando', hayAtorado) + tile(unreg.length, 'Contactos sin registrar', 'nuevos') + tile(sc.length, 'Sin visita agendada', 'agendar') + tile(pendientes.length, 'Pendientes', 'pendientes');
+    main = sec('esperando', 'Te están esperando', lista(misEsperando, chatRow, 'Nadie te está esperando. ¡Vas al día!'))
+      + sec('nuevos', 'Contactos nuevos sin registrar', lista(unreg, unregRow, 'No hay contactos sin registrar.', 6));
+    side = sec('agendar', 'Sin visita agendada', lista(sc, prospRow, 'Todos tus clientes de Registro tienen visita.', 6)) + sec('pendientes', 'Pendientes', lista(pendientes, pendRow, 'Sin pendientes.')) + sec('agenda', 'Visitas de hoy', lista(citasHoy, citaRow, 'No hay visitas hoy.'));
+  } else if (u === 'fabiola') {
+    rol = 'Atiendes la fase Visita';
+    const sc = sinCita('Visita');
+    tiles = tile(misEsperando.length, 'Te están esperando', 'esperando', hayAtorado) + tile(citasHoy.length, 'Visitas hoy', 'agenda') + tile(sc.length, 'Sin cita', 'sincita') + tile(pendientes.length, 'Pendientes', 'pendientes');
+    main = sigue + sec('esperando', 'Te están esperando', lista(misEsperando, chatRow, 'Nadie te está esperando. ¡Vas al día!')) + sec('agenda', 'Visitas de hoy', lista(citasHoy, citaRow, 'No hay visitas hoy.'));
+    side = sec('sincita', 'Clientes en Visita sin cita', lista(sc, prospRow, 'Todos tus clientes tienen cita.', 6)) + sec('pendientes', 'Pendientes', lista(pendientes, pendRow, 'Sin pendientes.'));
+  } else if (u === 'nayeli' || isCompliance()) {
+    rol = 'Atiendes Proceso y Cierre: papeles, crédito, notaría y entrega';
+    tiles = tile(misEsperando.length, 'Te están esperando', 'esperando', hayAtorado) + tile(nFase('Proceso'), 'En Proceso', 'clientes') + tile(nFase('Cierre'), 'En Cierre', 'clientes') + tile(pendientes.length, 'Pendientes', 'pendientes');
+    const clis = misProspectos.slice().sort((a,b)=>(a.phase==='Cierre'?0:1)-(b.phase==='Cierre'?0:1)).map(p=>{
+      const datos = [
+        p.prop ? 'Casa: ' + esc(p.prop) : '',
+        p.forma_pago ? 'Pago: ' + esc(p.forma_pago) : '',
+        p.proceso_etapa ? 'Etapa: ' + esc(p.proceso_etapa) : '',
+        p.fecha_escrituracion ? 'Escrituración: ' + esc(mdFechaCorta(p.fecha_escrituracion)) : '',
+        p.fecha_entrega ? 'Entrega: ' + esc(mdFechaCorta(p.fecha_entrega)) : ''
+      ].filter(Boolean).map(t=>`<span>${t}</span>`).join('');
+      return `<div class="md-cli"><div class="md-cli-top"><span class="md-row-t">${esc(p.name)}</span><span class="md-pill">${esc(p.phase)}</span></div>${datos ? `<div class="md-datos">${datos}</div>` : ''}${p.proxima_accion ? `<div class="md-row-s"><strong>Siguiente paso:</strong> ${esc(p.proxima_accion)}${p.proxima_accion_fecha ? ' · ' + esc(mdFechaCorta(p.proxima_accion_fecha)) : ''}</div>` : ''}<div class="md-acciones"><button type="button" class="md-accion" onclick="mdChatProspecto('${escJs(p.id)}')">Escribirle</button><button type="button" class="md-accion" onclick="showSection('kanban')">Ver en Pipeline</button></div></div>`;
+    }).join('');
+    main = sec('esperando', 'Te están esperando', lista(misEsperando, chatRow, 'Nadie te está esperando. ¡Vas al día!')) + sec('clientes', 'Mis clientes', clis ? `<div class="md-clis">${clis}</div>` : vacio('Todavía no tienes clientes en Proceso o Cierre.'));
+    const fechas = misProspectos.flatMap(p=>[
+      p.fecha_escrituracion ? {f:String(p.fecha_escrituracion).slice(0,10), t:'Escrituración', p} : null,
+      p.fecha_entrega ? {f:String(p.fecha_entrega).slice(0,10), t:'Entrega', p} : null
+    ]).filter(x=>x && x.f >= hoy).sort((a,b)=>a.f.localeCompare(b.f));
+    side = sec('fechas', 'Próximas fechas', lista(fechas, x=>`<div class="md-row"><div class="md-row-main"><span class="md-row-t">${esc(x.t)} · ${esc(mdFechaCorta(x.f))}</span><span class="md-row-x">${esc(x.p.name)}</span></div></div>`, 'Sin fechas de escrituración o entrega.')) + sec('pendientes', 'Pendientes', lista(pendientes, pendRow, 'Sin pendientes.'));
+  } else {
+    tiles = tile(citasHoy.length, 'Visitas hoy', 'agenda');
+    main = sec('agenda', 'Visitas de hoy', lista(citasHoy, citaRow, 'No hay visitas hoy.'));
+  }
+
+  root.innerHTML = `<div class="md-wrap">
+    <div><div class="md-fecha">Mi día · ${esc(mdFechaLarga())}</div><h1 class="md-hola">Hola, ${esc(nombre)}</h1><div class="md-rol">${esc(rol)}</div></div>
+    <div class="md-tiles">${tiles}</div>
+    <div class="md-cols"><div class="md-main">${main}</div>${side ? `<div class="md-side">${side}</div>` : ''}</div>
+  </div>`;
+}
 
 // ── Bandeja de WhatsApp por fase (12-nov-2026, decisión de Robert) ──
 // Todos ven todas las conversaciones, pero solo el responsable de la fase le escribe
@@ -5793,12 +6013,20 @@ function waScopeFilter(list){
   if (sc === 'atorados') return list.filter(c=>waAtoradoMin(c) > 0);
   return list;
 }
-function waScopeChips(list, cls){
+// Control segmentado (13-nov-2026): va en su propia fila, arriba de los filtros de origen
+function waRenderScope(filtersEl, id, list, w){
+  if (!filtersEl || !filtersEl.parentNode) return;
+  let box = document.getElementById(id);
+  if (!box) {
+    box = document.createElement('div');
+    box.id = id;
+    box.className = 'wa-scope wa-scope-' + w;
+    filtersEl.parentNode.insertBefore(box, filtersEl);
+  }
   const sc = waScopeActual();
-  const nMis = list.filter(waEsMio).length;
   const nAt = list.filter(c=>waAtoradoMin(c) > 0).length;
-  const b = (k,t,n) => `<button type="button" class="${cls} ${sc===k?'active':''}" onclick="setWaScope('${k}')">${t} <span class="cnt">${n}</span></button>`;
-  return `<div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;padding-bottom:8px;margin-bottom:2px;border-bottom:1px solid var(--border);">${isAdmin()?'':b('mis','Mis chats',nMis)}${b('todos','Todos',list.length)}${b('atorados','⚠️ Atorados',nAt)}</div>`;
+  const opts = (isAdmin() ? [] : [['mis','Mis chats',list.filter(waEsMio).length]]).concat([['todos','Todos',list.length],['atorados','Atorados',nAt]]);
+  box.innerHTML = opts.map(([k,t,n]) => `<button type="button" class="wa-scope-btn ${sc===k?'active':''} ${(k==='atorados'&&n)?'alerta':''}" onclick="setWaScope('${k}')">${t}<span class="wa-scope-cnt">${n}</span></button>`).join('');
 }
 function setWaScope(sc){
   __waScope = sc;
