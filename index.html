@@ -581,7 +581,7 @@
     #conv-board{display:none;}
 
   /* Rol Compliance (10-nov-2026): Sitio Web solo consulta, sin vista Perdidos */
-  body.rol-compliance .wp-acciones, body.rol-compliance .wp-nueva, body.rol-compliance #btn-wp-select-mode, body.rol-compliance #kv-btn-perdidos, body.rol-compliance #btn-nuevo-prospecto{display:none !important;}
+  body.rol-compliance .wp-acciones, body.rol-compliance .wp-nueva, body.rol-compliance #btn-wp-select-mode, body.rol-compliance #kv-btn-perdidos, body.rol-compliance #btn-nuevo-prospecto, body.rol-compliance #wa-tab-btn-tmpl{display:none !important;}
   /* Respuestas rápidas y barra de siguiente paso (5-nov-2026): escritorio y celular */
   .qr-bar{display:flex;gap:6px;align-items:center;overflow-x:auto;padding:8px 12px;border-top:1px solid var(--border,#eee);background:#fafafa;flex-shrink:0;scrollbar-width:thin;}
   .qr-bar select{flex-shrink:0;max-width:150px;font-size:12px;padding:5px 6px;border:1px solid #d6d6d6;border-radius:14px;background:#fff;font-family:inherit;}
@@ -3129,7 +3129,7 @@ function isRelevantToMe(p){return isAdmin() || !!(p && DB.currentUser?.id && p.s
 function markWaSeen(p){if(!p)return; try{localStorage.setItem(waSeenKey(p), new Date().toISOString());}catch(e){}}
 function waUnreadInfo(p){ if(!isRelevantToMe(p)) return {unread:false}; const lastIn=DB._waLastInbound&&DB._waLastInbound[p.id]; if(!lastIn) return {unread:false}; const seen=localStorage.getItem(waSeenKey(p)); const unread=!seen || new Date(lastIn).getTime()>new Date(seen).getTime(); return {unread, ago: unread?fmtAgo(lastIn):null}; }
 function cardHasUnread(p){if(!isRelevantToMe(p))return false; const ninfo=notesInfo(p); if(ninfo.unread)return true; const lastIn=DB._waLastInbound&&DB._waLastInbound[p.id]; if(!lastIn)return false; const seen=localStorage.getItem(waSeenKey(p)); return !seen || new Date(lastIn).getTime()>new Date(seen).getTime();}
-async function loadKanbanUnreadCache(){if(!DB.prospects||!DB.prospects.length)return; let q=supabase.from('crm_prospects').select('id,notes'); if(!puedeVerTodosProspectos()){ if(DB.currentUser.id) q=q.eq('seller_id',DB.currentUser.id); else q=q.eq('seller',DB.currentUser.name); } const {data:notesData}=await q; if(notesData){ const byId={}; notesData.forEach(r=>{byId[r.id]=r.notes;}); DB.prospects.forEach(p=>{ if(Object.prototype.hasOwnProperty.call(byId,p.id)) p.notes=byId[p.id]; }); } const idSet=new Set(DB.prospects.map(p=>String(p.id))); const {data:waData}=await supabase.from('crm_wa_messages').select('prospect_id,created_at').eq('direction','inbound').order('created_at',{ascending:false}).limit(1500); DB._waLastInbound={}; if(waData){ waData.forEach(r=>{ if(r.prospect_id&&idSet.has(String(r.prospect_id))&&!DB._waLastInbound[r.prospect_id]) DB._waLastInbound[r.prospect_id]=r.created_at; }); }}
+async function loadKanbanUnreadCache(){if(!DB.prospects||!DB.prospects.length)return; let q=supabase.from('crm_prospects').select('id,notes'); if(!puedeVerTodosProspectos() && !isCompliance()){ if(DB.currentUser.id) q=q.eq('seller_id',DB.currentUser.id); else q=q.eq('seller',DB.currentUser.name); } const {data:notesData}=await q; if(notesData){ const byId={}; notesData.forEach(r=>{byId[r.id]=r.notes;}); DB.prospects.forEach(p=>{ if(Object.prototype.hasOwnProperty.call(byId,p.id)) p.notes=byId[p.id]; }); } const idSet=new Set(DB.prospects.map(p=>String(p.id))); const {data:waData}=await supabase.from('crm_wa_messages').select('prospect_id,created_at').eq('direction','inbound').order('created_at',{ascending:false}).limit(1500); DB._waLastInbound={}; if(waData){ waData.forEach(r=>{ if(r.prospect_id&&idSet.has(String(r.prospect_id))&&!DB._waLastInbound[r.prospect_id]) DB._waLastInbound[r.prospect_id]=r.created_at; }); }}
 function lastNoteActivity(p){
   const list=parseManualNotes(p);
   if(!list.length) return null;
@@ -3503,6 +3503,8 @@ if(__waChatProspectId){ const __pSeen=(DB.prospects||[]).find(function(x){return
   document.getElementById('wachat-input').value = '';
   clearWaChatAttach();
   renderQuickReplies('m');
+  __waChatPhase = waPhaseDeProspecto(prospectId);
+  waAplicarBloqueo('m', __waChatPhase);
   if (window.__syncWaChatViewport) window.__syncWaChatViewport();
   await loadAndRenderWaChat();
   if (window.innerWidth > 768) document.getElementById('wachat-input').focus();
@@ -3552,7 +3554,9 @@ async function loadAndRenderWaChat(){
       const sessionRes = await supabase.auth.getSession();
       myEmail = (sessionRes && sessionRes.data && sessionRes.data.session && sessionRes.data.session.user && sessionRes.data.session.user.email) || '';
     } catch(e) {}
-    body.innerHTML = data.map(function(m){
+    const __items = await waMezclarCambiosFase(data, __waChatProspectId);
+    body.innerHTML = __items.map(function(m){
+      if (m.__sep) return waSeparadorHTML(m);
       const isOut = m.direction === 'outbound';
       const failed = m.status === 'failed';
       const dt = new Date(m.created_at);
@@ -3622,6 +3626,7 @@ function clearWaChatAttach(){
 async function sendWaChatMedia(){
   const p = __waChatPendingFile;
   if (!p || !__waChatToDigits) return;
+  if (!waPuedeEscribir(__waChatPhase)) { waAvisoNoPuede(__waChatPhase); return; }
   const btn = document.getElementById('wachat-send');
   btn.disabled = true;
   try {
@@ -3660,6 +3665,7 @@ async function sendWaChatMedia(){
 }
 
 async function sendWaChatMessage(){
+  if (!waPuedeEscribir(__waChatPhase)) { waAvisoNoPuede(__waChatPhase); return; }
   if (__waChatPendingFile) { await sendWaChatMedia(); return; }
   const input = document.getElementById('wachat-input');
   const text = (input.value || '').trim();
@@ -3781,13 +3787,15 @@ function renderMobileConvBody(list){
     <div class="mwa-insight-tile crit"><div class="mwa-insight-num">${expired}</div><div class="mwa-insight-label">Fuera 24h</div></div>
   `;
 
+  const __allConv = list;
+  list = waScopeFilter(list);
   const counts = {};
   list.forEach(c=>{
     const m = convOriginMeta(c);
     if (!counts[m.key]) counts[m.key] = {meta:m, n:0};
     counts[m.key].n++;
   });
-  const chips = [`<button type="button" class="mwa-chip ${__mConvFilter==='all'?'active':''}" onclick="setMobileConvFilter('all')">Todos <span class="cnt">${list.length}</span></button>`];
+  const chips = [waScopeChips(__allConv,'mwa-chip'), `<button type="button" class="mwa-chip ${__mConvFilter==='all'?'active':''}" onclick="setMobileConvFilter('all')">Cualquier origen <span class="cnt">${list.length}</span></button>`];
   chips.push(...califFilterChips(list,__mConvFilter,'mwa-chip','setMobileConvFilter'));
   Object.values(counts).sort((a,b)=>b.n-a.n).forEach(({meta,n})=>{
     chips.push(`<button type="button" class="mwa-chip ${__mConvFilter===meta.key?'active':''}" onclick="setMobileConvFilter('${meta.key}')"><span class="dot" style="background:${meta.color}"></span>${esc(meta.label)} <span class="cnt">${n}</span></button>`);
@@ -3829,6 +3837,7 @@ function renderMobileConvBody(list){
         <div class="mwa-name">${esc(c.name)}</div>
         <div class="mwa-preview">${esc(c.lastBody||'Sin mensajes')}</div>
         ${califRow(c)}
+        ${waRespRow(c)}
         ${c.adReferral ? `<div class="mwa-ad" style="font-size:11px;color:#8a5a00;margin-top:2px;"><span class="mangu-attr-badge" style="background:#4338CA;">META ADS</span>📢 ${esc(c.adReferral.headline||'Anuncio')}</div>` : ''}
         ${c.siteProperty ? `<div class="mwa-site-prop" style="font-size:11px;color:#0a6e4a;margin-top:2px;"><span class="mangu-attr-badge" style="background:#0a6e4a;">SITIO WEB</span>🏠 ${esc(c.siteProperty)}</div>` : ''}
         ${c.googleAdsInterest ? `<div class="mwa-gads" style="font-size:11px;color:var(--src-google);margin-top:2px;"><span class="mangu-attr-badge" style="background:var(--src-google);">GOOGLE ADS</span>🔍 Google Ads</div>` : ''}
@@ -3952,6 +3961,8 @@ async function sendReactivacionTemplate(where, btn){
 const to = where === 'm' ? __waChatToDigits : __convChatDigits;
 const pid = where === 'm' ? __waChatProspectId : __convChatProspectId;
 if (!to) return;
+const __fase = where === 'm' ? __waChatPhase : __convChatPhase;
+if (!waPuedeEscribir(__fase)) { waAvisoNoPuede(__fase); return; }
 if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
 try {
 const sessionRes = await supabase.auth.getSession();
@@ -4138,7 +4149,7 @@ if (m.ad_referral && !rec.adReferral) rec.adReferral = m.ad_referral;
 if (m.site_property_interest && !rec.siteProperty) rec.siteProperty = m.site_property_interest;
 if (m.google_ads_interest && !rec.googleAdsInterest) rec.googleAdsInterest = m.google_ads_interest;
 });
-const visible = getVisibleProspects().filter(p=>p.phase!=='Perdido');
+const visible = (isCompliance() ? (DB.prospects||[]).filter(x=>!x.vendido) : getVisibleProspects()).filter(p=>p.phase!=='Perdido');
 const list = [];
 visible.forEach(p=>{
 const last10 = waLast10(p.phone);
@@ -4206,13 +4217,15 @@ let __convActiveKey = null;
 function renderConvFilters(list){
 const el = document.getElementById('conv-filters');
 if (!el) return;
+const __allConv = list;
+list = waScopeFilter(list);
 const counts = {};
 list.forEach(c=>{
 const m = convOriginMeta(c);
 if (!counts[m.key]) counts[m.key] = {meta:m, n:0};
 counts[m.key].n++;
 });
-const chips = [`<button type="button" class="conv-chip ${__convFilter==='all'?'active':''}" onclick="setConvFilter('all')">Todos <span class="cnt">${list.length}</span></button>`];
+const chips = [waScopeChips(__allConv,'conv-chip'), `<button type="button" class="conv-chip ${__convFilter==='all'?'active':''}" onclick="setConvFilter('all')">Cualquier origen <span class="cnt">${list.length}</span></button>`];
 chips.push(...califFilterChips(list,__convFilter,'conv-chip','setConvFilter'));
 Object.values(counts).sort((a,b)=>b.n-a.n).forEach(({meta,n})=>{
 chips.push(`<button type="button" class="conv-chip ${__convFilter===meta.key?'active':''}" onclick="setConvFilter('${meta.key}')"><span class="dot" style="background:${meta.color}"></span>${esc(meta.label)} <span class="cnt">${n}</span></button>`);
@@ -4228,6 +4241,7 @@ renderConvList(list);
 function renderConvList(list){
 const el = document.getElementById('conv-list');
 if (!el) return;
+list = waScopeFilter(list);
 const __cq = __convSearchQuery;
 const __cqDigits = __cq.replace(/\D/g,'');
 let filtered = (__convFilter==='all' ? list : list.filter(c=>convMatchesFilter(c,__convFilter))).filter(c=>{
@@ -4257,6 +4271,7 @@ return `<div class="conv-item ${__convActiveKey===c.key?'active':''}" onclick="s
 <div class="conv-item-top"><span class="conv-item-name">${esc(c.name)}</span><span class="conv-item-time">${time.text}</span></div>
 <div class="conv-item-preview">${esc(c.lastBody||'Sin mensajes')}</div>
 ${califRow(c)}
+${waRespRow(c)}
 ${c.adReferral ? `<div class="conv-item-ad" style="font-size:11px;color:#8a5a00;margin-top:2px;">📢 ${esc(c.adReferral.headline||'Anuncio')}</div>` : ''}
 ${c.siteProperty ? `<div class="conv-item-site-prop" style="font-size:11px;color:#0a6e4a;margin-top:2px;">🏠 ${esc(c.siteProperty)}</div>` : ''}
 ${c.googleAdsInterest ? `<div class="conv-item-gads" style="font-size:11px;color:var(--src-google);margin-top:2px;">🔍 Google Ads</div>` : ''}
@@ -4347,6 +4362,8 @@ if (inputEl) inputEl.addEventListener('keydown', function(e){
 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendConvChatMessage(); }
 });
 renderQuickReplies('d');
+__convChatPhase = conv.kind==='prospect' ? conv.phase : null;
+waAplicarBloqueo('d', __convChatPhase);
 await loadAndRenderConvChat();
 if (inputEl) inputEl.focus();
 }
@@ -4388,6 +4405,7 @@ renderConvChatPreview();
 async function sendConvChatMedia(){
 const p = __convChatPendingFile;
 if (!p || !__convChatDigits) return;
+if (!waPuedeEscribir(__convChatPhase)) { waAvisoNoPuede(__convChatPhase); return; }
 const btn = document.getElementById('cchat-send');
 btn.disabled = true;
 try {
@@ -4449,7 +4467,9 @@ try {
 const sessionRes = await supabase.auth.getSession();
 myEmail = (sessionRes && sessionRes.data && sessionRes.data.session && sessionRes.data.session.user && sessionRes.data.session.user.email) || '';
 } catch(e) {}
-body.innerHTML = data.map(function(m){
+const __items = await waMezclarCambiosFase(data, __convChatProspectId);
+body.innerHTML = __items.map(function(m){
+if (m.__sep) return waSeparadorHTML(m);
 const isOut = m.direction === 'outbound';
 const failed = m.status === 'failed';
 const dt = new Date(m.created_at);
@@ -4478,6 +4498,7 @@ renderReactivacionWarn(document.getElementById('cchat-warn'), data, 'd');
 renderSiguientePaso('d', data);
 }
 async function sendConvChatMessage(){
+if (!waPuedeEscribir(__convChatPhase)) { waAvisoNoPuede(__convChatPhase); return; }
 if (__convChatPendingFile) { await sendConvChatMedia(); return; }
 const input = document.getElementById('cchat-input');
 if (!input) return;
@@ -5108,6 +5129,8 @@ function applyUserModules(user) {
     allowed = ['whatsapp','citas']; // Sin anuncios
   } else if (u === 'fabiola') {
     allowed = ['whatsapp','citas']; // Comercial: whatsapp y citas
+  } else if (isCompliance()) {
+    allowed = ['whatsapp']; // 12-nov-2026: Nayeli atiende Proceso y Cierre desde la bandeja
   } else {
     allowed = user.modules && user.modules.length > 0 ? user.modules : [];
   }
@@ -5190,7 +5213,7 @@ function applyUserModules(user) {
   const navDash = document.getElementById('nav-dashboard');
   if (navDash) navDash.style.display = isCompliance() ? 'none' : '';
   if (isCompliance()) {
-    ['nav-whatsapp','nav-anuncios','nav-citas','nav-mensajes','nav-contratos','nav-rentabilidad','nav-presupuesto','nav-equipo'].forEach(idn => { const el = document.getElementById(idn); if (el) el.style.display = 'none'; });
+    ['nav-anuncios','nav-citas','nav-mensajes','nav-contratos','nav-rentabilidad','nav-presupuesto','nav-equipo'].forEach(idn => { const el = document.getElementById(idn); if (el) el.style.display = 'none'; });
     if (_kanbanView === 'perdidos') _kanbanView = 'kanban';
   }
   // Oculta los títulos de sección del menú que se quedaron sin opciones
@@ -5534,7 +5557,7 @@ async function loadUsers() {
 async function loadProspects() {
   // notes se excluye del listado (puede crecer mucho); se consulta bajo demanda al editar/exportar/cambiar fase
   let q=supabase.from('crm_prospects').select('id,name,phone,email,prop,value,phase,seller,seller_id,source,created_at,phase_updated_at,last_wa_at,vendido,vendido_at,calificacion,calif_estado,calif_compra,calif_pago,calif_plazo,compra_estimada_hasta,atencion_pendiente_desde,proxima_accion,proxima_accion_fecha,proceso_etapa,precio_final,forma_pago,fecha_apartado,fecha_escrituracion,fecha_entrega,comision,postventa_resena_at,postventa_referidos_at,venta_registro_manual,resena_estado,encuesta_estado,encuesta_enviada_at,encuesta_experiencia,encuesta_recomienda,encuesta_permiso_publicar,encuesta_testimonio').order('created_at',{ascending:false});
-  if(!puedeVerTodosProspectos()) { if(DB.currentUser.id) q=q.eq('seller_id',DB.currentUser.id); else q=q.eq('seller',DB.currentUser.name); }
+  if(!puedeVerTodosProspectos() && !isCompliance()) { if(DB.currentUser.id) q=q.eq('seller_id',DB.currentUser.id); else q=q.eq('seller',DB.currentUser.name); }
   const{data,error}=await q;
   if(!error) DB.prospects=(data||[]).map(p=>({...p,phase:normalizePhase(p.phase)}));
 }
@@ -5714,11 +5737,123 @@ function isAdmin(){return ['Administrador','Gerencia'].includes(DB.currentUser?.
 // etapa de Proceso. Desde el 10-nov-2026 también pasa clientes de Proceso a Cierre y les
 // escribe por WhatsApp desde la tarjeta (sin la bandeja general de WhatsApp).
 const COMPLIANCE_FASES = ['Proceso','Cierre'];
-const COMPLIANCE_SECCIONES = ['kanban','vendidos','sitioweb'];
+const COMPLIANCE_SECCIONES = ['kanban','vendidos','sitioweb','whatsapp']; // 12-nov-2026: + bandeja de WhatsApp
 function isCompliance(){ return DB.currentUser?.role === 'Compliance'; }
 // Compliance no vende ni atiende prospectos: no aparece en las listas de vendedor/asesor
 function usuariosVendedores(){ return (DB.users||[]).filter(u=>u.role!=='Compliance'); }
 function fasesTablero(){ return isCompliance() ? COMPLIANCE_FASES : PHASES; }
+
+// ── Bandeja de WhatsApp por fase (12-nov-2026, decisión de Robert) ──
+// Todos ven todas las conversaciones, pero solo el responsable de la fase le escribe
+// al cliente: Registro (y contactos sin registrar o en Perdido) = Alfredo · Visita =
+// Fabiola · Proceso y Cierre = Nayeli. Roberto (Administrador/Gerencia) escribe en
+// cualquier fase. "Atorado" = el último mensaje es del cliente y nadie le contestó en
+// el tiempo límite de su fase; solo cuenta si ese mensaje es de los últimos 3 días
+// (lo más viejo ya es reactivación, ver chip "Para reactivar").
+const WA_RESPONSABLE_FASE = {Registro:'alfredo', Visita:'fabiola', Proceso:'nayeli', Cierre:'nayeli'};
+const WA_LIMITE_ATORADO_MIN = {Registro:30, Visita:20, Proceso:120, Cierre:120};
+let __waChatPhase = null;
+let __convChatPhase = null;
+let __waScope = null;
+function waResponsableUsername(phase){ return WA_RESPONSABLE_FASE[phase] || 'alfredo'; }
+function waResponsableNombre(phase){
+  const u = waResponsableUsername(phase);
+  const usr = (DB.users||[]).find(x=>(x.username||'').toLowerCase()===u);
+  const n = (usr && usr.name) ? usr.name.split(' ')[0] : u;
+  return n.charAt(0).toUpperCase() + n.slice(1);
+}
+function waPuedeEscribir(phase){
+  if (isAdmin()) return true;
+  return (DB.currentUser?.username||'').toLowerCase() === waResponsableUsername(phase);
+}
+function waAvisoNoPuede(phase){
+  showToast('Solo ' + waResponsableNombre(phase) + ' le escribe a este cliente. Puedes dejarle una nota o pedirle apoyo.', 'error');
+}
+function waPhaseDeProspecto(prospectId){
+  if (!prospectId) return null;
+  const p = (DB.prospects||[]).find(x=>String(x.id)===String(prospectId));
+  return p ? p.phase : null;
+}
+function waAtoradoMin(c){
+  if (!c || c.lastDir !== 'inbound' || !c.lastAt) return 0;
+  const min = (Date.now() - new Date(c.lastAt).getTime()) / 60000;
+  const lim = WA_LIMITE_ATORADO_MIN[c.phase] || 30;
+  return (min > lim && min < 3*24*60) ? Math.round(min) : 0;
+}
+function waAtoradoTexto(min){
+  if (min < 60) return min + ' min';
+  if (min < 1440) return Math.floor(min/60) + ' h';
+  return Math.floor(min/1440) + ' d';
+}
+function waEsMio(c){ return (DB.currentUser?.username||'').toLowerCase() === waResponsableUsername(c.phase); }
+function waScopeActual(){ if (!__waScope) __waScope = isAdmin() ? 'todos' : 'mis'; return __waScope; }
+function waScopeFilter(list){
+  const sc = waScopeActual();
+  if (sc === 'mis') return list.filter(waEsMio);
+  if (sc === 'atorados') return list.filter(c=>waAtoradoMin(c) > 0);
+  return list;
+}
+function waScopeChips(list, cls){
+  const sc = waScopeActual();
+  const nMis = list.filter(waEsMio).length;
+  const nAt = list.filter(c=>waAtoradoMin(c) > 0).length;
+  const b = (k,t,n) => `<button type="button" class="${cls} ${sc===k?'active':''}" onclick="setWaScope('${k}')">${t} <span class="cnt">${n}</span></button>`;
+  return `<div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;padding-bottom:8px;margin-bottom:2px;border-bottom:1px solid var(--border);">${isAdmin()?'':b('mis','Mis chats',nMis)}${b('todos','Todos',list.length)}${b('atorados','⚠️ Atorados',nAt)}</div>`;
+}
+function setWaScope(sc){
+  __waScope = sc;
+  const list = window.__convList || [];
+  renderConvFilters(list);
+  renderConvList(list);
+  if (window.innerWidth <= 768) renderMobileConvBody(list);
+}
+function waRespRow(c){
+  const at = waAtoradoMin(c);
+  return `<div class="wa-resp-row" style="font-size:11px;color:var(--text-muted);margin-top:2px;">👤 Atiende: ${esc(waResponsableNombre(c.phase))}${c.phase ? ' · ' + esc(c.phase) : ''}${at ? ` <span style="color:#c0392b;font-weight:700;">· ⚠️ Sin respuesta hace ${waAtoradoTexto(at)}</span>` : ''}</div>`;
+}
+// Bloquea el cuadro de texto si quien está viendo el chat no es el responsable de la fase
+function waAplicarBloqueo(w, phase){
+  const input = document.getElementById(w==='m' ? 'wachat-input' : 'cchat-input');
+  const footer = w==='m' ? document.getElementById('wachat-footer') : (input ? input.closest('.cchat-footer') : null);
+  if (!footer) return;
+  const qr = document.getElementById('qr-bar-' + w);
+  let aviso = document.getElementById('wa-lock-' + w);
+  if (!aviso) {
+    aviso = document.createElement('div');
+    aviso.id = 'wa-lock-' + w;
+    aviso.style.cssText = 'padding:10px 14px;background:#f4f4f7;border-top:1px solid #e2e2ea;font-size:12.5px;color:#555;text-align:center;';
+    footer.parentNode.insertBefore(aviso, footer);
+  }
+  if (waPuedeEscribir(phase)) {
+    aviso.style.display = 'none';
+    footer.style.display = '';
+    if (qr && qr.dataset.waLock) { qr.style.display = ''; delete qr.dataset.waLock; }
+  } else {
+    aviso.innerHTML = '🔒 Solo <strong>' + esc(waResponsableNombre(phase)) + '</strong> le escribe a este cliente' + (phase ? ' (fase ' + esc(phase) + ')' : '') + '. Tú puedes leer la conversación.';
+    aviso.style.display = '';
+    footer.style.display = 'none';
+    if (qr) { qr.dataset.waLock = '1'; qr.style.display = 'none'; }
+  }
+}
+// Línea "Pasó a Visita · ahora la atiende Fabiola" entre los mensajes (sale de crm_auditoria)
+async function waMezclarCambiosFase(data, prospectId){
+  if (!prospectId || !data || !data.length) return data || [];
+  let aud = [];
+  try {
+    const r = await supabase.from('crm_auditoria').select('fase_anterior,fase_nueva,created_at').eq('prospect_id', prospectId).order('created_at', {ascending:true});
+    aud = (r && r.data) || [];
+  } catch(e) { return data; }
+  const desde = new Date(data[0].created_at).getTime();
+  const seps = aud.filter(a => a.fase_nueva && a.fase_nueva !== a.fase_anterior && new Date(a.created_at).getTime() >= desde)
+    .map(a => ({__sep:true, created_at:a.created_at, fase:a.fase_nueva}));
+  if (!seps.length) return data;
+  return data.concat(seps).sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+}
+function waSeparadorHTML(it){
+  const f = new Date(it.created_at).toLocaleString('es-MX', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+  const quien = it.fase === 'Perdido' ? '' : ' · ahora la atiende ' + esc(waResponsableNombre(it.fase));
+  return '<div style="align-self:center;background:#e6f1fb;color:#0c447c;font-size:11.5px;padding:4px 12px;border-radius:12px;margin:6px 0;text-align:center;">➡️ Pasó a ' + esc(it.fase) + quien + ' · ' + f + '</div>';
+}
 // ── Permisos de Contratos (firma electrónica DocuSign) ──
 // Roberto (y Administrador/Gerencia): control total — crear, editar, eliminar y enviar a firma.
 // Fabiola: solo puede ver/recibir los contratos y compartirlos (link de firma), sin crear/editar/eliminar.
