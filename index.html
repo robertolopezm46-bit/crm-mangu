@@ -3655,6 +3655,7 @@ async function loadAndRenderWaChat(){
   else { body.scrollTop = Math.max(0, body.scrollHeight - body.clientHeight - __distFromBottom); }
 
   renderReactivacionWarn(document.getElementById('wachat-warn'), data, 'm');
+  waRenderAccionesChat('m', data);
   renderSiguientePaso('m', data);
 }
 
@@ -4206,8 +4207,9 @@ const t = m.type==='audio' ? '🎤 Audio' : (m.type==='image' ? '📷 Imagen' : 
 return (m.dir==='outbound' ? 'Tú: ' : '') + t;
 }
 async function loadConversationsBoardData(){
-const [{data: staffRows}, {data: waRows}] = await Promise.all([
+const [{data: staffRows}, {data: waRows}, {data: marcasRows}] = await Promise.all([
 supabase.from('crm_users').select('phone'),
+supabase.from('crm_wa_marcas').select('phone,tipo,marcado_at'),
 supabase.from('crm_wa_messages').select('phone, direction, body, message_type, created_at, prospect_id, ad_referral, site_property_interest, google_ads_interest').order('created_at',{ascending:false}).limit(1500)
 ]);
 const staffLast10 = (staffRows||[]).map(u => (u.phone||'').replace(/\D/g,'').slice(-10)).filter(Boolean);
@@ -4259,6 +4261,19 @@ siteProperty: rec.siteProperty,
 googleAdsInterest: rec.googleAdsInterest
 });
 });
+// 13-nov-2026: "Descartar contacto" oculta a los sin registrar y "No requiere respuesta" quita
+// la marca de atorado; las dos dejan de aplicar si el cliente vuelve a escribir después.
+const __marcas = {};
+(marcasRows||[]).forEach(r=>{ (__marcas[r.phone] = __marcas[r.phone] || {})[r.tipo] = r.marcado_at; });
+window.__waMarcas = __marcas;
+for (let i = list.length - 1; i >= 0; i--) {
+const c = list[i];
+const mk = __marcas[waLast10(c.phone)];
+if (!mk) continue;
+const lastIn = c.lastInboundAt ? new Date(c.lastInboundAt).getTime() : 0;
+if (c.kind === 'unreg' && mk.descartado && lastIn <= new Date(mk.descartado).getTime()) { list.splice(i, 1); continue; }
+if (mk.sin_respuesta && lastIn <= new Date(mk.sin_respuesta).getTime()) c.noRequiere = true;
+}
 list.sort((a,b)=>{
 const ta = a.lastAt ? new Date(a.lastAt).getTime() : 0;
 const tb = b.lastAt ? new Date(b.lastAt).getTime() : 0;
@@ -4570,6 +4585,7 @@ return '<div class="cchat-msg ' + (isOut ? 'out' : 'in') + (failed ? ' failed' :
 if (__wasNearBottom) { body.scrollTop = body.scrollHeight; }
 else { body.scrollTop = Math.max(0, body.scrollHeight - body.clientHeight - __distFromBottom); }
 renderReactivacionWarn(document.getElementById('cchat-warn'), data, 'd');
+waRenderAccionesChat('d', data);
 renderSiguientePaso('d', data);
 }
 async function sendConvChatMessage(){
@@ -5821,6 +5837,68 @@ function isCompliance(){ return DB.currentUser?.role === 'Compliance'; }
 function usuariosVendedores(){ return (DB.users||[]).filter(u=>u.role!=='Compliance'); }
 function fasesTablero(){ return isCompliance() ? COMPLIANCE_FASES : PHASES; }
 
+// ── Botones "No requiere respuesta" y "Descartar contacto" (13-nov-2026) ──
+// No requiere respuesta: el responsable de la fase o Roberto, cuando el último mensaje es del cliente.
+// Descartar contacto: solo Alfredo o Roberto, y solo para números sin registrar.
+function waPuedeDescartar(){ return isAdmin() || (DB.currentUser?.username||'').toLowerCase() === 'alfredo'; }
+function waRenderAccionesChat(w, data){
+  const input = document.getElementById(w==='m' ? 'wachat-input' : 'cchat-input');
+  const footer = w==='m' ? document.getElementById('wachat-footer') : (input ? input.closest('.cchat-footer') : null);
+  if (!footer) return;
+  let bar = document.getElementById('wa-acc-' + w);
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'wa-acc-' + w;
+    bar.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:8px 12px;border-top:1px solid #e2e2ea;background:#fafaf7;';
+    const lock = document.getElementById('wa-lock-' + w);
+    footer.parentNode.insertBefore(bar, (lock && lock.parentNode === footer.parentNode) ? lock : footer);
+  }
+  const phone10 = w==='m' ? __waChatPhone : __convChatPhone;
+  const pid = w==='m' ? __waChatProspectId : __convChatProspectId;
+  const phase = w==='m' ? __waChatPhase : __convChatPhase;
+  const rows = data || [];
+  const ult = rows.length ? rows[rows.length - 1] : null;
+  const mk = (window.__waMarcas || {})[phone10] || {};
+  const yaMarcado = ult && mk.sin_respuesta && new Date(ult.created_at).getTime() <= new Date(mk.sin_respuesta).getTime();
+  const btn = 'min-height:36px;padding:7px 12px;border-radius:8px;border:1px solid #d6d3c9;background:#fff;color:#1a1a2e;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;';
+  let html = '';
+  if (ult && ult.direction === 'inbound' && waPuedeEscribir(phase)) {
+    html += yaMarcado
+      ? '<span style="font-size:12.5px;color:#1e6b45;align-self:center;">✓ Marcado como "no requiere respuesta"</span>'
+      : '<button type="button" style="' + btn + '" onclick="waMarcarChat(\'' + w + '\',\'sin_respuesta\')" title="El cliente cerró la plática (gracias, ok…). Deja de contar como atorado.">✓ No requiere respuesta</button>';
+  }
+  if (!pid && waPuedeDescartar()) {
+    html += '<button type="button" style="' + btn + 'color:#a3222f;border-color:#f0b4b4;" onclick="waMarcarChat(\'' + w + '\',\'descartado\')" title="Spam, número equivocado, proveedor… Sale de la bandeja; si vuelve a escribir, aparece de nuevo.">Descartar contacto</button>';
+  }
+  bar.innerHTML = html;
+  bar.style.display = html ? 'flex' : 'none';
+}
+async function waMarcarChat(w, tipo){
+  const phone10 = w==='m' ? __waChatPhone : __convChatPhone;
+  if (!phone10) return;
+  if (tipo === 'descartado' && !waPuedeDescartar()) { showToast('Solo Alfredo o Roberto pueden descartar contactos.', 'error'); return; }
+  if (tipo === 'descartado' && !confirmDescartarContacto()) return;
+  const { error } = await supabase.from('crm_wa_marcas').upsert({ phone: phone10, tipo: tipo, marcado_at: new Date().toISOString(), marcado_por: (DB.currentUser?.username||'') }, { onConflict: 'phone,tipo' });
+  if (error) { showToast('No se pudo guardar: ' + error.message, 'error'); return; }
+  showToast(tipo === 'descartado' ? 'Contacto descartado. Si vuelve a escribir, aparece de nuevo.' : 'Listo: ya no cuenta como atorado.', 'success');
+  if (tipo === 'descartado') {
+    if (w === 'm') closeWaChatModal();
+    else { __convActiveKey = null; const panel = document.getElementById('conv-panel'); if (panel) panel.innerHTML = '<div class="conv-panel-empty">Selecciona una conversación</div>'; }
+  } else {
+    if (w === 'm') await loadAndRenderWaChat(); else await loadAndRenderConvChat();
+  }
+  try { if (window.innerWidth <= 768) renderMobileWhatsAppList(); else renderConvBoard(); } catch(e) {}
+  if (isSectionActive('midia')) renderMiDia();
+}
+// Confirmación sin alert() del navegador: segundo clic dentro de 4 segundos
+function confirmDescartarContacto(){
+  const ahora = Date.now();
+  if (window.__waDescartarTs && ahora - window.__waDescartarTs < 4000) { window.__waDescartarTs = 0; return true; }
+  window.__waDescartarTs = ahora;
+  showToast('Toca otra vez "Descartar contacto" para confirmar.', 'info');
+  return false;
+}
+
 // ══════════════════════════════════════════
 //  MI DÍA (13-nov-2026) — pantalla de inicio por persona
 // ══════════════════════════════════════════
@@ -5831,7 +5909,7 @@ function mdHoyStr(){ return new Date().toLocaleDateString('en-CA',{timeZone:'Ame
 function mdFechaLarga(){ const t = new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',timeZone:'America/Mexico_City'}); return t.charAt(0).toUpperCase()+t.slice(1); }
 function mdFechaCorta(d){ if(!d) return ''; return new Date(String(d).slice(0,10)+'T12:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}); }
 function mdEspera(c){
-  if (!c || c.lastDir !== 'inbound' || !c.lastAt) return 0;
+  if (!c || c.noRequiere || c.lastDir !== 'inbound' || !c.lastAt) return 0;
   const m = (Date.now() - new Date(c.lastAt).getTime()) / 60000;
   return m < 3*24*60 ? Math.max(1, Math.round(m)) : 0;
 }
@@ -5995,7 +6073,7 @@ function waPhaseDeProspecto(prospectId){
   return p ? p.phase : null;
 }
 function waAtoradoMin(c){
-  if (!c || c.lastDir !== 'inbound' || !c.lastAt) return 0;
+  if (!c || c.noRequiere || c.lastDir !== 'inbound' || !c.lastAt) return 0;
   const min = (Date.now() - new Date(c.lastAt).getTime()) / 60000;
   const lim = WA_LIMITE_ATORADO_MIN[c.phase] || 30;
   return (min > lim && min < 3*24*60) ? Math.round(min) : 0;
