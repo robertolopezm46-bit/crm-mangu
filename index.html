@@ -4078,12 +4078,19 @@ function renderQuickReplies(w){
   const pref = p && p.prop ? String(p.prop).trim().toUpperCase() : '';
   const opts = casas.map(c=>`<option value="${esc(c.id)}" ${String(c.titulo||'').trim().toUpperCase()===pref?'selected':''}>${esc(qrTitulo(c.titulo))}</option>`).join('');
   const chip = (k,t,tip) => `<button type="button" class="qr-chip" title="${esc(tip)}" onclick="usarRespuestaRapida('${w}','${k}')">${t}</button>`;
+  // 13-nov-2026: respuestas para el día de la visita (primero para Fabiola, que anda en la calle)
+  const campo = chip('camino','🚗 Voy en camino','Avisa que ya vas para la casa')
+    + chip('llegue','✅ Ya llegué','Avisa que ya estás afuera de la casa')
+    + (casas.length ? chip('ubicvisita','📍 Ubicación exacta','Dirección y mapa de la casa para el día de la visita') : '');
+  const esCampo = (DB.currentUser?.username||'').toLowerCase() === 'fabiola';
   bar.innerHTML = (casas.length ? `<select id="qr-casa-${w}" title="Casa para la ficha, la ubicación y la visita">${opts}</select>` : '')
+    + (esCampo ? campo : '')
     + chip('saludo','👋 Saludo','Presentación con tu nombre')
     + chip('nombre','🙋 Pedir nombre','¿Con quién tengo el gusto?')
     + (casas.length ? chip('ficha','🏠 Ficha','Liga de la casa en mangu.mx con fotos y precio') + chip('ubicacion','📍 Ubicación','Fraccionamiento y mapa') : '')
     + chip('visita','📅 Proponer 2 horarios','Propone un día entre semana y el sábado')
-    + chip('credito','💳 Crédito','Ofrece precalificación sin costo');
+    + chip('credito','💳 Crédito','Ofrece precalificación sin costo')
+    + (esCampo ? '' : campo);
 }
 function usarRespuestaRapida(w, k){
   const p = qrProspecto(w);
@@ -4099,6 +4106,13 @@ function usarRespuestaRapida(w, k){
     const zona = [c.fraccionamiento, c.municipio].filter(Boolean).join(', ') || c.ubicacion || 'Pachuca';
     const q = encodeURIComponent([(c.direccion||c.fraccionamiento||''), c.municipio||'Pachuca', 'Hidalgo'].filter(Boolean).join(', '));
     t = `📍 ${casaT} está en ${zona}.\nAquí la ves en el mapa: https://www.google.com/maps/search/?api=1&query=${q}\n\nLa dirección exacta te la compartimos al confirmar tu visita.`;
+  }
+  else if (k==='camino') t = `¡Hola${nom?' '+nom:''}! Ya voy en camino a ${c ? casaT : 'la casa'} 🚗 Llego en unos minutos.`;
+  else if (k==='llegue') t = `¡Ya llegué${nom?', '+nom:''}! Estoy afuera de ${c ? casaT : 'la casa'}. Aquí te espero 😊`;
+  else if (k==='ubicvisita' && c) {
+    const dir = [c.direccion, c.fraccionamiento, c.municipio||'Pachuca'].filter(Boolean).join(', ');
+    const q = encodeURIComponent([(c.direccion||c.fraccionamiento||''), c.municipio||'Pachuca', 'Hidalgo'].filter(Boolean).join(', '));
+    t = `📍 Esta es la ubicación de ${casaT} para tu visita:\n${dir}\nhttps://www.google.com/maps/search/?api=1&query=${q}`;
   }
   else if (k==='visita') {
     const hoy = new Date(); hoy.setHours(12,0,0,0);
